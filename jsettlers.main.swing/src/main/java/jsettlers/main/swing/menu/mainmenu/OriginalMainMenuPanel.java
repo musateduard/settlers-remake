@@ -1,51 +1,77 @@
 package jsettlers.main.swing.menu.mainmenu;
 
-import jsettlers.common.CommitInfo;
-
-import java.awt.*;
-import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
+import java.awt.Font;
+import java.awt.Color;
+import java.awt.Point;
+import java.awt.Graphics;
+import java.awt.Rectangle;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.RenderingHints;
+import java.awt.FontFormatException;
+import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.image.RescaleOp;
+import jsettlers.common.CommitInfo;
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+import java.io.IOException;
+import java.io.File;
+
+
+class MenuButtonProperties {
+
+    public Font buttonFont;
+    public BufferedImage buttonImage;
+    public BufferedImage buttonImageHovered;
+    public BufferedImage buttonImageClicked;
+
+
+    public MenuButtonProperties(BufferedImage buttonImage, BufferedImage buttonImageHovered, BufferedImage buttonImageClicked, Font buttonFont) {
+
+        this.buttonFont = buttonFont;
+        this.buttonImage = buttonImage;
+        this.buttonImageHovered = buttonImageHovered;
+        this.buttonImageClicked = buttonImageClicked;
+
+        return;
+    }
+}
 
 
 class MenuButton extends JButton {
 
-    public final File buttonPath = new File("D:\\sprite0_0.bmp");
-    public final File buttonPressedPath = new File("D:\\sprite0_0_pressed.bmp");
-    public final File buttonHoveredPath = new File("D:\\sprite0_0_hovered.bmp");
+    public final int buttonWidth = 172;
+    public final int buttonHeight = 32;
     public boolean hovered = false;
     public boolean pressed = false;
     public int offsetY;
 
+    public Font textFont;
+    public BufferedImage buttonImage;
+    public BufferedImage buttonImageHovered;
+    public BufferedImage buttonImageClicked;
 
-    public MenuButton(String buttonText, int offsetY) {
+
+    public MenuButton(MenuButtonProperties properties, String buttonText, int offsetY) {
+
+        this.textFont = properties.buttonFont;
+        this.buttonImage = properties.buttonImage;
+        this.buttonImageHovered = properties.buttonImageHovered;
+        this.buttonImageClicked = properties.buttonImageClicked;
 
         this.offsetY = offsetY;
         this.setText(buttonText);
-        this.setBounds(0, this.offsetY, 172, 32);
+        this.setBounds(0, this.offsetY, this.buttonWidth, this.buttonHeight);
         this.setBorderPainted(false);
         this.setContentAreaFilled(false);
         this.setOpaque(false);
         this.setForeground(new Color(0, 12, 64));
-
-        try {
-
-            Font msSans = Font.createFont(Font.TRUETYPE_FONT, new File("D:\\ms-sans-serif-1.ttf"));
-            this.setFont(msSans.deriveFont(11f));
-        }
-
-        catch (Exception exception) {
-            System.out.printf("failed to open font: %s\n", "D:\\ms-sans-serif-1.ttf");
-            exception.printStackTrace();
-        }
+        this.setFont(this.textFont.deriveFont(Font.PLAIN, 11f));
 
         return;
     }
@@ -53,24 +79,16 @@ class MenuButton extends JButton {
 
     public void paintComponent(Graphics graphics) {
 
-        try {
-
-            if (this.hovered) {
-                graphics.drawImage(ImageIO.read(this.buttonHoveredPath), 0, 0, this.getWidth(), this.getHeight(), this);
-            }
-
-            else if (this.pressed) {
-                graphics.drawImage(ImageIO.read(this.buttonPressedPath), 0, 0, this.getWidth(), this.getHeight(), this);
-            }
-
-            else {
-                graphics.drawImage(ImageIO.read(this.buttonPath), 0, 0, this.getWidth(), this.getHeight(), this);
-            }
+        if (this.hovered) {
+            graphics.drawImage(this.buttonImageHovered, 0, 0, this.getWidth(), this.getHeight(), this);
         }
 
-        catch (IOException exception) {
-            System.out.printf("failed to open file: %s\n", this.buttonPath);
-            exception.printStackTrace();
+        else if (this.pressed) {
+            graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
+        }
+
+        else {
+            graphics.drawImage(this.buttonImage, 0, 0, this.getWidth(), this.getHeight(), this);
         }
 
         super.paintComponent(graphics);
@@ -80,13 +98,13 @@ class MenuButton extends JButton {
 }
 
 
-class MenuListener implements MouseListener {
+class MenuEventListener implements MouseListener, MouseMotionListener {
 
-    public BackgroundPanel component;
-    public ArrayList<MenuButton> buttonList;
+    public final BackgroundPanel component;
+    public final MenuButton[] buttonList;
 
 
-    public MenuListener(BackgroundPanel menuPanel, ArrayList<MenuButton> buttonList) {
+    public MenuEventListener(BackgroundPanel menuPanel, MenuButton[] buttonList) {
         this.component = menuPanel;
         this.buttonList = buttonList;
         return;
@@ -123,10 +141,10 @@ class MenuListener implements MouseListener {
 
         Point clickPoint = this.getScaledPosition(event);
 
-        System.out.printf("\n");
-        System.out.printf("exit button %d %d %d %d\n", this.component.exitGameButton.getX(), this.component.exitGameButton.getY(), this.component.exitGameButton.getWidth(), this.component.exitGameButton.getHeight());
-        System.out.printf("parent size %d %d\n", this.component.getWidth(), this.component.getHeight());
-        System.out.printf("clicked %d %d\n", clickPoint.x, clickPoint.y);
+        // System.out.printf("\n");
+        // System.out.printf("exit button %d %d %d %d\n", this.component.exitGameButton.getX(), this.component.exitGameButton.getY(), this.component.exitGameButton.getWidth(), this.component.exitGameButton.getHeight());
+        // System.out.printf("parent size %d %d\n", this.component.getWidth(), this.component.getHeight());
+        // System.out.printf("clicked %d %d\n", clickPoint.x, clickPoint.y);
 
         if (clickPoint.x < 80 || clickPoint.x >= (172 + 80) || clickPoint.y < 20 || clickPoint.y >= (20 + 552)) {
             System.out.printf("point outside of menu area\n");
@@ -189,55 +207,141 @@ class MenuListener implements MouseListener {
         // System.out.printf("exited %d %d\n", event.getX(), event.getY());
         return;
     }
+
+
+    @Override
+    public void mouseDragged(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseMoved(MouseEvent event) {
+
+        Point clickPoint = this.getScaledPosition(event);
+
+        // set hovered status
+        for (MenuButton item : this.buttonList) {
+
+            Rectangle bounds = this.getButtonCoordinates(item);
+            item.hovered = bounds.contains(clickPoint);
+        }
+
+        this.component.repaint();
+
+        return;
+    }
 }
 
 
 class BackgroundPanel extends JPanel {
 
     public final double idealAspectRatio = (double) 800 / (double) 600;
-    public final File imagePath = new File("D:\\menu2.bmp");
-    public BufferedImage imageBuffer = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
-    public Font msSans;
+    public BufferedImage menuImage = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
+    public BufferedImage buttonImage = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
+    public BufferedImage buttonImageHovered = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
+    public BufferedImage buttonImageClicked = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
+    public Font menuFont = new Font("Arial", Font.PLAIN, 11);
 
-    public final JPanel buttonsPanel = new JPanel(null);
-    public final MenuButton tutorialButton = new MenuButton("Tutorial", 0);
-    public final MenuButton campaignButton = new MenuButton("Campaign", 40);
-    public final MenuButton missionCDCampaignButton = new MenuButton("Mission CD Campaign", 80);
-    public final MenuButton amazonCampaignButton = new MenuButton("Amazon Campaign", 120);
-    public final MenuButton campaignDifficultyButton = new MenuButton("Campaign: Normal", 160);
-    public final MenuButton singlePlayerScenarioButton = new MenuButton("Single Player: Scenario", 200);
-    public final MenuButton multiplayerGameLanButton = new MenuButton("Multi-player Game: LAN", 240);
-    public final MenuButton multiplayerGameInternetButton = new MenuButton("Multi-player Game: Internet", 280);
-    public final MenuButton loadGameButton = new MenuButton("Load Game", 320);
-    public final MenuButton onlineHelpButton = new MenuButton("Online Help", 380);
-    public final MenuButton tipsTricksButton = new MenuButton("Tips & Tricks", 420);
-    public final MenuButton creditsButton = new MenuButton("Credits", 460);
-    public final MenuButton exitGameButton = new MenuButton("Exit Game", 520);
+    public final MenuEventListener eventListener;
+    public final MenuButton[] buttonList;
+
+    public final JPanel buttonsPanel;
+    public final MenuButton tutorialButton;
+    public final MenuButton campaignButton;
+    public final MenuButton missionCDCampaignButton;
+    public final MenuButton amazonCampaignButton;
+    public final MenuButton campaignDifficultyButton;
+    public final MenuButton singlePlayerScenarioButton;
+    public final MenuButton multiplayerGameLanButton;
+    public final MenuButton multiplayerGameInternetButton;
+    public final MenuButton loadGameButton;
+    public final MenuButton onlineHelpButton;
+    public final MenuButton tipsTricksButton;
+    public final MenuButton creditsButton;
+    public final MenuButton exitGameButton;
 
 
     public BackgroundPanel() {
 
-        // set background image
+        File imagePath = new File("D:\\menu2.bmp");
+        File fontPath = new File("D:\\ms-sans-serif-1.ttf");
+        File buttonImagePath = new File("D:\\sprite0_0.bmp");
+        File buttonImageClickedPath = new File("D:\\sprite0_1.bmp");
+
+        // load all images
         try {
-            this.imageBuffer = ImageIO.read(this.imagePath);
-            this.msSans = Font.createFont(Font.TRUETYPE_FONT, new File("D:\\ms-sans-serif-1.ttf"));
+            this.menuImage = ImageIO.read(imagePath);
+            this.buttonImage = ImageIO.read(buttonImagePath);
+
+            RescaleOp brightness = new RescaleOp(0.90f, 0, null);
+            brightness.filter(this.buttonImage, this.buttonImageHovered);
+
+            this.buttonImageClicked = ImageIO.read(buttonImageClickedPath);
         }
 
         catch (IOException exception) {
-            System.out.printf("failed to open file: %s\n", this.imagePath);
+            System.out.printf("failed to open background image: %s\n", imagePath);
             exception.printStackTrace();
         }
 
-        catch (FontFormatException exception) {
-            System.out.printf("failed to open font: %s\n", "D:\\ms-sans-serif-1.ttf");
+        // load all fonts
+        try {
+            this.menuFont = Font.createFont(Font.TRUETYPE_FONT, fontPath);
+        }
+
+        catch (IOException | FontFormatException exception) {
+            System.out.printf("failed to open menu font: %s\n", fontPath);
             exception.printStackTrace();
         }
+
+        // set buttons
+        MenuButtonProperties buttonProperties = new MenuButtonProperties(this.buttonImage, this.buttonImageHovered, this.buttonImageClicked, this.menuFont);
+
+        this.tutorialButton = new MenuButton(buttonProperties, "Tutorial", 0);
+        this.campaignButton = new MenuButton(buttonProperties, "Campaign", 40);
+        this.missionCDCampaignButton = new MenuButton(buttonProperties, "Mission CD Campaign", 80);
+        this.amazonCampaignButton = new MenuButton(buttonProperties, "Amazon Campaign", 120);
+        this.campaignDifficultyButton = new MenuButton(buttonProperties, "Campaign: Normal", 160);
+        this.singlePlayerScenarioButton = new MenuButton(buttonProperties, "Single Player: Scenario", 200);
+        this.multiplayerGameLanButton = new MenuButton(buttonProperties, "Multi-player Game: LAN", 240);
+        this.multiplayerGameInternetButton = new MenuButton(buttonProperties, "Multi-player Game: Internet", 280);
+        this.loadGameButton = new MenuButton(buttonProperties, "Load Game", 320);
+        this.onlineHelpButton = new MenuButton(buttonProperties, "Online Help", 380);
+        this.tipsTricksButton = new MenuButton(buttonProperties, "Tips & Tricks", 420);
+        this.creditsButton = new MenuButton(buttonProperties, "Credits", 460);
+        this.exitGameButton = new MenuButton(buttonProperties, "Exit Game", 520);
 
         // assign buttons panel
+        this.buttonsPanel = new JPanel(null);
+
         this.buttonsPanel.setSize(new Dimension(172, 552));
         this.buttonsPanel.setOpaque(false);
 
-        // add buttons
+        // add button event listeners
+        this.tutorialButton.addActionListener(
+            event -> {
+                System.out.printf("tutorials button pressed\n");
+                return;
+            }
+        );
+
+        this.campaignButton.addActionListener(
+            event -> {
+                System.out.printf("campaign button pressed\n");
+                return;
+            }
+        );
+
+        this.exitGameButton.addActionListener(
+            event -> {
+                System.out.printf("exit button pressed\n");
+                System.exit(0);
+                return;
+            }
+        );
+
+        // add buttons to panel
         this.buttonsPanel.add(this.tutorialButton);
         this.buttonsPanel.add(this.campaignButton);
         this.buttonsPanel.add(this.missionCDCampaignButton);
@@ -250,37 +354,29 @@ class BackgroundPanel extends JPanel {
         this.buttonsPanel.add(this.onlineHelpButton);
         this.buttonsPanel.add(this.tipsTricksButton);
         this.buttonsPanel.add(this.creditsButton);
-
-        this.exitGameButton.addActionListener(
-            event -> {
-                System.out.printf("exit button pressed\n");
-                System.exit(0);
-                return;
-            }
-        );
-
         this.buttonsPanel.add(this.exitGameButton);
 
-        // add event listener
-        ArrayList<MenuButton> buttonList = new ArrayList<>(
-            List.of(
-                this.tutorialButton,
-                this.campaignButton,
-                this.missionCDCampaignButton,
-                this.amazonCampaignButton,
-                this.campaignDifficultyButton,
-                this.singlePlayerScenarioButton,
-                this.multiplayerGameLanButton,
-                this.multiplayerGameInternetButton,
-                this.loadGameButton,
-                this.onlineHelpButton,
-                this.tipsTricksButton,
-                this.creditsButton,
-                this.exitGameButton
-            )
-        );
+        // add menu event listener
+        this.buttonList = new MenuButton[] {
+            this.tutorialButton,
+            this.campaignButton,
+            this.missionCDCampaignButton,
+            this.amazonCampaignButton,
+            this.campaignDifficultyButton,
+            this.singlePlayerScenarioButton,
+            this.multiplayerGameLanButton,
+            this.multiplayerGameInternetButton,
+            this.loadGameButton,
+            this.onlineHelpButton,
+            this.tipsTricksButton,
+            this.creditsButton,
+            this.exitGameButton
+        };
 
-        this.addMouseListener(new MenuListener(this, buttonList));
+        this.eventListener = new MenuEventListener(this, this.buttonList);
+
+        this.addMouseListener(this.eventListener);
+        this.addMouseMotionListener(this.eventListener);
 
         return;
     }
@@ -325,26 +421,18 @@ class BackgroundPanel extends JPanel {
 
         super.paintComponent(graphics);
 
-        Graphics2D imageGraphics = this.imageBuffer.createGraphics();
+        Graphics2D menuGraphics = this.menuImage.createGraphics();
 
-        imageGraphics.translate(80, 20);
-        this.buttonsPanel.printAll(imageGraphics);
+        menuGraphics.translate(80, 20);
+        this.buttonsPanel.printAll(menuGraphics);
 
-        imageGraphics.translate(-80, -20);
-        imageGraphics.setColor(new Color(255, 223, 0));
-        imageGraphics.setFont(this.msSans.deriveFont(11f));
-        imageGraphics.drawString(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588);
+        menuGraphics.translate(-80, -20);
+        menuGraphics.setColor(new Color(255, 223, 0));
+        menuGraphics.setFont(this.menuFont.deriveFont(11f));
+        menuGraphics.drawString(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588);
+        menuGraphics.dispose();
 
-        /*
-        for (item in buttonList) {
-            imageGraphics.translate(item.offsetX, item.offsetY);
-            item.printAll(imageGraphics);
-        }
-        */
-
-        imageGraphics.dispose();
-
-        graphics.drawImage(this.imageBuffer, 0, 0, this.getWidth(), this.getHeight(), this);
+        graphics.drawImage(this.menuImage, 0, 0, this.getWidth(), this.getHeight(), this);
 
         return;
     }

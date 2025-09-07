@@ -79,12 +79,12 @@ class MenuButton extends JButton {
 
     public void paintComponent(Graphics graphics) {
 
-        if (this.hovered) {
-            graphics.drawImage(this.buttonImageHovered, 0, 0, this.getWidth(), this.getHeight(), this);
+        if (this.pressed) {
+            graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
         }
 
-        else if (this.pressed) {
-            graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
+        else if (this.hovered) {
+            graphics.drawImage(this.buttonImageHovered, 0, 0, this.getWidth(), this.getHeight(), this);
         }
 
         else {
@@ -102,6 +102,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
     public final BackgroundPanel component;
     public final MenuButton[] buttonList;
+    public MenuButton pressedButton;
 
 
     public MenuEventListener(BackgroundPanel menuPanel, MenuButton[] buttonList) {
@@ -136,46 +137,33 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
     }
 
 
+    public boolean isCursorOutsideMenuArea(Point click) {
+        boolean outsideMenu = (click.x < 80 || click.x >= (172 + 80) || click.y < 20 || click.y >= (20 + 552));
+        return outsideMenu;
+    }
+
+
     @Override
-    public void mouseClicked(MouseEvent event) {
+    public void mouseMoved(MouseEvent event) {
 
-        Point clickPoint = this.getScaledPosition(event);
+        Point cursor = this.getScaledPosition(event);
 
-        // System.out.printf("\n");
-        // System.out.printf("exit button %d %d %d %d\n", this.component.exitGameButton.getX(), this.component.exitGameButton.getY(), this.component.exitGameButton.getWidth(), this.component.exitGameButton.getHeight());
-        // System.out.printf("parent size %d %d\n", this.component.getWidth(), this.component.getHeight());
-        // System.out.printf("clicked %d %d\n", clickPoint.x, clickPoint.y);
-
-        if (clickPoint.x < 80 || clickPoint.x >= (172 + 80) || clickPoint.y < 20 || clickPoint.y >= (20 + 552)) {
-            System.out.printf("point outside of menu area\n");
-            return;
-        }
-
-        /*
-        for item in button list
-            get button
-            calculate absolute position of button based offset from menu panel and main panel
-            if click inside button
-                do action
-            else
-                continue
-
-        return
-        */
-
-        System.out.printf("clicked inside menu area\n");
+        // set hovered status
         for (MenuButton item : this.buttonList) {
 
-            Rectangle bounds = this.getButtonCoordinates(item);
+            Rectangle buttonBounds = this.getButtonCoordinates(item);
 
-            if (bounds.contains(clickPoint)) {
-                // run button action
-                System.out.printf("clicked inside button: %d %d %d %d\n", bounds.x, bounds.y, bounds.width, bounds.height);
-                item.doClick();
+            if (this.isCursorOutsideMenuArea(cursor)) {
+                item.hovered = false;
+                item.pressed = false;
             }
 
-            continue;
+            else {
+                item.hovered = buttonBounds.contains(cursor);
+            }
         }
+
+        this.component.repaint();
 
         return;
     }
@@ -183,14 +171,119 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
     @Override
     public void mousePressed(MouseEvent event) {
+
         // System.out.printf("pressed %d %d\n", event.getX(), event.getY());
+
+        Point cursor = this.getScaledPosition(event);
+        boolean anyButtonPressed = false;
+
+        if (this.isCursorOutsideMenuArea(cursor)) {
+            this.pressedButton = null;
+        }
+
+        else {
+
+            for (MenuButton item : this.buttonList) {
+
+                Rectangle buttonBounds = this.getButtonCoordinates(item);
+
+                if (buttonBounds.contains(cursor)) {
+
+                    item.pressed = true;
+                    this.pressedButton = item;
+                    anyButtonPressed = true;
+
+                    break;
+                }
+
+                continue;
+            }
+
+            if (anyButtonPressed == false) {
+                this.pressedButton = null;
+            }
+        }
+
+        this.component.repaint();
+
         return;
     }
 
 
     @Override
     public void mouseReleased(MouseEvent event) {
+
         // System.out.printf("released %d %d\n", event.getX(), event.getY());
+
+        Point cursor = this.getScaledPosition(event);
+
+        // cursor released outside menu area
+        if (this.isCursorOutsideMenuArea(cursor)) {
+
+            this.pressedButton = null;
+
+            for (MenuButton item : this.buttonList) {
+                item.hovered = false;
+                item.pressed = false;
+            }
+        }
+
+        // cursor released inside menu area
+        else {
+
+            // no button was pressed prior to release
+            if (this.pressedButton == null) {
+
+                // System.out.printf("button released inside menu area but no button pressed\n");
+
+                // check if any button is hovered
+                for (MenuButton item : this.buttonList) {
+
+                    Rectangle buttonBounds = this.getButtonCoordinates(item);
+
+                    item.pressed = false;
+                    item.hovered = buttonBounds.contains(cursor);
+                }
+            }
+
+            // button pressed prior to released
+            else {
+
+                // System.out.printf("button released inside menu area with pressed button\n");
+                Rectangle pressedButtonBounds = this.getButtonCoordinates(this.pressedButton);
+
+                // cursor released on same pressed button
+                if (pressedButtonBounds.contains(cursor)) {
+
+                    this.pressedButton.hovered = true;
+                    this.pressedButton.pressed = false;
+                    this.pressedButton.doClick();  // note: what will doClick do?
+                }
+
+                // cursor released on other button
+                else {
+
+                    for (MenuButton item : this.buttonList) {
+
+                        Rectangle currentButtonBounds = this.getButtonCoordinates(item);
+
+                        item.pressed = false;
+                        item.hovered = currentButtonBounds.contains(cursor);
+                    }
+                }
+
+                this.pressedButton = null;
+            }
+        }
+
+        this.component.repaint();
+
+        return;
+    }
+
+
+    @Override
+    public void mouseClicked(MouseEvent event) {
         return;
     }
 
@@ -211,24 +304,6 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseDragged(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseMoved(MouseEvent event) {
-
-        Point clickPoint = this.getScaledPosition(event);
-
-        // set hovered status
-        for (MenuButton item : this.buttonList) {
-
-            Rectangle bounds = this.getButtonCoordinates(item);
-            item.hovered = bounds.contains(clickPoint);
-        }
-
-        this.component.repaint();
-
         return;
     }
 }

@@ -32,6 +32,7 @@ import go.graphics.region.Region;
 import go.graphics.sound.SoundPlayer;
 import go.graphics.swing.AreaContainer;
 import go.graphics.swing.sound.SwingSoundPlayer;
+import go.graphics.swing.contextcreator.EBackendType;
 
 import jsettlers.common.CommitInfo;
 import jsettlers.common.menu.IJoinPhaseMultiplayerGameConnector;
@@ -79,17 +80,17 @@ public class JSettlersFrame extends JFrame {
         this.originalMainMenuPanel = new OriginalMainMenuPanel(this);
         this.originalCampaignPanel = new OriginalCampaignPanel(this);
 
-		// showMainMenu();
-        // setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		// setPreferredSize(new Dimension(1200, 800));
-        // pack();
-		// setLocationRelativeTo(null);
+		showMainMenu();
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		setPreferredSize(new Dimension(1200, 800));
+        pack();
+		setLocationRelativeTo(null);
 
-        this.showOriginalMainMenu();
-        this.pack();  // note: pack() should be called before showOriginalMainMenu()
-        this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
+        // this.showOriginalMainMenu();
+        // this.pack();  // note: pack() should be called before showOriginalMainMenu()
+        // this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
+        // this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // this.setLocationRelativeTo(null);
 
 		fullScreen = settingsManager.getFullScreenMode();
 		updateFullScreenMode();
@@ -174,26 +175,50 @@ public class JSettlersFrame extends JFrame {
 		return soundPlayer;
 	}
 
+
+    /**
+     * this method is called from showStartedGame() after creating a new game. it receives
+     * a MapContent instance which is passed to a new Region object. the Region is then passed
+     * to an Area object which is then passed to a new AreaContainer instance. the AreaContainer
+     * is the object that will eventually be added to the main JFrame.<br>
+     *
+     * note: AreaContainer is a child class of JPanel
+     *
+     * @param content MapContent object used for creating new AreaContainer instance that is added to the JFrame
+     */
 	public void setContent(MapContent content) {
+
+        Area area = new Area();
 		Region region = new Region(500, 500);
-		region.setContent(content);
-		Area area = new Area();
+
+        EBackendType backend = SettingsManager.getInstance().getBackend();
+        boolean debugFlag = SettingsManager.getInstance().isGraphicsDebug();
+        float uiScale = SettingsManager.getInstance().getGuiScale();
+		int fpsLimit = SettingsManager.getInstance().getFpsLimit();
+        int delay = (int) (1000.0f / fpsLimit);
+
+        region.setContent(content);
 		area.set(region);
 
-		int fpsLimit = SettingsManager.getInstance().getFpsLimit();
-		if(fpsLimit != 0) {
-			redrawTimer = new Timer((int)(1000.0f/fpsLimit), e -> region.requestRedraw());
-			redrawTimer.setInitialDelay(0);
-			redrawTimer.start();
+		if (fpsLimit != 0) {
+
+			this.redrawTimer = new Timer(delay, (event) -> region.requestRedraw());
+			this.redrawTimer.setInitialDelay(0);
+			this.redrawTimer.start();
 		}
 
-		SwingUtilities.invokeLater(() -> {
-			setContentPane(areaContainer = new AreaContainer(area, SettingsManager.getInstance().getBackend(), SettingsManager.getInstance().isGraphicsDebug(), SettingsManager.getInstance().getGuiScale()));
-			areaContainer.updateFPSLimit(fpsLimit);
-			revalidate();
-			repaint();
-		});
+        this.areaContainer = new AreaContainer(area, backend, debugFlag, uiScale);
+
+		SwingUtilities.invokeLater(
+            () -> {
+                this.setContentPane(this.areaContainer);
+                this.areaContainer.updateFPSLimit(fpsLimit);
+                this.revalidate();
+                this.repaint();
+		    }
+        );
 	}
+
 
 	public void showNewSinglePlayerGameMenu(MapLoader mapLoader) {
 		joinGamePanel.setSinglePlayerMap(mapLoader);
@@ -210,20 +235,45 @@ public class JSettlersFrame extends JFrame {
 		setNewContentPane(joinGamePanel);
 	}
 
+
+    /**
+     * this method draws the end game statistics menu at the end of a game.
+     *
+     * @param game IStartedGame interface passed to setGame() method.
+     */
 	public void showEndgameStatistics(IStartedGame game) {
-		if(areaContainer != null) {
-			areaContainer.disposeAll();
-			areaContainer = null;
+
+        if(this.areaContainer != null) {
+
+			this.areaContainer.disposeAll();
+			this.areaContainer = null;
 		}
 
-		endgameStatsPanel.setGame(game);
-		setNewContentPane(endgameStatsPanel);
+		this.endgameStatsPanel.setGame(game);
+		this.setNewContentPane(this.endgameStatsPanel);
+
+        return;
 	}
 
+
+    /**
+     * this method is called when starting a new game. it creates a new instance of MapContent
+     * which it passes down to setContent(). then it adds an exit game listener to the startedGame
+     * argument, and it returns an IMapInterfaceConnector to its caller.
+     *
+     * @param startedGame IStartedGame interface used for creating new MapContent instance and receiving an exit game listener
+     *
+     * @return IMapInterfaceConnector corresponding to MapContent instance
+     */
 	public IMapInterfaceConnector showStartedGame(IStartedGame startedGame) {
+
 		MapContent content = new MapContent(startedGame, soundPlayer, ETextDrawPosition.DESKTOP);
-		SwingUtilities.invokeLater(() -> setContent(content));
-		startedGame.setGameExitListener(exitGame -> SwingUtilities.invokeLater(() -> showEndgameStatistics(exitGame)));
-		return content.getInterfaceConnector();
+
+		SwingUtilities.invokeLater(() -> this.setContent(content));
+		startedGame.setGameExitListener((exitGame) -> SwingUtilities.invokeLater(() -> this.showEndgameStatistics(exitGame)));
+
+        IMapInterfaceConnector connector = content.getInterfaceConnector();
+
+        return connector;
 	}
 }

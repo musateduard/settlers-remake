@@ -42,12 +42,13 @@ import jsettlers.common.menu.IStartingGame;
 import jsettlers.graphics.map.ETextDrawPosition;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.logic.map.loading.MapLoader;
+import jsettlers.main.swing.settings.SettingsManager;
 import jsettlers.main.swing.menu.joinpanel.JoinGamePanel;
 import jsettlers.main.swing.menu.mainmenu.MainMenuPanel;
-import jsettlers.main.swing.menu.mainmenu.OriginalMainMenuPanel;
 import jsettlers.main.swing.menu.startinggamemenu.StartingGamePanel;
 import jsettlers.main.swing.menu.statspanel.EndgameStatsPanel;
-import jsettlers.main.swing.settings.SettingsManager;
+import jsettlers.main.swing.originalmenu.OriginalMainMenuPanel;
+import jsettlers.main.swing.originalmenu.OriginalCampaignPanel;
 
 /**
  * @author codingberlin
@@ -55,8 +56,10 @@ import jsettlers.main.swing.settings.SettingsManager;
 public class JSettlersFrame extends JFrame {
 	private static final long serialVersionUID = 2607082717493797224L;
 
-	private final MainMenuPanel mainPanel;
-    private final OriginalMainMenuPanel originalMainMenuPanel = new OriginalMainMenuPanel();
+    private final MainMenuPanel mainPanel;
+    private final OriginalMainMenuPanel originalMainMenuPanel;
+	private final OriginalCampaignPanel originalCampaignPanel;
+
 	private final EndgameStatsPanel endgameStatsPanel = new EndgameStatsPanel(this);
 	private final StartingGamePanel startingGamePanel = new StartingGamePanel(this);
 	private final JoinGamePanel joinGamePanel = new JoinGamePanel(this);
@@ -72,17 +75,21 @@ public class JSettlersFrame extends JFrame {
 
 		SettingsManager settingsManager = SettingsManager.getInstance();
 
-        // note: preferred size should be set on the main menu panel so that min frame size is calculated automatically
+		this.mainPanel = new MainMenuPanel(this);
+        this.originalMainMenuPanel = new OriginalMainMenuPanel(this);
+        this.originalCampaignPanel = new OriginalCampaignPanel(this);
+
+		// showMainMenu();
+        // setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		// setPreferredSize(new Dimension(1200, 800));
+        // pack();
+		// setLocationRelativeTo(null);
+
         this.showOriginalMainMenu();
-        this.setMinimumSize(this.getPreferredSize());
-
-		mainPanel = new MainMenuPanel(this);
-
-//		showMainMenu();
-		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-//		setPreferredSize(new Dimension(1200, 800));
-		pack();
-		setLocationRelativeTo(null);
+        this.pack();  // note: pack() should be called before showOriginalMainMenu()
+        this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setLocationRelativeTo(null);
 
 		fullScreen = settingsManager.getFullScreenMode();
 		updateFullScreenMode();
@@ -91,7 +98,7 @@ public class JSettlersFrame extends JFrame {
 		keyboardFocusManager.addKeyEventDispatcher(e -> {
 			if (e.getID() == KeyEvent.KEY_PRESSED) {
 				if (e.isAltDown() && e.getKeyCode() == KeyEvent.VK_ENTER) {
-					toogleFullScreenMode();
+					toggleFullScreenMode();
 					return true; // consume this key event.
 				}
 			}
@@ -99,7 +106,7 @@ public class JSettlersFrame extends JFrame {
 		});
 	}
 
-	private void toogleFullScreenMode() {
+	private void toggleFullScreenMode() {
 		fullScreen = !fullScreen;
 		SettingsManager.getInstance().setFullScreenMode(fullScreen);
 		updateFullScreenMode();
@@ -134,10 +141,13 @@ public class JSettlersFrame extends JFrame {
 
 
     public void showOriginalMainMenu() {
-
-        System.out.println("adding original main menu to main frame");
         this.setNewContentPane(this.originalMainMenuPanel);
+        return;
+    }
 
+
+    public void showOriginalCampaignMenu() {
+        this.setNewContentPane(this.originalCampaignPanel);
         return;
     }
 

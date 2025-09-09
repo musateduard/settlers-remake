@@ -1,4 +1,4 @@
-package jsettlers.main.swing.menu.mainmenu;
+package jsettlers.main.swing.originalmenu;
 
 import java.awt.Font;
 import java.awt.Color;
@@ -10,11 +10,12 @@ import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
 import java.awt.FontFormatException;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import jsettlers.main.swing.JSettlersFrame;
 import jsettlers.common.CommitInfo;
 import javax.imageio.ImageIO;
 import javax.swing.JButton;
@@ -100,12 +101,12 @@ class MenuButton extends JButton {
 
 class MenuEventListener implements MouseListener, MouseMotionListener {
 
-    public final BackgroundPanel component;
+    public final MainBackground component;
     public final MenuButton[] buttonList;
     public MenuButton pressedButton;
 
 
-    public MenuEventListener(BackgroundPanel menuPanel, MenuButton[] buttonList) {
+    public MenuEventListener(MainBackground menuPanel, MenuButton[] buttonList) {
         this.component = menuPanel;
         this.buttonList = buttonList;
         return;
@@ -309,7 +310,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 }
 
 
-class BackgroundPanel extends JPanel {
+class MainBackground extends JPanel {
 
     public final double idealAspectRatio = (double) 800 / (double) 600;
     public BufferedImage menuImage = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
@@ -321,6 +322,7 @@ class BackgroundPanel extends JPanel {
     public final MenuEventListener eventListener;
     public final MenuButton[] buttonList;
 
+    public final JSettlersFrame mainFrame;
     public final JPanel buttonsPanel;
     public final MenuButton tutorialButton;
     public final MenuButton campaignButton;
@@ -337,7 +339,9 @@ class BackgroundPanel extends JPanel {
     public final MenuButton exitGameButton;
 
 
-    public BackgroundPanel() {
+    public MainBackground(JSettlersFrame mainFrame) {
+
+        this.mainFrame = mainFrame;
 
         File imagePath = new File("D:\\menu2.bmp");
         File fontPath = new File("D:\\ms-sans-serif-1.ttf");
@@ -349,7 +353,7 @@ class BackgroundPanel extends JPanel {
             this.menuImage = ImageIO.read(imagePath);
             this.buttonImage = ImageIO.read(buttonImagePath);
 
-            RescaleOp brightness = new RescaleOp(0.90f, 0, null);
+            RescaleOp brightness = new RescaleOp(0.95f, 0, null);
             brightness.filter(this.buttonImage, this.buttonImageHovered);
 
             this.buttonImageClicked = ImageIO.read(buttonImageClickedPath);
@@ -403,7 +407,7 @@ class BackgroundPanel extends JPanel {
 
         this.campaignButton.addActionListener(
             event -> {
-                System.out.printf("campaign button pressed\n");
+                this.mainFrame.showOriginalCampaignMenu();
                 return;
             }
         );
@@ -524,16 +528,19 @@ class BackgroundPanel extends JPanel {
  */
 public class OriginalMainMenuPanel extends JPanel {
 
-    public OriginalMainMenuPanel() {
+    public final JSettlersFrame mainFrame;
 
-        System.out.println("constructing original main menu panel");
 
-        this.setMinimumSize(new Dimension(800, 600));
-        this.setLayout(new GridBagLayout());
-        this.setBackground(Color.BLACK);
+    public OriginalMainMenuPanel(JSettlersFrame mainFrame) {
+
+        this.mainFrame = mainFrame;
+
         this.setOpaque(true);
+        this.setBackground(Color.BLACK);
+        this.setLayout(new GridBagLayout());
+        this.setMinimumSize(new Dimension(800, 600));
 
-        BackgroundPanel background = new BackgroundPanel();
+        MainBackground background = new MainBackground(this.mainFrame);
 
         this.add(background);
 

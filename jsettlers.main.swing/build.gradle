@@ -1,9 +1,10 @@
 plugins {
-	id 'com.github.johnrengelman.shadow' version '7.1.2'
+	id 'com.gradleup.shadow' version '8.3.9'
 	id 'application'
 }
 
-/*add music dependencies
+/**
+ * add music dependencies
  * ogg libraries: vorbisspi1.0.2.jar, tritonus_share.jar, jorbis-0.0.15.jar, jogg-0.0.7.jar
  * mp3 libraries: jl1.0.1.jar, tritonus_share.jar, mp3spi1.9.5.jar
  * jaxb (map editor only)
@@ -28,7 +29,9 @@ startScripts {
 	applicationName = "jsettlers.main.swing"
 }
 
-mainClassName = 'jsettlers.main.swing.SwingManagedJSettlers'
+application {
+    mainClass.set("jsettlers.main.swing.SwingManagedJSettlers")
+}
 
 dependencies {
 	implementation project(':go.graphics')
@@ -47,12 +50,12 @@ dependencies {
 
 task copyDependencies(type: Copy) {
 	from configurations.lgplDeps
-	into new File(buildDir, 'libs/dependencies')
+	into new File(layout.buildDirectory.get().asFile, 'libs/dependencies')
 }
 
 jar {
 	manifest {
-		attributes 'Main-Class': mainClassName
+		attributes "Main-Class": application.mainClass.get()
 		attributes 'Class-Path' : configurations.lgplDeps.collect() {"dependencies/" + it.getName()}.join(' ');
 
 	}
@@ -60,7 +63,7 @@ jar {
 
 shadowJar {
 	archiveBaseName = 'JSettlers'
-	classifier = ''
+    archiveClassifier = ""
 
 	dependsOn copyDependencies
 }

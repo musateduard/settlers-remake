@@ -21,6 +21,7 @@ import go.graphics.RedrawListener;
 import go.graphics.event.GOEvent;
 import go.graphics.event.GOEventHandlerProvider;
 
+
 /**
  * This class represents a region, a part of an area.
  *
@@ -82,22 +83,24 @@ public class Region implements RedrawListener {
 		this.size = size;
 	}
 
-	/**
-	 * Draws the region on the gl space, assuming it 0,0 is the bottom left corner.
-	 *
-	 * @param gl2
-	 *            The gl space
-	 *
-	 */
-	public void drawRegion(GLDrawContext gl2, int width, int height) {
-		// gl2.color(.3f, .3f, .3f, 1);
-		// gl2.fillQuad(0,0, width, height);
 
-		if (content != null) {
-			content.drawContent(gl2, width, height);
+	/**
+	 * Draws the region on the gl space, assuming 0, 0 is the bottom left corner.
+	 *
+	 * @param glContext The gl space
+	 */
+	public void drawRegion(GLDrawContext glContext, int width, int height) {
+
+		// glContext.color(.3f, .3f, .3f, 1);
+		// glContext.fillQuad(0,0, width, height);
+
+		if (this.content != null) {
+			this.content.drawContent(glContext, width, height);
 		}
 
+        return;
 	}
+
 
 	/**
 	 * Gets the position of the region in the area.

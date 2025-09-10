@@ -32,15 +32,15 @@ import go.graphics.event.mouse.GOPanEvent;
 import go.graphics.event.mouse.GOZoomEvent;
 import go.graphics.region.Region;
 
+
 /**
  * This class represents an area. This is a rectangular part of the screen that consists of multiple regions.
  *
  * @author michael
  */
 public class Area implements RedrawListener, GOEventHandlerProvider {
-	/**
-	 * How wide is a border of this area?
-	 */
+
+	// How wide is a border of this area?
 	public static final int BORDER_SIZE = 1;
 
 	private int width;
@@ -82,20 +82,25 @@ public class Area implements RedrawListener, GOEventHandlerProvider {
 		this.drawmodeListener = drawmodeListener;
 	}
 
+
 	/**
 	 * Draws the area at the given gl context.
-	 * <p>
-	 * it assumes that the transformation is set so that the lower left corner is (0,0).
+     * it assumes that the transformation is set so that the lower left corner is (0,0).
 	 *
-	 * @param gl2
+	 * @param glContext GLDrawContext used to draw images on.
 	 */
-	public void drawArea(GLDrawContext gl2) {
-		region.drawRegion(gl2, width, height);
-		// Rectangle border = position.getBorder();
+	public void drawArea(GLDrawContext glContext) {
+
+		this.region.drawRegion(glContext, this.width, this.height);
+
+        // Rectangle border = position.getBorder();
 		// if (border != null) {
-		// drawBorder(gl2, border);
+		//     drawBorder(glContext, border);
 		// }
+
+        return;
 	}
+
 
 	// /**
 	// * Draws a border for a region.

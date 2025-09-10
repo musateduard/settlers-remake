@@ -24,25 +24,22 @@ import go.graphics.event.GOEvent;
 import go.graphics.swing.contextcreator.EBackendType;
 import go.graphics.swing.contextcreator.ContextException;
 
+
 /**
  * This class lets you embed areas into swing components.
- * 
+ *
  * @author michael
  * @author paul
  */
 public class AreaContainer extends ContextContainer implements RedrawListener {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 8204496712425576430L;
 	protected final Area area;
 
 	/**
 	 * creates a new area container
-	 * 
-	 * @param area
-	 *            The area to display
+	 *
+	 * @param area The area to display
 	 */
 	public AreaContainer(Area area) {
 		this(area, EBackendType.DEFAULT, false, 0);
@@ -70,10 +67,16 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
 
 	}
 
+
+    @Override
 	public void draw() throws ContextException {
-		super.draw();
-		area.drawArea(context);
+
+        super.draw();
+		this.area.drawArea(this.context);
+
+        return;
 	}
+
 
 	@Override
 	public void handleEvent(GOEvent event) {

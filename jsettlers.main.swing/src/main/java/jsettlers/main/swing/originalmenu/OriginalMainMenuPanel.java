@@ -78,6 +78,7 @@ class MenuButton extends JButton {
     }
 
 
+    @Override
     public void paintComponent(Graphics graphics) {
 
         if (this.pressed) {

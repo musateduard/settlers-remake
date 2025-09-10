@@ -95,39 +95,48 @@ import jsettlers.graphics.sound.BackgroundSound;
 import jsettlers.graphics.sound.MusicManager;
 import jsettlers.graphics.sound.SoundManager;
 
+
 /**
  * This is the main map content class. It manages the map drawing on the screen region.
- * <p>
- * <h1>The drawing process</h1> The map is drawn in three steps. At first, the background is drawn. After that, it is overlayed with the images for settlers, and other map objects. Then the interface
- * is drawn above everything else.
+ *
+ * <h1>The drawing process</h1>
+ * The map is drawn in three steps. At first, the background is drawn.
+ * After that, it is overlaid with the images for settlers, and other map objects.
+ * Then the interface is drawn above everything else.
+ *
  * <p>
  * The objects and background are drawn with the map draw context.
+ *
  * <p>
  * UI structure:
+ *
  * <ul>
  * <li>left minimap decoration</li>
  * <li>right minimap decoration</li>
  * <li>main background
- * <ul>
- * <li>tabs
- * <ol>
- * <li>building tabs</li>
- * <li>goods tabs</li>
- * <li>settlers tabs</li>
- * <li>game tab</li>
- * </ol>
- * </li>
- * </ul>
+ *
+ *      <ul>
+ *      <li>tabs
+ *
+ *          <ol>
+ *          <li>building tabs</li>
+ *          <li>goods tabs</li>
+ *          <li>settlers tabs</li>
+ *          <li>game tab</li>
+ *
+ *          </ol>
+ *      </li>
+ *      </ul>
  * </li>
  * </ul>
  *
  * @author michael
  */
 public final class MapContent implements RegionContent, IMapInterfaceListener, ActionFireable, ActionThreadBlockingListener {
-	private static final AnimationSequence GOTO_ANIMATION = new AnimationSequence(new OriginalImageLink(EImageLinkType.SETTLER, 3, 1).getName(), 0, 2);
 
 	private final class ZoomEventHandler implements GOModalEventHandler {
-		float startZoom = context.getScreen().getZoom();
+
+        float startZoom = context.getScreen().getZoom();
 
 		@Override
 		public void phaseChanged(GOEvent event) {
@@ -149,10 +158,13 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		}
 
 		private void eventDataChanged(float zoomFactor, UIPoint p) {
-			float newZoom = startZoom * zoomFactor;
+			float newZoom = this.startZoom * zoomFactor;
 			setZoom(newZoom, p);
 		}
 	}
+
+
+	private static final AnimationSequence GOTO_ANIMATION = new AnimationSequence(new OriginalImageLink(EImageLinkType.SETTLER, 3, 1).getName(), 0, 2);
 
 	private static final int SCREEN_PADDING = 50;
 	private static final float OVERDRAW_BOTTOM_PX = 50;
@@ -239,9 +251,9 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 	/**
-	 * 
+	 *
 	 * Creates a new map content for the given map.
-	 * 
+	 *
 	 * @param game
 	 *            The map.
 	 * @param soundPlayer
@@ -307,18 +319,22 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		this.context.setSize(windowWidth, windowHeight);
 	}
 
+
 	@Override
-	public void drawContent(GLDrawContext gl, int newWidth, int newHeight) {
+	public void drawContent(GLDrawContext glContext, int newWidth, int newHeight) {
+
 		try {
 			framerate.nextFrame();
 			gamespeedCalculator.tick();
 
 			// TODO: Do only check once.
-			if (textDrawer.getTextDrawer(gl, EFontSize.NORMAL).getWidth("a") == 0) {
+			if (textDrawer.getTextDrawer(glContext, EFontSize.NORMAL).getWidth("a") == 0) {
 				textDrawer.setTextDrawerFactory(new FontDrawerFactory());
 			}
 
-			if(isVisibleGridAvailable) objectDrawer.setVisibleGrid(((IDirectGridProvider)map).isFoWEnabled()?((IDirectGridProvider)map).getVisibleStatusArray():null);
+			if(isVisibleGridAvailable) {
+                objectDrawer.setVisibleGrid(((IDirectGridProvider)map).isFoWEnabled()?((IDirectGridProvider)map).getVisibleStatusArray():null);
+            }
 
 			if (newWidth != windowWidth || newHeight != windowHeight) {
 				resizeTo(newWidth, newHeight);
@@ -327,7 +343,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			adaptScreenSize();
 			this.objectDrawer.nextFrame();
 
-			this.context.begin(gl);
+			this.context.begin(glContext);
 			long start = System.nanoTime();
 
 			FloatRectangle screen = this.context.getScreen().getPosition().bigger(SCREEN_PADDING);
@@ -340,6 +356,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			if (scrollMarker != null) {
 				drawGotoMarker();
 			}
+
 			if (moveToMarker != null) {
 				drawMoveToMarker();
 			}
@@ -348,36 +365,45 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			long foregroundDuration = System.nanoTime() - start;
 
 			start = System.nanoTime();
-			gl.clearDepthBuffer();
-			gl.setGlobalAttributes(0, 0, 0, 1, 1, 1);
-			drawSelectionHint(gl);
-			controls.drawAt(gl);
-			drawMessages(gl);
-			drawWinStateMsg(gl);
+			glContext.clearDepthBuffer();
+			glContext.setGlobalAttributes(0, 0, 0, 1, 1, 1);
+			drawSelectionHint(glContext);
+			controls.drawAt(glContext);
+			drawMessages(glContext);
+			drawWinStateMsg(glContext);
 
-			drawFramerateTimeAndHash(gl);
+			drawFramerateTimeAndHash(glContext);
 
 			if (actionThreadIsSlow) {
-				drawActionThreadSlow(gl);
+				drawActionThreadSlow(glContext);
 			}
-			drawTooltip(gl);
+
+			drawTooltip(glContext);
 			long uiTime = System.nanoTime() - start;
 
 			if (CommonConstants.ENABLE_GRAPHICS_TIMES_DEBUG_OUTPUT) {
 				System.out.println("Background: " + backgroundDuration/1000 + "µs, Foreground: " + foregroundDuration/1000 + "µs, UI: " + uiTime/1000 + "µs");
 			}
-		} catch (Throwable t) {
-			System.err.println("Main draw handler cought throwable:");
+		}
+
+        catch (Throwable t) {
+
+			System.err.println("Main draw handler caught throwable:");
 			t.printStackTrace();
 
 			try {
-				showError(gl, t);
-			} catch (Throwable t2) {
+				showError(glContext, t);
+			}
+
+            catch (Throwable t2) {
 				System.err.println("Error while handling exception:");
 				t2.printStackTrace();
 			}
 		}
+
+        return;
 	}
+
 
 	private Throwable lastException;
 
@@ -720,7 +746,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			fireActionEvent(event, action);
 		} else if (event instanceof GOKeyEvent) {
 			Optional<Action> actionForKeyboard = Optional.ofNullable(getActionForKeyboard(((GOKeyEvent) event).getKeyCode()));
-			actionForKeyboard.ifPresent(action -> 
+			actionForKeyboard.ifPresent(action ->
 				fireActionEvent(event, actionForKeyboard)
 			);
 		} else if (event instanceof GODrawEvent) {
@@ -775,7 +801,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 	/**
-	 * Gets a action for a keyboard key.
+	 * Gets an action for a keyboard key.
 	 *
 	 * @param keyCode
 	 *            The key name as String.
@@ -855,7 +881,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	/**
 	 * This is called whenever the mouse pointer position changed. Used for tooltips.
-	 * 
+	 *
 	 * @param position
 	 *            The new mouse position.
 	 */

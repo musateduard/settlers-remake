@@ -51,6 +51,7 @@ import jsettlers.main.swing.menu.statspanel.EndgameStatsPanel;
 import jsettlers.main.swing.originalmenu.OriginalMainMenuPanel;
 import jsettlers.main.swing.originalmenu.OriginalCampaignPanel;
 
+
 /**
  * @author codingberlin
  */
@@ -184,6 +185,11 @@ public class JSettlersFrame extends JFrame {
      *
      * note: AreaContainer is a child class of JPanel
      *
+     * @see MapContent
+     * @see Region
+     * @see Area
+     * @see AreaContainer
+     *
      * @param content MapContent object used for creating new AreaContainer instance that is added to the JFrame
      */
 	public void setContent(MapContent content) {
@@ -191,14 +197,16 @@ public class JSettlersFrame extends JFrame {
         Area area = new Area();
 		Region region = new Region(500, 500);
 
+        region.setContent(content);
+		area.set(region);
+
         EBackendType backend = SettingsManager.getInstance().getBackend();
         boolean debugFlag = SettingsManager.getInstance().isGraphicsDebug();
         float uiScale = SettingsManager.getInstance().getGuiScale();
 		int fpsLimit = SettingsManager.getInstance().getFpsLimit();
         int delay = (int) (1000.0f / fpsLimit);
 
-        region.setContent(content);
-		area.set(region);
+        this.areaContainer = new AreaContainer(area, backend, debugFlag, uiScale);
 
 		if (fpsLimit != 0) {
 
@@ -206,8 +214,6 @@ public class JSettlersFrame extends JFrame {
 			this.redrawTimer.setInitialDelay(0);
 			this.redrawTimer.start();
 		}
-
-        this.areaContainer = new AreaContainer(area, backend, debugFlag, uiScale);
 
 		SwingUtilities.invokeLater(
             () -> {

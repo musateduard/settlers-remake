@@ -24,8 +24,8 @@ import go.graphics.swing.contextcreator.ContextException;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import go.graphics.swing.vulkan.VulkanDrawContext;
 
-public abstract class ContextContainer extends JPanel implements GOEventHandlerProvider {
 
+public abstract class ContextContainer extends JPanel implements GOEventHandlerProvider {
 
 	protected ContextCreator<?> cc;
 	protected GLDrawContext context;
@@ -33,18 +33,25 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	private final boolean debug;
 	protected float guiScale = 0;
 
+
 	public ContextContainer(EBackendType backend, LayoutManager layout, boolean debug) {
-		setLayout(layout);
+
+        setLayout(layout);
 		this.debug = debug;
 
 		try {
 			cc = BackendSelector.createBackend(this, backend, debug);
 			cc.init();
-		} catch (Exception ex) {
+		}
+
+        catch (Exception ex) {
 			ex.printStackTrace();
 			fatal("Could not create opengl context through " + backend.cc_name);
 		}
+
+        return;
 	}
+
 
 	public void fatal(String message) {
 		SwingUtilities.invokeLater(() -> {

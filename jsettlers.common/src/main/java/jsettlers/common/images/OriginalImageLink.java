@@ -16,17 +16,19 @@ package jsettlers.common.images;
 
 import java.util.Locale;
 
+
 /**
- * This is a virtual link to a image in a settler image file.
+ * This is a virtual link to an image in a settler image .dat file.
  * <p>
- * Files indexes are always the ones of the gold editon of settlers 3. Internal translating allows to migtrate between gold and demo.
- * 
+ * Files indexes are always the ones of the gold edition of settlers 3.
+ * Internal translation allows to migrate between gold and demo.
+ *
  * @author Michael Zangl
  * @see EImageLinkType
  */
 public final class OriginalImageLink extends ImageLink {
-	private static final long serialVersionUID = -9042004381156308651L;
 
+	private static final long serialVersionUID = -9042004381156308651L;
 	private final EImageLinkType type;
 	private final int file;
 	private final int sequence;
@@ -35,19 +37,22 @@ public final class OriginalImageLink extends ImageLink {
 	private final String humanName;
 	private OriginalImageLink fallback;
 
+
 	/**
 	 * Creates a new image link description.
-	 * 
-	 * @param type
-	 *            The type
-	 * @param file
-	 *            The file it is in
-	 * @param sequence
-	 *            The sequence index
-	 * @param image
-	 *            The image in the sequence, for {@value EImageLinkType#SETTLER} images.
-	 * @param length
-	 *            The number contained in the sequence that is linked,
+     * this constructor is used for {@link EImageLinkType#SETTLER} type images.
+	 *
+	 * @param type image type; possible values: SETTLER, GUI, LANDSCAPE
+	 * @param file file index where image is located. all image files are located in the ./GFX folder and
+     *             they are packed into .dat archives. the file index is the number that comes after the
+     *             "siedler3_" prefix. ex.:  for "siedler3_03.7c003e01f.dat" the index would be 3.
+	 * @param sequence image sequence index. all images inside each dat archive are laid out in sequence
+     *                 starting at index 0. the name schema for images in the archive is: {type of image}{sequence index}.bmp
+     *                 example of image sequence index: for an image in archive "siedler3_03.7c003e01f.dat" with
+     *                 name "menu23.bmp" the sequence index would be 23.
+	 * @param image The image in the sequence, for {@link EImageLinkType#SETTLER} images.
+	 * @param length The number contained in the sequence that is linked,
+     * @param name user friendly name of the image; used internally.
 	 */
 	public OriginalImageLink(EImageLinkType type, int file, int sequence, int image, int length, String name) {
 		this.type = type;
@@ -62,39 +67,47 @@ public final class OriginalImageLink extends ImageLink {
 		this(type, file, sequence, image, length, null);
 	}
 
+
 	/**
 	 * Creates a new image link description.
-	 * 
-	 * @param type
-	 *            The type
-	 * @param file
-	 *            The file it is in
-	 * @param sequence
-	 *            The sequence index
-	 * @param image
-	 *            The image in the sequence, for {@value EImageLinkType#SETTLER} images.
+     * this constructor is used for {@link EImageLinkType#SETTLER} type images.
+	 *
+	 * @param type image type; possible values: SETTLER, GUI, LANDSCAPE
+	 * @param file file index where image is located. all image files are located in the ./GFX folder and
+     *             they are packed into .dat archives. the file index is the number that comes after the
+     *             "siedler3_" prefix. ex.:  for "siedler3_03.7c003e01f.dat" the index would be 3.
+     * @param sequence image sequence index. all images inside each dat archive are laid out in sequence
+     *                 starting at index 0. the name schema for images in the archive is: {type of image}{sequence index}.bmp
+     *                 example of image sequence index: for an image in archive "siedler3_03.7c003e01f.dat" with
+     *                 name "menu23.bmp" the sequence index would be 23.
+	 * @param image The image in the sequence, for {@link EImageLinkType#SETTLER} images.
 	 */
 	public OriginalImageLink(EImageLinkType type, int file, int sequence, int image) {
 		this(type, file, sequence, image, 0);
 	}
 
+
 	/**
-	 * Creates a new image link description for {@value EImageLinkType#GUI} images.
-	 * 
-	 * @param type
-	 *            The type
-	 * @param file
-	 *            The file it is in
-	 * @param sequence
-	 *            The sequence index
+	 * Creates a new image link description for {@link EImageLinkType#GUI} images.
+	 *
+     * @param type image type; possible values: SETTLER, GUI, LANDSCAPE
+     * @param file file index where image is located. all image files are located in the ./GFX folder and
+     *             they are packed into .dat archives. the file index is the number that comes after the
+     *             "siedler3_" prefix.<br>
+     *             ex.:  for "siedler3_03.7c003e01f.dat" the index would be 3.
+     * @param sequence image sequence index. all images inside each dat archive are laid out in sequence
+     *                 starting at index 0. the name schema for images in the archive is: {type of image}{sequence index}.bmp<br>
+     *                 example of image sequence index: for an image in archive "siedler3_03.7c003e01f.dat" with
+     *                 name "menu23.bmp" the sequence index would be 23.
 	 */
 	public OriginalImageLink(EImageLinkType type, int file, int sequence) {
 		this(type, file, sequence, 0);
 	}
 
+
 	/**
 	 * Gets the type of the image.
-	 * 
+	 *
 	 * @return The image type
 	 */
 	public EImageLinkType getType() {
@@ -103,7 +116,7 @@ public final class OriginalImageLink extends ImageLink {
 
 	/**
 	 * Gets the file.
-	 * 
+	 *
 	 * @return The files number.
 	 */
 	public int getFile() {
@@ -114,7 +127,7 @@ public final class OriginalImageLink extends ImageLink {
 	 * Gets the seuqence index inside the file.
 	 * <p>
 	 * For GUI and LANDSCAPE images, this defines the image.
-	 * 
+	 *
 	 * @return The index
 	 */
 	public int getSequence() {
@@ -123,7 +136,7 @@ public final class OriginalImageLink extends ImageLink {
 
 	/**
 	 * Gets the image index inside the sequence.
-	 * 
+	 *
 	 * @return The image index
 	 */
 	public int getImage() {
@@ -137,7 +150,7 @@ public final class OriginalImageLink extends ImageLink {
 
 	/**
 	 * Gets the length of this strip.
-	 * 
+	 *
 	 * @return The length as int
 	 */
 	public int getLength() {

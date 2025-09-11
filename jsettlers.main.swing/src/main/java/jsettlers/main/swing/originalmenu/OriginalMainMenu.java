@@ -15,6 +15,11 @@ import java.awt.image.RescaleOp;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+
+import jsettlers.common.images.EImageLinkType;
+import jsettlers.common.images.OriginalImageLink;
+import jsettlers.graphics.image.SingleImage;
+import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.main.swing.JSettlersFrame;
 import jsettlers.common.CommitInfo;
 import javax.imageio.ImageIO;
@@ -80,6 +85,8 @@ class MenuButton extends JButton {
 
     @Override
     public void paintComponent(Graphics graphics) {
+
+        // todo: fix problem where campaign button stays hovered when returning from campaign menu
 
         if (this.pressed) {
             graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
@@ -344,28 +351,26 @@ class MainBackground extends JPanel {
 
         this.mainFrame = mainFrame;
 
-        File imagePath = new File("D:\\menu2.bmp");
         File fontPath = new File("D:\\ms-sans-serif-1.ttf");
-        File buttonImagePath = new File("D:\\sprite0_0.bmp");
-        File buttonImageClickedPath = new File("D:\\sprite0_1.bmp");
+
+        // note: EImageLinkType.SETTLER is also used for menu buttons not just settlers sprites
+        // note: OriginalImageLink doesn't throw exception if index is out of bounds
+        // todo: make OriginalImageLink throw exception on out of bounds index
+
+        ImageProvider imageProvider = ImageProvider.getInstance();
+        BufferedImage backgroundImage = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 61, 2))).convertToBufferedImage();
+        BufferedImage buttonImage = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 0))).convertToBufferedImage();
+        BufferedImage buttonImageClicked = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 1))).convertToBufferedImage();
 
         // load all images
-        try {
-            this.menuImage = ImageIO.read(imagePath);
-            this.buttonImage = ImageIO.read(buttonImagePath);
+        this.menuImage = backgroundImage;
+        this.buttonImage = buttonImage;
+        this.buttonImageClicked = buttonImageClicked;
 
-            RescaleOp brightness = new RescaleOp(0.95f, 0, null);
-            brightness.filter(this.buttonImage, this.buttonImageHovered);
+        // set menu button hover effect
+        RescaleOp brightness = new RescaleOp(0.95f, 0, null);
+        brightness.filter(this.buttonImage, this.buttonImageHovered);
 
-            this.buttonImageClicked = ImageIO.read(buttonImageClickedPath);
-        }
-
-        catch (IOException exception) {
-            System.out.printf("failed to open background image: %s\n", imagePath);
-            exception.printStackTrace();
-        }
-
-        // load all fonts
         try {
             this.menuFont = Font.createFont(Font.TRUETYPE_FONT, fontPath);
         }
@@ -400,21 +405,21 @@ class MainBackground extends JPanel {
 
         // add button event listeners
         this.tutorialButton.addActionListener(
-            event -> {
+            (event) -> {
                 System.out.printf("tutorials button pressed\n");
                 return;
             }
         );
 
         this.campaignButton.addActionListener(
-            event -> {
+            (event) -> {
                 this.mainFrame.showOriginalCampaignMenu();
                 return;
             }
         );
 
         this.exitGameButton.addActionListener(
-            event -> {
+            (event) -> {
                 System.out.printf("exit button pressed\n");
                 System.exit(0);
                 return;
@@ -521,18 +526,18 @@ class MainBackground extends JPanel {
 
 /**
  * this panel is used as a container for the actual main menu background.
- * it is set to a black background and covers the entire frame window regardless os size or aspect ratio.
- * it then contains an additional background panel set to a fixed aspect ratio of 4:3.
+ * it is set to a black background and covers the entire frame regardless of size and aspect ratio.
+ * it then contains an additional background panel set to a fixed aspect ratio of 4:3.<br>
  * the background panel then contains a buffered image that is set to a fixed resolution of 800 x 600.
- * this buffered image is set to fill the entire background panel and contains the actual background image of the main menu
+ * this buffered image is set to fill the entire background panel and contains the actual image of the main menu
  * as well as the buttons and any additional text painted onto the main menu.
  */
-public class OriginalMainMenuPanel extends JPanel {
+public class OriginalMainMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
 
 
-    public OriginalMainMenuPanel(JSettlersFrame mainFrame) {
+    public OriginalMainMenu(JSettlersFrame mainFrame) {
 
         this.mainFrame = mainFrame;
 

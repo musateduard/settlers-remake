@@ -1,14 +1,16 @@
 package jsettlers.main.swing.originalmenu;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.image.BufferedImage;
+import java.awt.event.KeyEvent;
 import javax.swing.JPanel;
-import javax.swing.JButton;
 
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
@@ -94,14 +96,24 @@ class CampaignBackground extends JPanel {
 }
 
 
-public class OriginalCampaignPanel extends JPanel {
+public class OriginalCampaignMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
+    public final KeyEventDispatcher campaignMenuKeyListener;
 
 
-    public OriginalCampaignPanel(JSettlersFrame mainFrame) {
+    public OriginalCampaignMenu(JSettlersFrame mainFrame) {
 
         this.mainFrame = mainFrame;
+        this.campaignMenuKeyListener = (event) -> {
+
+            if (event.getID() == KeyEvent.KEY_PRESSED && event.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                System.out.printf("escape key pressed\n");
+                this.returnToMainMenu();
+            }
+
+            return true;
+        };
 
         this.setOpaque(true);
         this.setBackground(Color.BLACK);
@@ -111,6 +123,17 @@ public class OriginalCampaignPanel extends JPanel {
         CampaignBackground background = new CampaignBackground(this.mainFrame);
 
         this.add(background);
+
+        return;
+    }
+
+
+    public void returnToMainMenu() {
+
+        KeyboardFocusManager keyManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+        keyManager.removeKeyEventDispatcher(this.campaignMenuKeyListener);
+        this.mainFrame.showOriginalMainMenu();
 
         return;
     }

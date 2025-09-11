@@ -22,9 +22,9 @@ import java.awt.HeadlessException;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 
+import javax.swing.Timer;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import javax.swing.WindowConstants;
 
 import go.graphics.area.Area;
@@ -48,19 +48,20 @@ import jsettlers.main.swing.menu.joinpanel.JoinGamePanel;
 import jsettlers.main.swing.menu.mainmenu.MainMenuPanel;
 import jsettlers.main.swing.menu.startinggamemenu.StartingGamePanel;
 import jsettlers.main.swing.menu.statspanel.EndgameStatsPanel;
-import jsettlers.main.swing.originalmenu.OriginalMainMenuPanel;
-import jsettlers.main.swing.originalmenu.OriginalCampaignPanel;
+import jsettlers.main.swing.originalmenu.OriginalCampaignMenu;
+import jsettlers.main.swing.originalmenu.OriginalMainMenu;
 
 
 /**
  * @author codingberlin
  */
 public class JSettlersFrame extends JFrame {
+
 	private static final long serialVersionUID = 2607082717493797224L;
 
     private final MainMenuPanel mainPanel;
-    private final OriginalMainMenuPanel originalMainMenuPanel;
-	private final OriginalCampaignPanel originalCampaignPanel;
+    private final OriginalMainMenu originalMainMenu;
+	private final OriginalCampaignMenu originalCampaignMenu;
 
 	private final EndgameStatsPanel endgameStatsPanel = new EndgameStatsPanel(this);
 	private final StartingGamePanel startingGamePanel = new StartingGamePanel(this);
@@ -71,41 +72,50 @@ public class JSettlersFrame extends JFrame {
 	private boolean fullScreen = false;
 	private AreaContainer areaContainer;
 
-	JSettlersFrame() throws HeadlessException {
-		setTitle("JSettlers - Version: " + CommitInfo.COMMIT_HASH_SHORT);
-		setIconImage(JSettlersSwingUtil.APP_ICON);
+
+	public JSettlersFrame() throws HeadlessException {
+
+		this.setTitle("JSettlers - Version: " + CommitInfo.COMMIT_HASH_SHORT);
+		this.setIconImage(JSettlersSwingUtil.APP_ICON);
 
 		SettingsManager settingsManager = SettingsManager.getInstance();
 
 		this.mainPanel = new MainMenuPanel(this);
-        this.originalMainMenuPanel = new OriginalMainMenuPanel(this);
-        this.originalCampaignPanel = new OriginalCampaignPanel(this);
+        this.originalMainMenu = new OriginalMainMenu(this);
+        this.originalCampaignMenu = new OriginalCampaignMenu(this);
 
-		showMainMenu();
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		setPreferredSize(new Dimension(1200, 800));
-        pack();
-		setLocationRelativeTo(null);
+        // jsettlers look and feel menu
+		// showMainMenu();
+        // setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		// setPreferredSize(new Dimension(1200, 800));
+        // pack();
+		// setLocationRelativeTo(null);
 
-        // this.showOriginalMainMenu();
-        // this.pack();  // note: pack() should be called before showOriginalMainMenu()
-        // this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
-        // this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // this.setLocationRelativeTo(null);
+        // settlers 3 original mnu
+        this.showOriginalMainMenu();
+        this.pack();
+        this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setLocationRelativeTo(null);
 
-		fullScreen = settingsManager.getFullScreenMode();
-		updateFullScreenMode();
+		this.fullScreen = settingsManager.getFullScreenMode();
+		this.updateFullScreenMode();
 
 		KeyboardFocusManager keyboardFocusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-		keyboardFocusManager.addKeyEventDispatcher(e -> {
-			if (e.getID() == KeyEvent.KEY_PRESSED) {
-				if (e.isAltDown() && e.getKeyCode() == KeyEvent.VK_ENTER) {
-					toggleFullScreenMode();
-					return true; // consume this key event.
-				}
-			}
-			return false;
-		});
+
+		keyboardFocusManager.addKeyEventDispatcher(
+            (event) -> {
+
+                if (event.getID() == KeyEvent.KEY_PRESSED && event.isAltDown() && event.getKeyCode() == KeyEvent.VK_ENTER) {
+                    this.toggleFullScreenMode();
+                    return true;  // consume this key event.
+                }
+
+                return false;
+            }
+        );
+
+        return;
 	}
 
 	private void toggleFullScreenMode() {
@@ -143,13 +153,18 @@ public class JSettlersFrame extends JFrame {
 
 
     public void showOriginalMainMenu() {
-        this.setNewContentPane(this.originalMainMenuPanel);
+        this.setNewContentPane(this.originalMainMenu);
         return;
     }
 
 
     public void showOriginalCampaignMenu() {
-        this.setNewContentPane(this.originalCampaignPanel);
+
+        KeyboardFocusManager keyManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+        keyManager.addKeyEventDispatcher(this.originalCampaignMenu.campaignMenuKeyListener);
+        this.setNewContentPane(this.originalCampaignMenu);
+
         return;
     }
 
@@ -159,12 +174,17 @@ public class JSettlersFrame extends JFrame {
 		setNewContentPane(startingGamePanel);
 	}
 
+
 	private void setNewContentPane(Container newContent) {
-		abortRedrawTimerIfPresent();
-		setContentPane(newContent);
-		revalidate();
-		repaint();
+
+        this.abortRedrawTimerIfPresent();
+		this.setContentPane(newContent);
+		this.revalidate();
+		this.repaint();
+
+        return;
 	}
+
 
 	public void exit() {
 		soundPlayer.close();
@@ -178,9 +198,9 @@ public class JSettlersFrame extends JFrame {
 
 
     /**
-     * this method is called from showStartedGame() after creating a new game. it receives
-     * a MapContent instance which is passed to a new Region object. the Region is then passed
-     * to an Area object which is then passed to a new AreaContainer instance. the AreaContainer
+     * this method is called from {@link JSettlersFrame#showStartedGame} after creating a new game. it receives
+     * a {@link MapContent} instance which is passed to a new {@link Region} object. the Region is then passed
+     * to an {@link Area} object which is then passed to a new {@link AreaContainer} instance. the AreaContainer
      * is the object that will eventually be added to the main JFrame.<br>
      *
      * note: AreaContainer is a child class of JPanel
@@ -190,7 +210,7 @@ public class JSettlersFrame extends JFrame {
      * @see Area
      * @see AreaContainer
      *
-     * @param content MapContent object used for creating new AreaContainer instance that is added to the JFrame
+     * @param content {@link MapContent} object used for creating new AreaContainer instance that is added to the {@link JSettlersFrame}
      */
 	public void setContent(MapContent content) {
 
@@ -209,7 +229,6 @@ public class JSettlersFrame extends JFrame {
         this.areaContainer = new AreaContainer(area, backend, debugFlag, uiScale);
 
 		if (fpsLimit != 0) {
-
 			this.redrawTimer = new Timer(delay, (event) -> region.requestRedraw());
 			this.redrawTimer.setInitialDelay(0);
 			this.redrawTimer.start();
@@ -263,9 +282,9 @@ public class JSettlersFrame extends JFrame {
 
 
     /**
-     * this method is called when starting a new game. it creates a new instance of MapContent
-     * which it passes down to setContent(). then it adds an exit game listener to the startedGame
-     * argument, and it returns an IMapInterfaceConnector to its caller.
+     * this method is called when starting a new game. it creates a new instance of {@link MapContent}
+     * which it passes down to {@link JSettlersFrame#setContent}. then it adds an exit game listener to the startedGame
+     * argument, and it returns an {@link IMapInterfaceConnector} to its caller.
      *
      * @param startedGame IStartedGame interface used for creating new MapContent instance and receiving an exit game listener
      *

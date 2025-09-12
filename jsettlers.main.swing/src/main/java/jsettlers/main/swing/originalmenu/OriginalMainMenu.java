@@ -1,24 +1,18 @@
 package jsettlers.main.swing.originalmenu;
 
-import java.awt.Font;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.GridBagLayout;
 import java.awt.RenderingHints;
-import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import javax.swing.JButton;
 import javax.swing.JPanel;
-import java.io.IOException;
-import java.io.File;
 import java.util.List;
 
 import jsettlers.common.CommitInfo;
@@ -27,94 +21,17 @@ import jsettlers.common.images.OriginalImageLink;
 import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.image.NullImage;
-import jsettlers.graphics.image.Image;
 import jsettlers.main.swing.JSettlersFrame;
-
-
-class MenuButtonProperties {
-
-    public Font buttonFont;
-    public BufferedImage buttonImage;
-    public BufferedImage buttonImageHovered;
-    public BufferedImage buttonImagePressed;
-
-
-    public MenuButtonProperties(BufferedImage buttonImage, BufferedImage buttonImageHovered, BufferedImage buttonImagePressed, Font buttonFont) {
-
-        this.buttonFont = buttonFont;
-        this.buttonImage = buttonImage;
-        this.buttonImageHovered = buttonImageHovered;
-        this.buttonImagePressed = buttonImagePressed;
-
-        return;
-    }
-}
-
-
-class MenuButton extends JButton {
-
-    public final int buttonWidth = 172;
-    public final int buttonHeight = 32;
-    public boolean hovered = false;
-    public boolean pressed = false;
-    public int offsetY;
-
-    public Font textFont;
-    public BufferedImage buttonImage;
-    public BufferedImage buttonImageHovered;
-    public BufferedImage buttonImageClicked;
-
-
-    public MenuButton(MenuButtonProperties properties, String buttonText, int offsetY) {
-
-        this.textFont = properties.buttonFont;
-        this.buttonImage = properties.buttonImage;
-        this.buttonImageHovered = properties.buttonImageHovered;
-        this.buttonImageClicked = properties.buttonImagePressed;
-
-        this.offsetY = offsetY;
-        this.setText(buttonText);
-        this.setBounds(0, this.offsetY, this.buttonWidth, this.buttonHeight);
-        this.setBorderPainted(false);
-        this.setContentAreaFilled(false);
-        this.setOpaque(false);
-        this.setForeground(new Color(0, 12, 64));
-        this.setFont(this.textFont.deriveFont(Font.PLAIN, 11f));
-
-        return;
-    }
-
-
-    @Override
-    public void paintComponent(Graphics graphics) {
-
-        if (this.pressed) {
-            graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
-        }
-
-        else if (this.hovered) {
-            graphics.drawImage(this.buttonImageHovered, 0, 0, this.getWidth(), this.getHeight(), this);
-        }
-
-        else {
-            graphics.drawImage(this.buttonImage, 0, 0, this.getWidth(), this.getHeight(), this);
-        }
-
-        super.paintComponent(graphics);
-
-        return;
-    }
-}
 
 
 class MenuEventListener implements MouseListener, MouseMotionListener {
 
     public final MainBackground component;
-    public final MenuButton[] buttonList;
-    public MenuButton pressedButton;
+    public final OriginalMenuButton[] buttonList;
+    public OriginalMenuButton pressedButton;
 
 
-    public MenuEventListener(MainBackground menuPanel, MenuButton[] buttonList) {
+    public MenuEventListener(MainBackground menuPanel, OriginalMenuButton[] buttonList) {
         this.component = menuPanel;
         this.buttonList = buttonList;
         return;
@@ -135,7 +52,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
     }
 
 
-    public Rectangle getButtonCoordinates(MenuButton button) {
+    public Rectangle getButtonCoordinates(OriginalMenuButton button) {
 
         Rectangle bounds = button.getBounds();
 
@@ -158,7 +75,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
         Point cursor = this.getScaledPosition(event);
 
         // set hovered status
-        for (MenuButton item : this.buttonList) {
+        for (OriginalMenuButton item : this.buttonList) {
 
             Rectangle buttonBounds = this.getButtonCoordinates(item);
 
@@ -181,8 +98,6 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
     @Override
     public void mousePressed(MouseEvent event) {
 
-        // System.out.printf("pressed %d %d\n", event.getX(), event.getY());
-
         Point cursor = this.getScaledPosition(event);
         boolean anyButtonPressed = false;
 
@@ -192,7 +107,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
         else {
 
-            for (MenuButton item : this.buttonList) {
+            for (OriginalMenuButton item : this.buttonList) {
 
                 Rectangle buttonBounds = this.getButtonCoordinates(item);
 
@@ -222,8 +137,6 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
     @Override
     public void mouseReleased(MouseEvent event) {
 
-        // System.out.printf("released %d %d\n", event.getX(), event.getY());
-
         Point cursor = this.getScaledPosition(event);
 
         // cursor released outside menu area
@@ -231,7 +144,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
             this.pressedButton = null;
 
-            for (MenuButton item : this.buttonList) {
+            for (OriginalMenuButton item : this.buttonList) {
                 item.hovered = false;
                 item.pressed = false;
             }
@@ -243,10 +156,8 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
             // no button was pressed prior to release
             if (this.pressedButton == null) {
 
-                // System.out.printf("button released inside menu area but no button pressed\n");
-
                 // check if any button is hovered
-                for (MenuButton item : this.buttonList) {
+                for (OriginalMenuButton item : this.buttonList) {
 
                     Rectangle buttonBounds = this.getButtonCoordinates(item);
 
@@ -258,7 +169,6 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
             // button pressed prior to released
             else {
 
-                // System.out.printf("button released inside menu area with pressed button\n");
                 Rectangle pressedButtonBounds = this.getButtonCoordinates(this.pressedButton);
 
                 // cursor released on same pressed button
@@ -272,7 +182,7 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
                 // cursor released on other button
                 else {
 
-                    for (MenuButton item : this.buttonList) {
+                    for (OriginalMenuButton item : this.buttonList) {
 
                         Rectangle currentButtonBounds = this.getButtonCoordinates(item);
 
@@ -299,14 +209,12 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseEntered(MouseEvent event) {
-        // System.out.printf("entered %d %d\n", event.getX(), event.getY());
         return;
     }
 
 
     @Override
     public void mouseExited(MouseEvent event) {
-        // System.out.printf("exited %d %d\n", event.getX(), event.getY());
         return;
     }
 
@@ -318,38 +226,35 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 }
 
 
-class MainBackground extends JPanel {
+class MainBackground extends OriginalBackgroundBase {
 
-    public final double idealAspectRatio = (double) 800 / (double) 600;
-    public BufferedImage menuImage;
-    public BufferedImage buttonImage;
-    public BufferedImage buttonImageHovered;
-    public BufferedImage buttonImageClicked;
-    public Font menuFont = new Font("Arial", Font.PLAIN, 11);
+    public final BufferedImage menuImage;
+    public final BufferedImage buttonImage;
+    public final BufferedImage buttonImageHovered;
+    public final BufferedImage buttonImageClicked;
 
+    public final OriginalMenuButton[] buttonList;
     public final MenuEventListener eventListener;
-    public final MenuButton[] buttonList;
 
-    public final JSettlersFrame mainFrame;
     public final JPanel buttonsPanel;
-    public final MenuButton tutorialButton;
-    public final MenuButton campaignButton;
-    public final MenuButton missionCDCampaignButton;
-    public final MenuButton amazonCampaignButton;
-    public final MenuButton campaignDifficultyButton;
-    public final MenuButton singlePlayerScenarioButton;
-    public final MenuButton multiplayerGameLanButton;
-    public final MenuButton multiplayerGameInternetButton;
-    public final MenuButton loadGameButton;
-    public final MenuButton onlineHelpButton;
-    public final MenuButton tipsTricksButton;
-    public final MenuButton creditsButton;
-    public final MenuButton exitGameButton;
+    public final OriginalMenuButton tutorialButton;
+    public final OriginalMenuButton campaignButton;
+    public final OriginalMenuButton missionCDCampaignButton;
+    public final OriginalMenuButton amazonCampaignButton;
+    public final OriginalMenuButton campaignDifficultyButton;
+    public final OriginalMenuButton singlePlayerScenarioButton;
+    public final OriginalMenuButton multiplayerGameLanButton;
+    public final OriginalMenuButton multiplayerGameInternetButton;
+    public final OriginalMenuButton loadGameButton;
+    public final OriginalMenuButton onlineHelpButton;
+    public final OriginalMenuButton tipsTricksButton;
+    public final OriginalMenuButton creditsButton;
+    public final OriginalMenuButton exitGameButton;
 
 
     public MainBackground(JSettlersFrame mainFrame) {
 
-        this.mainFrame = mainFrame;
+        super(mainFrame);
 
         // note: EImageLinkType.SETTLER is also used for menu buttons not just settlers sprites
         // note: OriginalImageLink doesn't throw exception if index is out of bounds
@@ -361,7 +266,7 @@ class MainBackground extends JPanel {
         SingleImage buttonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 0));
         SingleImage buttonImageClicked = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 1));
 
-        for (Image item : List.of(backgroundImage, buttonImage, buttonImageClicked)) {
+        for (SingleImage item : List.of(backgroundImage, buttonImage, buttonImageClicked)) {
 
             if (item instanceof NullImage) {
                 System.out.printf("image not found %s\n", item);
@@ -375,38 +280,32 @@ class MainBackground extends JPanel {
         this.buttonImageClicked = buttonImageClicked.convertToBufferedImage();
         this.buttonImageHovered = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
 
-        // set menu button hover effect
+        // create hovered version of menu button
         RescaleOp brightness = new RescaleOp(0.95f, 0, null);
         brightness.filter(this.buttonImage, this.buttonImageHovered);
 
-        // load font
-        File fontPath = new File("D:\\ms-sans-serif-1.ttf");
-
-        try {
-            this.menuFont = Font.createFont(Font.TRUETYPE_FONT, fontPath);
-        }
-
-        catch (IOException | FontFormatException exception) {
-            System.out.printf("failed to open menu font: %s\n", fontPath);
-            exception.printStackTrace();
-        }
-
         // set buttons
-        MenuButtonProperties buttonProperties = new MenuButtonProperties(this.buttonImage, this.buttonImageHovered, this.buttonImageClicked, this.menuFont);
+        ButtonProps buttonProps = new ButtonProps(
+            this.buttonImage,
+            this.buttonImageHovered,
+            this.buttonImageClicked,
+            this.menuFont, 11, false,
+            new Color(0, 12, 64)
+        );
 
-        this.tutorialButton = new MenuButton(buttonProperties, "Tutorial", 0);
-        this.campaignButton = new MenuButton(buttonProperties, "Campaign", 40);
-        this.missionCDCampaignButton = new MenuButton(buttonProperties, "Mission CD Campaign", 80);
-        this.amazonCampaignButton = new MenuButton(buttonProperties, "Amazon Campaign", 120);
-        this.campaignDifficultyButton = new MenuButton(buttonProperties, "Campaign: Normal", 160);
-        this.singlePlayerScenarioButton = new MenuButton(buttonProperties, "Single Player: Scenario", 200);
-        this.multiplayerGameLanButton = new MenuButton(buttonProperties, "Multi-player Game: LAN", 240);
-        this.multiplayerGameInternetButton = new MenuButton(buttonProperties, "Multi-player Game: Internet", 280);
-        this.loadGameButton = new MenuButton(buttonProperties, "Load Game", 320);
-        this.onlineHelpButton = new MenuButton(buttonProperties, "Online Help", 380);
-        this.tipsTricksButton = new MenuButton(buttonProperties, "Tips & Tricks", 420);
-        this.creditsButton = new MenuButton(buttonProperties, "Credits", 460);
-        this.exitGameButton = new MenuButton(buttonProperties, "Exit Game", 520);
+        this.tutorialButton = new OriginalMenuButton(buttonProps, "Tutorial", 0, 0);
+        this.campaignButton = new OriginalMenuButton(buttonProps, "Campaign", 0, 40);
+        this.missionCDCampaignButton = new OriginalMenuButton(buttonProps, "Mission CD Campaign", 0, 80);
+        this.amazonCampaignButton = new OriginalMenuButton(buttonProps, "Amazon Campaign", 0, 120);
+        this.campaignDifficultyButton = new OriginalMenuButton(buttonProps, "Campaign: Normal", 0, 160);
+        this.singlePlayerScenarioButton = new OriginalMenuButton(buttonProps, "Single Player: Scenario", 0, 200);
+        this.multiplayerGameLanButton = new OriginalMenuButton(buttonProps, "Multi-player Game: LAN", 0, 240);
+        this.multiplayerGameInternetButton = new OriginalMenuButton(buttonProps, "Multi-player Game: Internet", 0, 280);
+        this.loadGameButton = new OriginalMenuButton(buttonProps, "Load Game", 0, 320);
+        this.onlineHelpButton = new OriginalMenuButton(buttonProps, "Online Help", 0, 380);
+        this.tipsTricksButton = new OriginalMenuButton(buttonProps, "Tips & Tricks", 0, 420);
+        this.creditsButton = new OriginalMenuButton(buttonProps, "Credits", 0, 460);
+        this.exitGameButton = new OriginalMenuButton(buttonProps, "Exit Game", 0, 520);
 
         // add button event listeners
         this.tutorialButton.addActionListener(
@@ -451,7 +350,7 @@ class MainBackground extends JPanel {
         this.buttonsPanel.add(this.exitGameButton);
 
         // add menu event listener
-        this.buttonList = new MenuButton[] {
+        this.buttonList = new OriginalMenuButton[] {
             this.tutorialButton,
             this.campaignButton,
             this.missionCDCampaignButton,
@@ -477,56 +376,29 @@ class MainBackground extends JPanel {
 
 
     @Override
-    public Dimension getPreferredSize() {
-
-        // size needs to be based on parent size while also keeping aspect ratio
-
-        Dimension parentSize = this.getParent().getSize();
-        double currentAspectRatio = (double) parentSize.width / (double) parentSize.height;
-
-        // height becomes deciding
-        if (currentAspectRatio >= this.idealAspectRatio) {
-
-            int newViewportWidth = (int) (this.idealAspectRatio * parentSize.height);
-            int newViewportHeight = parentSize.height;
-
-            Dimension newSize = new Dimension(newViewportWidth, newViewportHeight);
-
-            return newSize;
-        }
-
-        // width becomes deciding
-        else {
-
-            int newViewportWidth = parentSize.width;
-            int newViewportHeight = (int) (parentSize.width / this.idealAspectRatio);
-
-            Dimension newSize = new Dimension(newViewportWidth, newViewportHeight);
-
-            return newSize;
-        }
-    }
-
-
-    @Override
     public void paintComponent(Graphics graphics) {
-
-        ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
         super.paintComponent(graphics);
 
-        Graphics2D menuGraphics = this.menuImage.createGraphics();
+        graphics.setColor(Color.WHITE);
+        graphics.fillRect(0, 0, this.getWidth(), this.getHeight());
 
-        menuGraphics.translate(80, 20);
-        this.buttonsPanel.printAll(menuGraphics);
+        Graphics2D tempContext = this.tempBuffer.createGraphics();
 
-        menuGraphics.translate(-80, -20);
-        menuGraphics.setColor(new Color(255, 223, 0));
-        menuGraphics.setFont(this.menuFont.deriveFont(11f));
-        menuGraphics.drawString(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588);
-        menuGraphics.dispose();
+        tempContext.drawImage(this.menuImage, 0, 0, this.tempBuffer.getWidth(), this.tempBuffer.getHeight(), this);
 
-        graphics.drawImage(this.menuImage, 0, 0, this.getWidth(), this.getHeight(), this);
+        tempContext.translate(80, 20);
+        this.buttonsPanel.printAll(tempContext);
+
+        tempContext.translate(-80, -20);
+        tempContext.setColor(new Color(255, 223, 0));
+        tempContext.setFont(this.menuFont.deriveFont(11f));
+        tempContext.drawString(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588);
+        tempContext.dispose();
+
+        ((Graphics2D) graphics).setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+        graphics.drawImage(this.tempBuffer, 0, 0, this.getWidth(), this.getHeight(), this);
 
         return;
     }
@@ -537,35 +409,19 @@ class MainBackground extends JPanel {
  * this panel is used as a container for the actual main menu background.
  * it is set to a black background and covers the entire frame regardless of size and aspect ratio.
  * it then contains an additional background panel set to a fixed aspect ratio of 4:3.<br>
- * the background panel then contains a buffered image that is set to a fixed resolution of 800 x 600.
- * this buffered image is set to fill the entire background panel and contains the actual image of the main menu
- * as well as the buttons and any additional text painted onto the main menu.
+ * the background panel then contains in image buffered that is set to a fixed resolution of 800 x 600.
+ * this buffer is set to fill the entire background panel and contains the actual image of the main menu
+ * as well as the buttons and any additional text painted onto the menu.
  */
-public class OriginalMainMenu extends JPanel {
-
-    public final JSettlersFrame mainFrame;
-
+public class OriginalMainMenu extends OriginalMenuBase {
 
     public OriginalMainMenu(JSettlersFrame mainFrame) {
 
-        this.mainFrame = mainFrame;
-
-        this.setOpaque(true);
-        this.setBackground(Color.BLACK);
-        this.setLayout(new GridBagLayout());
-        this.setMinimumSize(new Dimension(800, 600));
+        super(mainFrame);
 
         MainBackground background = new MainBackground(this.mainFrame);
-
         this.add(background);
 
         return;
-    }
-
-
-    @Override
-    public Dimension getPreferredSize() {
-        Dimension preferredSize = this.getMinimumSize();
-        return preferredSize;
     }
 }

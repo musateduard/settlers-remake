@@ -60,8 +60,6 @@ public class JSettlersFrame extends JFrame {
 	private static final long serialVersionUID = 2607082717493797224L;
 
     private final MainMenuPanel mainPanel;
-    private final OriginalMainMenu originalMainMenu;
-	private final OriginalCampaignMenu originalCampaignMenu;
 
 	private final EndgameStatsPanel endgameStatsPanel = new EndgameStatsPanel(this);
 	private final StartingGamePanel startingGamePanel = new StartingGamePanel(this);
@@ -81,8 +79,6 @@ public class JSettlersFrame extends JFrame {
 		SettingsManager settingsManager = SettingsManager.getInstance();
 
 		this.mainPanel = new MainMenuPanel(this);
-        this.originalMainMenu = new OriginalMainMenu(this);
-        this.originalCampaignMenu = new OriginalCampaignMenu(this);
 
         // jsettlers look and feel menu
 		// showMainMenu();
@@ -91,7 +87,7 @@ public class JSettlersFrame extends JFrame {
         // pack();
 		// setLocationRelativeTo(null);
 
-        // settlers 3 original mnu
+        // settlers 3 original menu
         this.showOriginalMainMenu();
         this.pack();
         this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
@@ -153,17 +149,22 @@ public class JSettlersFrame extends JFrame {
 
 
     public void showOriginalMainMenu() {
-        this.setNewContentPane(this.originalMainMenu);
+
+        OriginalMainMenu mainMenu = new OriginalMainMenu(this);
+
+        this.setNewContentPane(mainMenu);
+
         return;
     }
 
 
     public void showOriginalCampaignMenu() {
 
+        OriginalCampaignMenu campaignMenu = new OriginalCampaignMenu(this);
         KeyboardFocusManager keyManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
 
-        keyManager.addKeyEventDispatcher(this.originalCampaignMenu.campaignMenuKeyListener);
-        this.setNewContentPane(this.originalCampaignMenu);
+        keyManager.addKeyEventDispatcher(campaignMenu.campaignMenuKeyListener);
+        this.setNewContentPane(campaignMenu);
 
         return;
     }

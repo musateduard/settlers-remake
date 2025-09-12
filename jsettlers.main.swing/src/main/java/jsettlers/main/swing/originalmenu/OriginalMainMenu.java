@@ -15,18 +15,20 @@ import java.awt.image.RescaleOp;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-
-import jsettlers.common.images.EImageLinkType;
-import jsettlers.common.images.OriginalImageLink;
-import jsettlers.graphics.image.SingleImage;
-import jsettlers.graphics.map.draw.ImageProvider;
-import jsettlers.main.swing.JSettlersFrame;
-import jsettlers.common.CommitInfo;
-import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.File;
+import java.util.List;
+
+import jsettlers.common.CommitInfo;
+import jsettlers.common.images.EImageLinkType;
+import jsettlers.common.images.OriginalImageLink;
+import jsettlers.graphics.map.draw.ImageProvider;
+import jsettlers.graphics.image.SingleImage;
+import jsettlers.graphics.image.NullImage;
+import jsettlers.graphics.image.Image;
+import jsettlers.main.swing.JSettlersFrame;
 
 
 class MenuButtonProperties {
@@ -34,15 +36,15 @@ class MenuButtonProperties {
     public Font buttonFont;
     public BufferedImage buttonImage;
     public BufferedImage buttonImageHovered;
-    public BufferedImage buttonImageClicked;
+    public BufferedImage buttonImagePressed;
 
 
-    public MenuButtonProperties(BufferedImage buttonImage, BufferedImage buttonImageHovered, BufferedImage buttonImageClicked, Font buttonFont) {
+    public MenuButtonProperties(BufferedImage buttonImage, BufferedImage buttonImageHovered, BufferedImage buttonImagePressed, Font buttonFont) {
 
         this.buttonFont = buttonFont;
         this.buttonImage = buttonImage;
         this.buttonImageHovered = buttonImageHovered;
-        this.buttonImageClicked = buttonImageClicked;
+        this.buttonImagePressed = buttonImagePressed;
 
         return;
     }
@@ -68,7 +70,7 @@ class MenuButton extends JButton {
         this.textFont = properties.buttonFont;
         this.buttonImage = properties.buttonImage;
         this.buttonImageHovered = properties.buttonImageHovered;
-        this.buttonImageClicked = properties.buttonImageClicked;
+        this.buttonImageClicked = properties.buttonImagePressed;
 
         this.offsetY = offsetY;
         this.setText(buttonText);
@@ -85,8 +87,6 @@ class MenuButton extends JButton {
 
     @Override
     public void paintComponent(Graphics graphics) {
-
-        // todo: fix problem where campaign button stays hovered when returning from campaign menu
 
         if (this.pressed) {
             graphics.drawImage(this.buttonImageClicked, 0, 0, this.getWidth(), this.getHeight(), this);
@@ -321,10 +321,10 @@ class MenuEventListener implements MouseListener, MouseMotionListener {
 class MainBackground extends JPanel {
 
     public final double idealAspectRatio = (double) 800 / (double) 600;
-    public BufferedImage menuImage = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
-    public BufferedImage buttonImage = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
-    public BufferedImage buttonImageHovered = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
-    public BufferedImage buttonImageClicked = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
+    public BufferedImage menuImage;
+    public BufferedImage buttonImage;
+    public BufferedImage buttonImageHovered;
+    public BufferedImage buttonImageClicked;
     public Font menuFont = new Font("Arial", Font.PLAIN, 11);
 
     public final MenuEventListener eventListener;
@@ -351,25 +351,36 @@ class MainBackground extends JPanel {
 
         this.mainFrame = mainFrame;
 
-        File fontPath = new File("D:\\ms-sans-serif-1.ttf");
-
         // note: EImageLinkType.SETTLER is also used for menu buttons not just settlers sprites
         // note: OriginalImageLink doesn't throw exception if index is out of bounds
-        // todo: make OriginalImageLink throw exception on out of bounds index
+        // note: you need to check if getImage() returned instanceof NullImage
 
         ImageProvider imageProvider = ImageProvider.getInstance();
-        BufferedImage backgroundImage = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 61, 2))).convertToBufferedImage();
-        BufferedImage buttonImage = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 0))).convertToBufferedImage();
-        BufferedImage buttonImageClicked = ((SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 1))).convertToBufferedImage();
+
+        SingleImage backgroundImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 61, 2));
+        SingleImage buttonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 0));
+        SingleImage buttonImageClicked = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 61, 0, 1));
+
+        for (Image item : List.of(backgroundImage, buttonImage, buttonImageClicked)) {
+
+            if (item instanceof NullImage) {
+                System.out.printf("image not found %s\n", item);
+                new Exception().printStackTrace();
+            }
+        }
 
         // load all images
-        this.menuImage = backgroundImage;
-        this.buttonImage = buttonImage;
-        this.buttonImageClicked = buttonImageClicked;
+        this.menuImage = backgroundImage.convertToBufferedImage();
+        this.buttonImage = buttonImage.convertToBufferedImage();
+        this.buttonImageClicked = buttonImageClicked.convertToBufferedImage();
+        this.buttonImageHovered = new BufferedImage(172, 32, BufferedImage.TYPE_INT_ARGB);
 
         // set menu button hover effect
         RescaleOp brightness = new RescaleOp(0.95f, 0, null);
         brightness.filter(this.buttonImage, this.buttonImageHovered);
+
+        // load font
+        File fontPath = new File("D:\\ms-sans-serif-1.ttf");
 
         try {
             this.menuFont = Font.createFont(Font.TRUETYPE_FONT, fontPath);
@@ -397,12 +408,6 @@ class MainBackground extends JPanel {
         this.creditsButton = new MenuButton(buttonProperties, "Credits", 460);
         this.exitGameButton = new MenuButton(buttonProperties, "Exit Game", 520);
 
-        // assign buttons panel
-        this.buttonsPanel = new JPanel(null);
-
-        this.buttonsPanel.setSize(new Dimension(172, 552));
-        this.buttonsPanel.setOpaque(false);
-
         // add button event listeners
         this.tutorialButton.addActionListener(
             (event) -> {
@@ -420,13 +425,17 @@ class MainBackground extends JPanel {
 
         this.exitGameButton.addActionListener(
             (event) -> {
-                System.out.printf("exit button pressed\n");
                 System.exit(0);
                 return;
             }
         );
 
         // add buttons to panel
+        this.buttonsPanel = new JPanel(null);
+
+        this.buttonsPanel.setSize(new Dimension(172, 552));
+        this.buttonsPanel.setOpaque(false);
+
         this.buttonsPanel.add(this.tutorialButton);
         this.buttonsPanel.add(this.campaignButton);
         this.buttonsPanel.add(this.missionCDCampaignButton);

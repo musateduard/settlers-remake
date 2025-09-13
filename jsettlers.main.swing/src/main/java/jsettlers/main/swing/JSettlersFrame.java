@@ -48,6 +48,7 @@ import jsettlers.main.swing.menu.joinpanel.JoinGamePanel;
 import jsettlers.main.swing.menu.mainmenu.MainMenuPanel;
 import jsettlers.main.swing.menu.startinggamemenu.StartingGamePanel;
 import jsettlers.main.swing.menu.statspanel.EndgameStatsPanel;
+import jsettlers.main.swing.originalmenu.OriginalScenarioMenu;
 import jsettlers.main.swing.originalmenu.OriginalCampaignMenu;
 import jsettlers.main.swing.originalmenu.OriginalMainMenu;
 
@@ -165,6 +166,15 @@ public class JSettlersFrame extends JFrame {
 
         keyManager.addKeyEventDispatcher(campaignMenu.campaignMenuKeyListener);
         this.setNewContentPane(campaignMenu);
+
+        return;
+    }
+
+
+    public void showOriginalScenarioMenu() {
+
+        OriginalScenarioMenu scenarioMenu = new OriginalScenarioMenu(this);
+        this.setNewContentPane(scenarioMenu);
 
         return;
     }

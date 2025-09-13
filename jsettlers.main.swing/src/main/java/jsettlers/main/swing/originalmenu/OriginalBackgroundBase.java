@@ -13,6 +13,7 @@ import jsettlers.main.swing.JSettlersFrame;
 public abstract class OriginalBackgroundBase extends JPanel {
 
     public Font menuFont;
+    public Font menuFontBold;
     public final JSettlersFrame mainFrame;
     public final BufferedImage tempBuffer;
     public final double idealAspectRatio = (double) 800 / (double) 600;
@@ -25,17 +26,21 @@ public abstract class OriginalBackgroundBase extends JPanel {
 
         // load font
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        InputStream fontStream = loader.getResourceAsStream("micross.ttf");
+        InputStream fontStream = loader.getResourceAsStream("ms-sans-serif-1.ttf");
+        InputStream fontBoldStream = loader.getResourceAsStream("ms-sans-serif-bold.ttf");
 
         assert fontStream != null;
+        assert fontBoldStream != null;
 
         try {
             this.menuFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            this.menuFontBold = Font.createFont(Font.TRUETYPE_FONT, fontBoldStream);
         }
 
         catch (IOException | FontFormatException exception) {
 
             this.menuFont = new Font("Arial", Font.PLAIN, 11);
+            this.menuFontBold = new Font("Arial", Font.BOLD, 14);
 
             System.out.printf("failed to open menu font: %s\n", loader.getName());
             exception.printStackTrace();

@@ -58,6 +58,8 @@ public class OriginalMenuButton extends JButton {
     @Override
     public void paintComponent(Graphics graphics) {
 
+        // todo: paint text with offset when button is pressed
+
         if (this.pressed) {
             graphics.drawImage(this.buttonImagePressed, 0, 0, this.getWidth(), this.getHeight(), this);
         }
@@ -76,9 +78,12 @@ public class OriginalMenuButton extends JButton {
 
             FontMetrics metrics = graphics.getFontMetrics();
 
-            // get text position
+            // get text offsets
             int textX = ((this.getWidth() - metrics.stringWidth(this.getText())) + 2 - 1) / 2;  // this ensures all divisions are rounded up
-            int textY = ((this.getHeight() - metrics.getAscent() - (metrics.getDescent() / 2)) / 2) + metrics.getAscent() - (metrics.getDescent() / 2);
+            int textY = ((this.getHeight() - metrics.getAscent() - (metrics.getDescent() / 2)) / 2) + metrics.getAscent();
+
+            // correction "descent / 2" might not be accurate
+            // correction might be just 1
 
             graphics.setColor(Color.BLACK);
             graphics.drawString(this.getText(), textX + 1, textY + 1);

@@ -1,17 +1,11 @@
 package jsettlers.main.swing.originalmenu;
 
 import java.awt.Color;
-import java.awt.Point;
 import java.awt.Graphics;
-import java.awt.Rectangle;
-import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import javax.swing.JPanel;
 import java.util.List;
 
@@ -24,217 +18,12 @@ import jsettlers.graphics.image.NullImage;
 import jsettlers.main.swing.JSettlersFrame;
 
 
-class MenuEventListener implements MouseListener, MouseMotionListener {
-
-    public final MainBackground component;
-    public final OriginalMenuButton[] buttonList;
-    public OriginalMenuButton pressedButton;
-
-
-    public MenuEventListener(MainBackground menuPanel, OriginalMenuButton[] buttonList) {
-        this.component = menuPanel;
-        this.buttonList = buttonList;
-        return;
-    }
-
-
-    public Point getScaledPosition(MouseEvent event) {
-
-        int parentWidth = this.component.getWidth();
-        int parentHeight = this.component.getHeight();
-
-        int translatedX = (int) (((double) event.getX() / (double) parentWidth) * (double) 800);
-        int translatedY = (int) (((double) event.getY() / (double) parentHeight) * (double) 600);
-
-        Point position = new Point(translatedX, translatedY);
-
-        return position;
-    }
-
-
-    public Rectangle getButtonCoordinates(OriginalMenuButton button) {
-
-        Rectangle bounds = button.getBounds();
-
-        bounds.x += 80;
-        bounds.y += 20;
-
-        return bounds;
-    }
-
-
-    public boolean isCursorOutsideMenuArea(Point click) {
-        boolean outsideMenu = (click.x < 80 || click.x >= (172 + 80) || click.y < 20 || click.y >= (20 + 552));
-        return outsideMenu;
-    }
-
-
-    @Override
-    public void mouseMoved(MouseEvent event) {
-
-        Point cursor = this.getScaledPosition(event);
-
-        // set hovered status
-        for (OriginalMenuButton item : this.buttonList) {
-
-            Rectangle buttonBounds = this.getButtonCoordinates(item);
-
-            if (this.isCursorOutsideMenuArea(cursor)) {
-                item.hovered = false;
-                item.pressed = false;
-            }
-
-            else {
-                item.hovered = buttonBounds.contains(cursor);
-            }
-        }
-
-        this.component.repaint();
-
-        return;
-    }
-
-
-    @Override
-    public void mousePressed(MouseEvent event) {
-
-        Point cursor = this.getScaledPosition(event);
-        boolean anyButtonPressed = false;
-
-        if (this.isCursorOutsideMenuArea(cursor)) {
-            this.pressedButton = null;
-        }
-
-        else {
-
-            for (OriginalMenuButton item : this.buttonList) {
-
-                Rectangle buttonBounds = this.getButtonCoordinates(item);
-
-                if (buttonBounds.contains(cursor)) {
-
-                    item.pressed = true;
-                    this.pressedButton = item;
-                    anyButtonPressed = true;
-
-                    break;
-                }
-
-                continue;
-            }
-
-            if (anyButtonPressed == false) {
-                this.pressedButton = null;
-            }
-        }
-
-        this.component.repaint();
-
-        return;
-    }
-
-
-    @Override
-    public void mouseReleased(MouseEvent event) {
-
-        Point cursor = this.getScaledPosition(event);
-
-        // cursor released outside menu area
-        if (this.isCursorOutsideMenuArea(cursor)) {
-
-            this.pressedButton = null;
-
-            for (OriginalMenuButton item : this.buttonList) {
-                item.hovered = false;
-                item.pressed = false;
-            }
-        }
-
-        // cursor released inside menu area
-        else {
-
-            // no button was pressed prior to release
-            if (this.pressedButton == null) {
-
-                // check if any button is hovered
-                for (OriginalMenuButton item : this.buttonList) {
-
-                    Rectangle buttonBounds = this.getButtonCoordinates(item);
-
-                    item.pressed = false;
-                    item.hovered = buttonBounds.contains(cursor);
-                }
-            }
-
-            // button pressed prior to released
-            else {
-
-                Rectangle pressedButtonBounds = this.getButtonCoordinates(this.pressedButton);
-
-                // cursor released on same pressed button
-                if (pressedButtonBounds.contains(cursor)) {
-
-                    this.pressedButton.hovered = true;
-                    this.pressedButton.pressed = false;
-                    this.pressedButton.doClick();  // note: what will doClick do?
-                }
-
-                // cursor released on other button
-                else {
-
-                    for (OriginalMenuButton item : this.buttonList) {
-
-                        Rectangle currentButtonBounds = this.getButtonCoordinates(item);
-
-                        item.pressed = false;
-                        item.hovered = currentButtonBounds.contains(cursor);
-                    }
-                }
-
-                this.pressedButton = null;
-            }
-        }
-
-        this.component.repaint();
-
-        return;
-    }
-
-
-    @Override
-    public void mouseClicked(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseEntered(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseExited(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseDragged(MouseEvent event) {
-        return;
-    }
-}
-
-
 class MainBackground extends OriginalBackgroundBase {
 
     public final BufferedImage menuImage;
     public final BufferedImage buttonImage;
     public final BufferedImage buttonImageHovered;
     public final BufferedImage buttonImageClicked;
-
-    public final OriginalMenuButton[] buttonList;
-    public final MenuEventListener eventListener;
 
     public final JPanel buttonsPanel;
     public final OriginalMenuButton tutorialButton;
@@ -250,6 +39,7 @@ class MainBackground extends OriginalBackgroundBase {
     public final OriginalMenuButton tipsTricksButton;
     public final OriginalMenuButton creditsButton;
     public final OriginalMenuButton exitGameButton;
+    public final OriginalMenuEventListener eventListener;
 
 
     public MainBackground(JSettlersFrame mainFrame) {
@@ -293,19 +83,19 @@ class MainBackground extends OriginalBackgroundBase {
             new Color(0, 12, 64)
         );
 
-        this.tutorialButton = new OriginalMenuButton(buttonProps, "Tutorial", 0, 0);
-        this.campaignButton = new OriginalMenuButton(buttonProps, "Campaign", 0, 40);
-        this.missionCDCampaignButton = new OriginalMenuButton(buttonProps, "Mission CD Campaign", 0, 80);
-        this.amazonCampaignButton = new OriginalMenuButton(buttonProps, "Amazon Campaign", 0, 120);
-        this.campaignDifficultyButton = new OriginalMenuButton(buttonProps, "Campaign: Normal", 0, 160);
-        this.singlePlayerScenarioButton = new OriginalMenuButton(buttonProps, "Single Player: Scenario", 0, 200);
-        this.multiplayerGameLanButton = new OriginalMenuButton(buttonProps, "Multi-player Game: LAN", 0, 240);
-        this.multiplayerGameInternetButton = new OriginalMenuButton(buttonProps, "Multi-player Game: Internet", 0, 280);
-        this.loadGameButton = new OriginalMenuButton(buttonProps, "Load Game", 0, 320);
-        this.onlineHelpButton = new OriginalMenuButton(buttonProps, "Online Help", 0, 380);
-        this.tipsTricksButton = new OriginalMenuButton(buttonProps, "Tips & Tricks", 0, 420);
-        this.creditsButton = new OriginalMenuButton(buttonProps, "Credits", 0, 460);
-        this.exitGameButton = new OriginalMenuButton(buttonProps, "Exit Game", 0, 520);
+        this.tutorialButton = new OriginalMenuButton(buttonProps, "Tutorial", 80, 20);
+        this.campaignButton = new OriginalMenuButton(buttonProps, "Campaign", 80, 60);
+        this.missionCDCampaignButton = new OriginalMenuButton(buttonProps, "Mission CD Campaign", 80, 100);
+        this.amazonCampaignButton = new OriginalMenuButton(buttonProps, "Amazon Campaign", 80, 140);
+        this.campaignDifficultyButton = new OriginalMenuButton(buttonProps, "Campaign: Normal", 80, 180);
+        this.singlePlayerScenarioButton = new OriginalMenuButton(buttonProps, "Single Player: Scenario", 80, 220);
+        this.multiplayerGameLanButton = new OriginalMenuButton(buttonProps, "Multi-player Game: LAN", 80, 260);
+        this.multiplayerGameInternetButton = new OriginalMenuButton(buttonProps, "Multi-player Game: Internet", 80, 300);
+        this.loadGameButton = new OriginalMenuButton(buttonProps, "Load Game", 80, 340);
+        this.onlineHelpButton = new OriginalMenuButton(buttonProps, "Online Help", 80, 400);
+        this.tipsTricksButton = new OriginalMenuButton(buttonProps, "Tips & Tricks", 80, 440);
+        this.creditsButton = new OriginalMenuButton(buttonProps, "Credits", 80, 480);
+        this.exitGameButton = new OriginalMenuButton(buttonProps, "Exit Game", 80, 540);
 
         // add button event listeners
         this.tutorialButton.addActionListener(
@@ -332,8 +122,8 @@ class MainBackground extends OriginalBackgroundBase {
         // add buttons to panel
         this.buttonsPanel = new JPanel(null);
 
-        this.buttonsPanel.setSize(new Dimension(172, 552));
         this.buttonsPanel.setOpaque(false);
+        this.buttonsPanel.setBounds(0, 0, 800, 600);
 
         this.buttonsPanel.add(this.tutorialButton);
         this.buttonsPanel.add(this.campaignButton);
@@ -350,7 +140,7 @@ class MainBackground extends OriginalBackgroundBase {
         this.buttonsPanel.add(this.exitGameButton);
 
         // add menu event listener
-        this.buttonList = new OriginalMenuButton[] {
+        OriginalMenuButton[] buttonList =  {
             this.tutorialButton,
             this.campaignButton,
             this.missionCDCampaignButton,
@@ -366,7 +156,7 @@ class MainBackground extends OriginalBackgroundBase {
             this.exitGameButton
         };
 
-        this.eventListener = new MenuEventListener(this, this.buttonList);
+        this.eventListener = new OriginalMenuEventListener(this, buttonList);
 
         this.addMouseListener(this.eventListener);
         this.addMouseMotionListener(this.eventListener);
@@ -387,10 +177,8 @@ class MainBackground extends OriginalBackgroundBase {
 
         tempContext.drawImage(this.menuImage, 0, 0, this.tempBuffer.getWidth(), this.tempBuffer.getHeight(), this);
 
-        tempContext.translate(80, 20);
         this.buttonsPanel.printAll(tempContext);
 
-        tempContext.translate(-80, -20);
         tempContext.setColor(new Color(255, 223, 0));
         tempContext.setFont(this.menuFont.deriveFont(11f));
         tempContext.drawString(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588);
@@ -414,6 +202,9 @@ class MainBackground extends OriginalBackgroundBase {
  * as well as the buttons and any additional text painted onto the menu.
  */
 public class OriginalMainMenu extends OriginalMenuBase {
+
+    // todo: make background class generic for all menus
+    // note: menu class should be declarative with all necessary components for rendering respective menu
 
     public OriginalMainMenu(JSettlersFrame mainFrame) {
 

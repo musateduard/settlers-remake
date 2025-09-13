@@ -32,6 +32,7 @@ class CampaignBackground extends OriginalBackgroundBase {
     public final BufferedImage buttonImage;
     public final BufferedImage buttonImagePressed;
     public final BufferedImage buttonImageHovered;
+    public final OriginalMenuEventListener eventListener;
 
 
     public CampaignBackground(JSettlersFrame mainFrame) {
@@ -43,7 +44,7 @@ class CampaignBackground extends OriginalBackgroundBase {
 
         SingleImage campaignImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 7));
         SingleImage buttonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 4, 0));
-        SingleImage buttonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 4, 0));
+        SingleImage buttonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 4, 1));
 
         for (SingleImage item : List.of(campaignImage, buttonImage, buttonImagePressed)) {
 
@@ -76,6 +77,16 @@ class CampaignBackground extends OriginalBackgroundBase {
         this.asians = new OriginalMenuButton(buttonProps, "Asians", 664, 200);
 
         // add button event listeners
+        OriginalMenuButton[] buttonList = {
+            this.egyptians,
+            this.romans,
+            this.asians
+        };
+
+        this.eventListener = new OriginalMenuEventListener(this, buttonList);
+
+        this.addMouseListener(this.eventListener);
+        this.addMouseMotionListener(this.eventListener);
 
         // add buttons panel
         this.buttonsPanel = new JPanel(null);
@@ -95,8 +106,6 @@ class CampaignBackground extends OriginalBackgroundBase {
 
     @Override
     public void paintComponent(Graphics graphics) {
-
-        // todo: add hover effects
 
         super.paintComponent(graphics);
 
@@ -124,28 +133,23 @@ class CampaignBackground extends OriginalBackgroundBase {
         tempContext.drawString("Tsu Tang (medium)", 602, 367);
 
         // draw title
-        // note: only use antialiasing for larger text
-        // note: antialiasing on smaller fonts make them unreadable but is necessary for larger fonts
-        tempContext.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);  // HRGB looks good
-
         String title = "Choose a Race";
         int[] letterXOffsets = {0, 10, 18, 27, 36, 44, 53, 57, 66, 70, 81, 90, 98};
 
-        // note: this loop is necessary for proper letter spacing
+        // note: these loops are necessary for proper letter spacing
+
+        tempContext.setColor(Color.BLACK);
+        tempContext.setFont(this.menuFontBold.deriveFont(Font.BOLD, 14.00f));
 
         // draw title shadow
-        tempContext.setColor(Color.BLACK);
-
         for (int index = 0; index < title.length(); index += 1) {
-            tempContext.setFont(this.menuFont.deriveFont(Font.BOLD, 14.00f));
             tempContext.drawString(String.format("%c", title.charAt(index)), 351 + letterXOffsets[index], 54);
         }
 
-        // draw title text
         tempContext.setColor(new Color(248, 92, 24));
 
+        // draw title text
         for (int index = 0; index < title.length(); index += 1) {
-            tempContext.setFont(this.menuFont.deriveFont(Font.BOLD, 14.00f));
             tempContext.drawString(String.format("%c", title.charAt(index)), 350 + letterXOffsets[index], 53);
         }
 

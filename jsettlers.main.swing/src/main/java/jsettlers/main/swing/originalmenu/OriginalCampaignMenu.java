@@ -92,14 +92,13 @@ public class OriginalCampaignMenu extends JPanel {
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,
             buttonImagePressed.convertToBufferedImage(),
-            menuFont, 11, true,
-            new Color(248, 220, 0)
+            menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(248, 220, 0), true
         );
 
         OriginalMenuButton[] buttonList = {
-            new OriginalMenuButton(buttonProps, "Egyptians", 56, 164),
-            new OriginalMenuButton(buttonProps, "Romans", 240, 440),
-            new OriginalMenuButton(buttonProps, "Asians", 664, 200)
+            new OriginalMenuButton("Egyptians", 56, 164, buttonProps),
+            new OriginalMenuButton("Romans", 240, 440, buttonProps),
+            new OriginalMenuButton("Asians", 664, 200, buttonProps)
         };
 
         // todo: add button event listeners
@@ -107,19 +106,19 @@ public class OriginalCampaignMenu extends JPanel {
         // declare all text
         TextProps titleTextProps = new TextProps(
             menuFontBold.deriveFont(Font.BOLD, 14.00f),
-            new Color(248, 92, 24), 1, 1
+            new Color(248, 92, 24), true
         );
 
         TextProps regularTextProps = new TextProps(
             menuFont.deriveFont(Font.PLAIN, 11.00f),
-                new Color(248, 220, 0), 0, 0
+                new Color(248, 220, 0), false
         );
 
-        MenuText[] textList = {
-            new MenuText(titleTextProps, "Choose a Race", 350, 53, new int[] {0, 10, 18, 27, 36, 44, 53, 57, 66, 70, 81, 90, 98}),
-            new MenuText(regularTextProps, "Ramadamses (hard)", 125, 367, null),
-            new MenuText(regularTextProps, "Septimus Marius (easy)", 342, 515, null),
-            new MenuText(regularTextProps, "Tsu Tang (medium)", 602, 367, null)
+        OriginalMenuText[] textList = {
+            new OriginalMenuText("Choose a Race", 350, 53, titleTextProps),
+            new OriginalMenuText("Ramadamses (hard)", 125, 367, regularTextProps),
+            new OriginalMenuText("Septimus Marius (easy)", 342, 515, regularTextProps),
+            new OriginalMenuText("Tsu Tang (medium)", 602, 367, regularTextProps)
         };
 
         MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, textList);

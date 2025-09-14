@@ -32,9 +32,6 @@ public class OriginalMainMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
 
-    // todo: make background class generic for all menus
-    // note: menu class should be declarative with all necessary components for rendering respective menu
-
 
     public OriginalMainMenu(JSettlersFrame mainFrame) {
 
@@ -84,28 +81,27 @@ public class OriginalMainMenu extends JPanel {
             exception.printStackTrace();
         }
 
-        // declare all buttons with event listeners
+        // declare all buttons and event listeners
         ButtonProps buttonProps = new ButtonProps(
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,
             buttonImagePressed.convertToBufferedImage(),
-            menuFont, 11, false,
-            new Color(0, 12, 64)
+            menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(0, 12, 64), false
         );
 
-        OriginalMenuButton tutorialButton = new OriginalMenuButton(buttonProps, "Tutorial", 80, 20);
-        OriginalMenuButton campaignButton = new OriginalMenuButton(buttonProps, "Campaign", 80, 60);
-        OriginalMenuButton missionCDCampaignButton = new OriginalMenuButton(buttonProps, "Mission CD Campaign", 80, 100);
-        OriginalMenuButton amazonCampaignButton = new OriginalMenuButton(buttonProps, "Amazon Campaign", 80, 140);
-        OriginalMenuButton campaignDifficultyButton = new OriginalMenuButton(buttonProps, "Campaign: Normal", 80, 180);
-        OriginalMenuButton singlePlayerScenarioButton = new OriginalMenuButton(buttonProps, "Single Player: Scenario", 80, 220);
-        OriginalMenuButton multiplayerGameLanButton = new OriginalMenuButton(buttonProps, "Multi-player Game: LAN", 80, 260);
-        OriginalMenuButton multiplayerGameInternetButton = new OriginalMenuButton(buttonProps, "Multi-player Game: Internet", 80, 300);
-        OriginalMenuButton loadGameButton = new OriginalMenuButton(buttonProps, "Load Game", 80, 340);
-        OriginalMenuButton onlineHelpButton = new OriginalMenuButton(buttonProps, "Online Help", 80, 400);
-        OriginalMenuButton tipsTricksButton = new OriginalMenuButton(buttonProps, "Tips & Tricks", 80, 440);
-        OriginalMenuButton creditsButton = new OriginalMenuButton(buttonProps, "Credits", 80, 480);
-        OriginalMenuButton exitGameButton = new OriginalMenuButton(buttonProps, "Exit Game", 80, 540);
+        OriginalMenuButton tutorialButton = new OriginalMenuButton("Tutorial", 80, 20, buttonProps);
+        OriginalMenuButton campaignButton = new OriginalMenuButton("Campaign", 80, 60, buttonProps);
+        OriginalMenuButton missionCDCampaignButton = new OriginalMenuButton("Mission CD Campaign", 80, 100, buttonProps);
+        OriginalMenuButton amazonCampaignButton = new OriginalMenuButton("Amazon Campaign", 80, 140, buttonProps);
+        OriginalMenuButton campaignDifficultyButton = new OriginalMenuButton("Campaign: Normal", 80, 180, buttonProps);
+        OriginalMenuButton singlePlayerScenarioButton = new OriginalMenuButton("Single Player: Scenario", 80, 220, buttonProps);
+        OriginalMenuButton multiplayerGameLanButton = new OriginalMenuButton("Multi-player Game: LAN", 80, 260, buttonProps);
+        OriginalMenuButton multiplayerGameInternetButton = new OriginalMenuButton("Multi-player Game: Internet", 80, 300, buttonProps);
+        OriginalMenuButton loadGameButton = new OriginalMenuButton("Load Game", 80, 340, buttonProps);
+        OriginalMenuButton onlineHelpButton = new OriginalMenuButton("Online Help", 80, 400, buttonProps);
+        OriginalMenuButton tipsTricksButton = new OriginalMenuButton("Tips & Tricks", 80, 440, buttonProps);
+        OriginalMenuButton creditsButton = new OriginalMenuButton("Credits", 80, 480, buttonProps);
+        OriginalMenuButton exitGameButton = new OriginalMenuButton("Exit Game", 80, 540, buttonProps);
 
         tutorialButton.addActionListener(
             (event) -> {
@@ -117,6 +113,13 @@ public class OriginalMainMenu extends JPanel {
         campaignButton.addActionListener(
             (event) -> {
                 this.mainFrame.showOriginalCampaignMenu();
+                return;
+            }
+        );
+
+        singlePlayerScenarioButton.addActionListener(
+            (event) -> {
+                this.mainFrame.showOriginalScenarioMenu();
                 return;
             }
         );
@@ -147,15 +150,14 @@ public class OriginalMainMenu extends JPanel {
         // todo: finish all event listeners
 
         // declare all text
-        TextProps textProps = new TextProps(
-            menuFont.deriveFont(Font.PLAIN, 11.00f),
-            new Color(255, 223, 0), 0, 0
-        );
+        TextProps textProps = new TextProps(menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(255, 223, 0), false);
+        OriginalMenuText version = new OriginalMenuText(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588, textProps);
 
-        MenuText[] textList = {
-            new MenuText(textProps, String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588, null),
+        OriginalMenuText[] textList = {
+            version
         };
 
+        // add background to menu
         MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, textList);
         this.add(background);
 

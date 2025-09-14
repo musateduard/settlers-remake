@@ -18,19 +18,17 @@ public class OriginalMenuButton extends JButton {
     public boolean pressed;
 
     public final Font textFont;
-    public final int fontSize;
-    public final boolean shadow;
+    public final boolean textShadow;
 
     public final BufferedImage buttonImage;
     public final BufferedImage buttonImageHovered;
     public final BufferedImage buttonImagePressed;
 
 
-    public OriginalMenuButton(ButtonProps props, String buttonText, int offsetX, int offsetY) {
+    public OriginalMenuButton(String buttonText, int offsetX, int offsetY, ButtonProps props) {
 
-        this.textFont = props.buttonFont();
-        this.fontSize = props.fontSize();
-        this.shadow = props.shadow();
+        this.textFont = props.textFont();
+        this.textShadow = props.shadow();
 
         this.buttonImage = props.buttonImage();
         this.buttonImageHovered = props.buttonImageHovered();
@@ -49,7 +47,7 @@ public class OriginalMenuButton extends JButton {
         this.setContentAreaFilled(false);
         this.setOpaque(false);
         this.setForeground(props.textColor());
-        this.setFont(this.textFont.deriveFont(Font.PLAIN, 11f));
+        this.setFont(this.textFont);
 
         return;
     }
@@ -72,9 +70,9 @@ public class OriginalMenuButton extends JButton {
             graphics.drawImage(this.buttonImage, 0, 0, this.getWidth(), this.getHeight(), this);
         }
 
-        if (this.shadow) {
+        if (this.textShadow) {
 
-            graphics.setFont(this.textFont.deriveFont((float) this.fontSize));
+            graphics.setFont(this.textFont);
 
             FontMetrics metrics = graphics.getFontMetrics();
 

@@ -7,6 +7,5 @@ import java.awt.Color;
 public record TextProps(
     Font textFont,
     Color textColor,
-    int shadowX,
-    int shadowY
+    boolean shadow
 ) {}

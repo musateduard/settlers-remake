@@ -38,8 +38,6 @@ public class OriginalMainMenu extends JPanel {
 
     public OriginalMainMenu(JSettlersFrame mainFrame) {
 
-        // super();
-
         this.mainFrame = mainFrame;
 
         this.setOpaque(true);

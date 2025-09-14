@@ -59,7 +59,7 @@ public class OriginalCampaignMenu extends JPanel {
         assert buttonImage instanceof NullImage == false;
         assert buttonImagePressed instanceof NullImage == false;
 
-        RescaleOp brightness = new RescaleOp(0.95f, 0, null);
+        RescaleOp brightness = new RescaleOp(1.10f, 0, null);
         brightness.filter(buttonImage.convertToBufferedImage(), buttonImageHovered);
 
         // load all fonts
@@ -87,7 +87,7 @@ public class OriginalCampaignMenu extends JPanel {
             exception.printStackTrace();
         }
 
-        // declare all buttons with event listeners
+        // declare all buttons and event listeners
         ButtonProps buttonProps = new ButtonProps(
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,

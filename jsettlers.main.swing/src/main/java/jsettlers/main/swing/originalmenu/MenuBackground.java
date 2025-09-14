@@ -1,16 +1,17 @@
 package jsettlers.main.swing.originalmenu;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
 
 /**
- * this class is a canvas on which all menu elements get painted on. it holds an internal buffer
+ * this class is a canvas on which all menu elements get painted. it holds an internal {@link BufferedImage}
  * of fixed size of 800 x 600 and all images and text get painted on this buffer. the buffer
  * then gets painted on the {@link JPanel} background and the panel is added to the actual menu component.
  * this panel is set to scale at a fixed aspect ratio of 4:3.
@@ -22,11 +23,11 @@ public class MenuBackground extends JPanel {
     public final JPanel buttonsPanel;
     public final OriginalMenuButton[] buttonList;
     public final OriginalMenuEventListener eventListener;
-    public final MenuText[] textList;
+    public final OriginalMenuText[] textList;
     public final double idealAspectRatio = (double) 800 / (double) 600;
 
 
-    public MenuBackground(BufferedImage menuImage, OriginalMenuButton[] buttonList, MenuText[] textList) {
+    public MenuBackground(BufferedImage menuImage, OriginalMenuButton[] buttonList, OriginalMenuText[] textList) {
 
         this.menuImage = menuImage;
         this.buttonList = buttonList;
@@ -61,10 +62,14 @@ public class MenuBackground extends JPanel {
         graphics.setColor(Color.WHITE);
         graphics.fillRect(0, 0, this.getWidth(), this.getHeight());
 
-        // note: tempBuffer has a fixed size of 800 x 600
-        // note: all images are painted on temp buffer which is then painted onto the main frame
-        // note: don't paint onto the menuImage directly; it will cause artifacts from text antialiasing
-        // note: text antialiasing artifacts make text look thicker on each resize
+        /*
+        note:
+
+        tempBuffer has a fixed size of 800 x 600
+        all images are painted on temp buffer which is then painted onto the main frame
+        don't paint onto the menuImage directly; it will cause artifacts from text antialiasing
+        artifacts make text look thicker on each resize
+        */
 
         Graphics2D tempContext = this.tempBuffer.createGraphics();
 
@@ -73,49 +78,59 @@ public class MenuBackground extends JPanel {
         // paint buttons
         this.buttonsPanel.printAll(tempContext);
 
-        // paint text
-        for (MenuText item : this.textList) {
+        // draw text based on font size and shadow
+        for (OriginalMenuText item : this.textList) {
 
             tempContext.setFont(item.textFont);
+            FontMetrics metrics = tempContext.getFontMetrics();
 
-            // draw first if text has shadow
-            if (item.shadowX != 0 || item.shadowY != 0) {
+            // draw shadow first
+            if (item.shadow == true) {
 
                 tempContext.setColor(Color.BLACK);
 
-                // text has letter spacing
-                if (item.letterSpacing != null) {
+                // draw text with proper letter spacing
+                if (item.textFont.isBold()) {
 
+                    int letterOffset = 0;
                     for (int index = 0; index < item.textString.length(); index += 1) {
 
-                        String letter = String.format("%c", item.textString.charAt(index));
-                        int letterX = item.offsetX + item.shadowX + item.letterSpacing[index];
-                        int letterY = item.offsetY + item.shadowY;
+                        char letter = item.textString.charAt(index);
+                        int letterX = item.offsetX + 1 + letterOffset;
+                        int letterY = item.offsetY + 1;
 
-                        tempContext.drawString(letter, letterX, letterY);
+                        tempContext.drawString(String.valueOf(letter), letterX, letterY);
+
+                        letterOffset += metrics.charWidth(letter) - (letter == ' ' ? 0 : 1);
                     }
                 }
 
+                // draw text normally
                 else {
-                    tempContext.drawString(item.textString, item.offsetX + item.shadowX, item.offsetY + item.shadowY);
+                    tempContext.drawString(item.textString, item.offsetX + 1, item.offsetY + 1);
                 }
             }
 
-            // draw text
+            // draw text foreground
             tempContext.setColor(item.textColor);
 
-            if (item.letterSpacing != null) {
+            // draw text with letter spacing
+            if (item.textFont.isBold()) {
 
+                int letterOffset = 0;
                 for (int index = 0; index < item.textString.length(); index += 1) {
 
-                    String letter = String.format("%c", item.textString.charAt(index));
-                    int letterX = item.offsetX + item.letterSpacing[index];
+                    char letter = item.textString.charAt(index);
+                    int letterX = item.offsetX + letterOffset;
                     int letterY = item.offsetY;
 
-                    tempContext.drawString(letter, letterX, letterY);
+                    tempContext.drawString(String.valueOf(letter), letterX, letterY);
+
+                    letterOffset += metrics.charWidth(letter) - (letter == ' ' ? 0 : 1);
                 }
             }
 
+            // draw text normally
             else {
                 tempContext.drawString(item.textString, item.offsetX, item.offsetY);
             }

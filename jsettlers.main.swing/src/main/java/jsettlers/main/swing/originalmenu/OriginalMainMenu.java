@@ -117,9 +117,72 @@ public class OriginalMainMenu extends JPanel {
             }
         );
 
+        missionCDCampaignButton.addActionListener(
+            (event) -> {
+                System.out.printf("mission cd campaign pressed\n");
+                return;
+            }
+        );
+
+        amazonCampaignButton.addActionListener(
+            (event) -> {
+                System.out.printf("amazon campaign pressed\n");
+                return;
+            }
+        );
+
+        campaignDifficultyButton.addActionListener(
+            (event) -> {
+                System.out.printf("campaign difficulty toggled\n");
+                return;
+            }
+        );
+
         singlePlayerScenarioButton.addActionListener(
             (event) -> {
                 this.mainFrame.showOriginalScenarioMenu();
+                return;
+            }
+        );
+
+        multiplayerGameLanButton.addActionListener(
+            (event) -> {
+                System.out.printf("multiplayer lan pressed\n");
+                return;
+            }
+        );
+
+        multiplayerGameInternetButton.addActionListener(
+            (event) -> {
+                System.out.printf("multiplayer online pressed\n");
+                return;
+            }
+        );
+
+        loadGameButton.addActionListener(
+            (event) -> {
+                System.out.printf("load game pressed\n");
+                return;
+            }
+        );
+
+        onlineHelpButton.addActionListener(
+            (event) -> {
+                System.out.printf("online help pressed\n");
+                return;
+            }
+        );
+
+        tipsTricksButton.addActionListener(
+            (event) -> {
+                System.out.printf("tips and tricks pressed\n");
+                return;
+            }
+        );
+
+        creditsButton.addActionListener(
+            (event) -> {
+                System.out.printf("credits pressed\n");
                 return;
             }
         );
@@ -158,7 +221,7 @@ public class OriginalMainMenu extends JPanel {
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, textList);
+        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, textList, null);
         this.add(background);
 
         return;

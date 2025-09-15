@@ -7,7 +7,9 @@ import java.awt.Graphics2D;
 import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 
 /**
@@ -27,7 +29,11 @@ public class MenuBackground extends JPanel {
     public final double idealAspectRatio = (double) 800 / (double) 600;
 
 
-    public MenuBackground(BufferedImage menuImage, OriginalMenuButton[] buttonList, OriginalMenuText[] textList) {
+    public MenuBackground(
+        BufferedImage menuImage,
+        OriginalMenuButton[] buttonList,
+        OriginalMenuText[] textList,
+        JFormattedTextField[] inputFieldList) {
 
         this.menuImage = menuImage;
         this.buttonList = buttonList;
@@ -40,8 +46,16 @@ public class MenuBackground extends JPanel {
         this.buttonsPanel.setOpaque(false);
         this.buttonsPanel.setBounds(0, 0, 800, 600);
 
-        for (OriginalMenuButton item : this.buttonList) {
-            this.buttonsPanel.add(item);
+        if (buttonList != null) {
+            for (OriginalMenuButton button : this.buttonList) {
+                this.buttonsPanel.add(button);
+            }
+        }
+
+        if (inputFieldList != null) {
+            for (JFormattedTextField input : inputFieldList) {
+                buttonsPanel.add(input);
+            }
         }
 
         // add event listener

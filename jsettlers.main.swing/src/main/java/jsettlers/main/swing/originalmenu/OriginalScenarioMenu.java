@@ -9,7 +9,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.io.IOException;
 import java.io.InputStream;
+import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
@@ -38,6 +40,7 @@ public class OriginalScenarioMenu extends JPanel {
         this.setLayout(new GridBagLayout());
         this.setMinimumSize(new Dimension(800, 600));
 
+        // text colors
         Color regularColor = new Color(255, 223, 0);
         Color titleColor = new Color(248, 92, 24);
 
@@ -52,10 +55,12 @@ public class OriginalScenarioMenu extends JPanel {
         SingleImage mapsButtonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 0));
         SingleImage mapsButtonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 1));
         BufferedImage mapsButtonImageHovered = new BufferedImage(59, 22, BufferedImage.TYPE_INT_ARGB);
-        SingleImage upArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 6, 0));
-        SingleImage downArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 5, 0));
 
-        // todo: create hovered and pressed versions of arrow
+        SingleImage upArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 6, 0));
+        BufferedImage upArrowHovered = new BufferedImage(upArrow.getWidth(), upArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        SingleImage downArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 5, 0));
+        BufferedImage downArrowHovered = new BufferedImage(downArrow.getWidth(), downArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
         assert menuImage instanceof NullImage == false;
         assert buttonImage instanceof NullImage == false;
@@ -69,6 +74,8 @@ public class OriginalScenarioMenu extends JPanel {
 
         brightness.filter(buttonImage.convertToBufferedImage(), buttonImageHovered);
         brightness.filter(mapsButtonImage.convertToBufferedImage(), mapsButtonImageHovered);
+        brightness.filter(upArrow.convertToBufferedImage(), upArrowHovered);
+        brightness.filter(downArrow.convertToBufferedImage(), downArrowHovered);
 
         // load all fonts
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -123,32 +130,57 @@ public class OriginalScenarioMenu extends JPanel {
             null, null, false
         );
 
-        ButtonProps arrowUpProps = new ButtonProps(
+        ButtonProps upArrowProps = new ButtonProps(
             upArrow.convertToBufferedImage(),
-            upArrow.convertToBufferedImage(),
+            upArrowHovered,
             upArrow.convertToBufferedImage(),
             null, null, false
         );
 
-        ButtonProps arrowDownProps = new ButtonProps(
+        ButtonProps downArrowProps = new ButtonProps(
             downArrow.convertToBufferedImage(),
-            downArrow.convertToBufferedImage(),
+            downArrowHovered,
             downArrow.convertToBufferedImage(),
             null, null, false
         );
 
-        // todo: add event listeners
+        /*
+        note:
+
+        arrows should be part of dropdown lists or number inputs not standalone buttons
+        only real buttons on this menu are maps, cancel and ok
+
+        todo: add event listeners
+        todo: add dropdown lists
+        todo: add number inputs
+        todo: add text inputs
+        */
 
         OriginalMenuButton cancelButton = new OriginalMenuButton("Cancel", 560, 556, buttonProps);
         OriginalMenuButton okButton = new OriginalMenuButton("OK", 680, 556, buttonProps);
         OriginalMenuButton mapsButton = new OriginalMenuButton(null, 321, 170, mapsButtonProps);
-        OriginalMenuButton goodsArrow = new OriginalMenuButton(null, 369, 246, arrowDownProps);
-        OriginalMenuButton gameTypeArrow = new OriginalMenuButton(null, 369, 342, arrowDownProps);
-        OriginalMenuButton freeForAllArrow = new OriginalMenuButton(null, 369, 374, arrowDownProps);
-        OriginalMenuButton nrOfTeamsUpArrow = new OriginalMenuButton(null, 301, 457, arrowUpProps);
-        OriginalMenuButton nrOfTeamsDownArrow = new OriginalMenuButton(null, 301, 466, arrowDownProps);
-        OriginalMenuButton playersPerTeamUpArrow = new OriginalMenuButton(null, 301, 489, arrowUpProps);
-        OriginalMenuButton playersPerTeamDownArrow = new OriginalMenuButton(null, 301, 498, arrowDownProps);
+
+        OriginalMenuButton goodsArrow = new OriginalMenuButton(null, 369, 246, downArrowProps);
+        OriginalMenuButton gameTypeArrow = new OriginalMenuButton(null, 369, 342, downArrowProps);
+        OriginalMenuButton freeForAllArrow = new OriginalMenuButton(null, 369, 374, downArrowProps);
+        OriginalMenuButton nrOfTeamsUpArrow = new OriginalMenuButton(null, 301, 457, upArrowProps);
+        OriginalMenuButton nrOfTeamsDownArrow = new OriginalMenuButton(null, 301, 466, downArrowProps);
+        OriginalMenuButton playersPerTeamUpArrow = new OriginalMenuButton(null, 301, 489, upArrowProps);
+        OriginalMenuButton playersPerTeamDownArrow = new OriginalMenuButton(null, 301, 498, downArrowProps);
+
+        cancelButton.addActionListener(
+            (event) -> {
+                this.returnToMainMenu();
+                return;
+            }
+        );
+
+        okButton.addActionListener(
+            (event) -> {
+                System.out.printf("ok button pressed\n");
+                return;
+            }
+        );
 
         OriginalMenuButton[] buttonList = {
             cancelButton,
@@ -161,6 +193,20 @@ public class OriginalScenarioMenu extends JPanel {
             nrOfTeamsDownArrow,
             playersPerTeamUpArrow,
             playersPerTeamDownArrow
+        };
+
+        // declare all input fields and their event listeners
+        JFormattedTextField test1 = new JFormattedTextField("player's game");
+
+        test1.setBounds(380, 86, 228, 13);
+        test1.setOpaque(false);
+        test1.setBackground(new Color(0, 0, 0, 0));
+        test1.setForeground(regularColor);
+        test1.setBorder(null);
+        test1.setFont(menuFont.deriveFont(Font.PLAIN, 11.00f));
+
+        JFormattedTextField[] inputFieldList = {
+            test1
         };
 
         // declare all text
@@ -202,9 +248,15 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList);
+        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList);
         this.add(background);
 
+        return;
+    }
+
+
+    public void returnToMainMenu() {
+        this.mainFrame.showOriginalMainMenu();
         return;
     }
 

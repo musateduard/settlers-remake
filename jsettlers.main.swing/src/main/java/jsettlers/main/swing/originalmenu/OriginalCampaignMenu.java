@@ -121,7 +121,7 @@ public class OriginalCampaignMenu extends JPanel {
             new OriginalMenuText("Tsu Tang (medium)", 602, 367, regularTextProps)
         };
 
-        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, textList);
+        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, textList, null);
 
         this.add(background);
 

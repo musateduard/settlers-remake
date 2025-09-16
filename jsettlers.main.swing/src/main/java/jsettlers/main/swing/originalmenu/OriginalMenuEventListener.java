@@ -1,6 +1,8 @@
 package jsettlers.main.swing.originalmenu;
 
+import javax.swing.JButton;
 import javax.swing.JPanel;
+import java.awt.Component;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -67,6 +69,24 @@ public class OriginalMenuEventListener implements MouseListener, MouseMotionList
         // todo: create new event and dispatch it to internal panel instead of looping buttons
 
         Point cursor = this.getScaledPosition(event);
+        Component comp = this.internalPanel.getComponentAt(cursor);
+
+        if (comp == this.internalPanel) {
+            // System.out.printf("component is internal panel\n");
+        }
+
+        else if (comp instanceof OriginalMenuButton) {
+            Point trans = this.getScaledPosition(event);
+            int offsetX = trans.x - comp.getX();
+            int offsetY = trans.y - comp.getY();
+            System.out.printf("dispatching event to button %s at %d %d\n", ((OriginalMenuButton) comp).getText(), offsetX, offsetY);
+            MouseEvent newEvent = new MouseEvent(comp, MouseEvent.MOUSE_MOVED, event.getWhen(), event.getModifiersEx(), offsetX, offsetY, event.getClickCount(), event.isPopupTrigger());
+            comp.dispatchEvent(newEvent);
+        }
+
+        else {
+            System.out.printf("other element hovered\n");
+        }
 
         // set hovered status
         for (OriginalMenuButton item : this.buttonList) {

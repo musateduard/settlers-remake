@@ -1,14 +1,17 @@
 package jsettlers.main.swing.originalmenu;
 
-import java.awt.Color;
 import java.awt.Font;
-import java.awt.FontMetrics;
+import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.FontMetrics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import javax.swing.JButton;
 
 
-public class OriginalMenuButton extends JButton {
+public class OriginalMenuButton extends JButton implements MouseListener, MouseMotionListener {
 
     public final int buttonWidth;
     public final int buttonHeight;
@@ -48,6 +51,9 @@ public class OriginalMenuButton extends JButton {
         this.setOpaque(false);
         this.setForeground(props.textColor());
         this.setFont(this.textFont);
+
+        this.addMouseMotionListener(this);
+        this.addMouseListener(this);
 
         return;
     }
@@ -89,6 +95,52 @@ public class OriginalMenuButton extends JButton {
 
         super.paintComponent(graphics);
 
+        return;
+    }
+
+
+    @Override
+    public void mouseClicked(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mousePressed(MouseEvent event) {
+        System.out.printf("mouse pressed dfghjfdgjhdfgjg\n");
+        return;
+    }
+
+
+    @Override
+    public void mouseReleased(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseEntered(MouseEvent event) {
+        System.out.printf("mouse entered button %s\n", this.getText());
+        return;
+    }
+
+
+    @Override
+    public void mouseExited(MouseEvent event) {
+        System.out.printf("mouse exited button %s\n", this.getText());
+        return;
+    }
+
+
+    @Override
+    public void mouseDragged(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseMoved(MouseEvent event) {
+        System.out.printf("mouse moved inside button %s\n", this.getText());
         return;
     }
 }

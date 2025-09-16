@@ -10,13 +10,28 @@ import java.awt.event.MouseMotionListener;
 
 public class OriginalMenuEventListener implements MouseListener, MouseMotionListener {
 
+    /*
+    todo: add active overlay member that holds current active overlay
+
+    note:
+    mouse events should be passed to the upper most overlay
+    the menus underneath should keep their previous state while overlay is visible
+
+    note:
+    button list always refers to the current menu's button list
+    this needs to be adjusted to the current layer's button list
+    we need to be able to retrieve the current layer button list
+    */
+
+    public final JPanel internalPanel;
     public final JPanel parentComponent;
     public final OriginalMenuButton[] buttonList;
     public OriginalMenuButton pressedButton;
 
 
-    public OriginalMenuEventListener(JPanel menuPanel, OriginalMenuButton[] buttonList) {
+    public OriginalMenuEventListener(JPanel menuPanel, OriginalMenuButton[] buttonList, JPanel internalPanel) {
         this.parentComponent = menuPanel;
+        this.internalPanel = internalPanel;
         this.buttonList = buttonList;
         return;
     }
@@ -41,10 +56,15 @@ public class OriginalMenuEventListener implements MouseListener, MouseMotionList
     }
 
 
+    /**
+     * this method listens for {@link MouseEvent} events and marks buttons as hovered accordingly.
+     *
+     * @param event the event to be processed
+     */
     @Override
     public void mouseMoved(MouseEvent event) {
 
-        // when mouse moves check each button to see if mouse is hovering
+        // todo: create new event and dispatch it to internal panel instead of looping buttons
 
         Point cursor = this.getScaledPosition(event);
 

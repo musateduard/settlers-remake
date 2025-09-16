@@ -9,7 +9,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.swing.JFormattedTextField;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
+import java.util.ArrayList;
 
 
 /**
@@ -20,6 +20,8 @@ import javax.swing.JTextField;
  */
 public class MenuBackground extends JPanel {
 
+    // todo: use JLayeredPane to to draw dialogs and dropdown lists
+
     public final BufferedImage menuImage;
     public final BufferedImage tempBuffer;
     public final JPanel buttonsPanel;
@@ -27,6 +29,8 @@ public class MenuBackground extends JPanel {
     public final OriginalMenuEventListener eventListener;
     public final OriginalMenuText[] textList;
     public final double idealAspectRatio = (double) 800 / (double) 600;
+
+    public ArrayList<JPanel> overlayList;
 
 
     public MenuBackground(
@@ -59,11 +63,29 @@ public class MenuBackground extends JPanel {
         }
 
         // add event listener
-        this.eventListener = new OriginalMenuEventListener(this, this.buttonList);
+        this.eventListener = new OriginalMenuEventListener(this, this.buttonList, this.buttonsPanel);
 
         this.addMouseListener(this.eventListener);
         this.addMouseMotionListener(this.eventListener);
 
+        return;
+    }
+
+
+    /*
+    note:
+
+    internal panel should handle all swing component logic without having to handle events
+    this should be done in the menu event listener class
+    */
+    public void openDialog() {
+        System.out.printf("opening dialog window\n");
+        return;
+    }
+
+
+    public void openDropDownList() {
+        System.out.printf("opening dropdown list\n");
         return;
     }
 
@@ -149,6 +171,8 @@ public class MenuBackground extends JPanel {
                 tempContext.drawString(item.textString, item.offsetX, item.offsetY);
             }
         }
+
+        // todo: draw all overlays if any
 
         tempContext.dispose();
 

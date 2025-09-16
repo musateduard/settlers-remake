@@ -8,6 +8,7 @@ import java.awt.FontMetrics;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.util.ArrayList;
 
@@ -21,13 +22,21 @@ import java.util.ArrayList;
 public class MenuBackground extends JPanel {
 
     // todo: use JLayeredPane to to draw dialogs and dropdown lists
+    // todo: create bold version of ms sans serif 13
+    // todo: draw all overlays if any
+
+    /*
+    note:
+    overlays should be handled inside the internal panel not in paintComponent
+    ideally all elements should be handled inside the internal panel but due to limitations
+    in font letter spacing, labels are currently drawn inside paintComponent using context.drawString
+    */
 
     public final BufferedImage menuImage;
     public final BufferedImage tempBuffer;
-    public final JPanel buttonsPanel;
+    public final JPanel internalPanel;
     public final OriginalMenuButton[] buttonList;
     public final OriginalMenuEventListener eventListener;
-    public final OriginalMenuText[] textList;
     public final double idealAspectRatio = (double) 800 / (double) 600;
 
     public ArrayList<JPanel> overlayList;
@@ -36,34 +45,39 @@ public class MenuBackground extends JPanel {
     public MenuBackground(
         BufferedImage menuImage,
         OriginalMenuButton[] buttonList,
-        OriginalMenuText[] textList,
+        JLabel[] labelList,
         JFormattedTextField[] inputFieldList) {
 
         this.menuImage = menuImage;
         this.buttonList = buttonList;
-        this.textList = textList;
         this.tempBuffer = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
 
-        // add buttons panel
-        this.buttonsPanel = new JPanel(null);
+        // add internal panel
+        this.internalPanel = new JPanel(null);
 
-        this.buttonsPanel.setOpaque(false);
-        this.buttonsPanel.setBounds(0, 0, 800, 600);
+        this.internalPanel.setOpaque(false);
+        this.internalPanel.setBounds(0, 0, 800, 600);
 
         if (buttonList != null) {
             for (OriginalMenuButton button : this.buttonList) {
-                this.buttonsPanel.add(button);
+                this.internalPanel.add(button);
             }
         }
 
         if (inputFieldList != null) {
             for (JFormattedTextField input : inputFieldList) {
-                buttonsPanel.add(input);
+                internalPanel.add(input);
+            }
+        }
+
+        if (labelList != null) {
+            for (JLabel label : labelList) {
+                internalPanel.add(label);
             }
         }
 
         // add event listener
-        this.eventListener = new OriginalMenuEventListener(this, this.buttonList, this.buttonsPanel);
+        this.eventListener = new OriginalMenuEventListener(this, this.buttonList, this.internalPanel);
 
         this.addMouseListener(this.eventListener);
         this.addMouseMotionListener(this.eventListener);
@@ -90,6 +104,12 @@ public class MenuBackground extends JPanel {
     }
 
 
+    /**
+     * this method runs each time the menu canvas element gets redrawn. this happens on mouse move,
+     * mouse press, mouse release and window resize.
+     *
+     * @param graphics the <code>Graphics</code> object the provides the context to draw on.
+     */
     @Override
     public void paintComponent(Graphics graphics) {
 
@@ -104,75 +124,15 @@ public class MenuBackground extends JPanel {
         tempBuffer has a fixed size of 800 x 600
         all images are painted on temp buffer which is then painted onto the main frame
         don't paint onto the menuImage directly; it will cause artifacts from text antialiasing
-        artifacts make text look thicker on each resize
+        artifacts make text look thicker on each repaint
         */
 
         Graphics2D tempContext = this.tempBuffer.createGraphics();
 
         tempContext.drawImage(this.menuImage, 0, 0, this.tempBuffer.getWidth(), this.tempBuffer.getHeight(), this);
 
-        // paint buttons
-        this.buttonsPanel.printAll(tempContext);
-
-        // draw text based on font size and shadow
-        for (OriginalMenuText item : this.textList) {
-
-            tempContext.setFont(item.textFont);
-            FontMetrics metrics = tempContext.getFontMetrics();
-
-            // draw shadow first
-            if (item.shadow == true) {
-
-                tempContext.setColor(Color.BLACK);
-
-                // draw text with proper letter spacing
-                if (item.textFont.isBold()) {
-
-                    int letterOffset = 0;
-                    for (int index = 0; index < item.textString.length(); index += 1) {
-
-                        char letter = item.textString.charAt(index);
-                        int letterX = item.offsetX + 1 + letterOffset;
-                        int letterY = item.offsetY + 1;
-
-                        tempContext.drawString(String.valueOf(letter), letterX, letterY);
-
-                        letterOffset += metrics.charWidth(letter) - (letter == ' ' ? 0 : 1);
-                    }
-                }
-
-                // draw text normally
-                else {
-                    tempContext.drawString(item.textString, item.offsetX + 1, item.offsetY + 1);
-                }
-            }
-
-            // draw text foreground
-            tempContext.setColor(item.textColor);
-
-            // draw text with letter spacing
-            if (item.textFont.isBold()) {
-
-                int letterOffset = 0;
-                for (int index = 0; index < item.textString.length(); index += 1) {
-
-                    char letter = item.textString.charAt(index);
-                    int letterX = item.offsetX + letterOffset;
-                    int letterY = item.offsetY;
-
-                    tempContext.drawString(String.valueOf(letter), letterX, letterY);
-
-                    letterOffset += metrics.charWidth(letter) - (letter == ' ' ? 0 : 1);
-                }
-            }
-
-            // draw text normally
-            else {
-                tempContext.drawString(item.textString, item.offsetX, item.offsetY);
-            }
-        }
-
-        // todo: draw all overlays if any
+        // paint internal panel
+        this.internalPanel.printAll(tempContext);
 
         tempContext.dispose();
 

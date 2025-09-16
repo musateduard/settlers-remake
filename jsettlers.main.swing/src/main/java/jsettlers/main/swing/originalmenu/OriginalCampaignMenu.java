@@ -11,6 +11,7 @@ import java.awt.FontFormatException;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,25 +104,20 @@ public class OriginalCampaignMenu extends JPanel {
 
         // todo: add button event listeners
 
-        // declare all text
-        TextProps titleTextProps = new TextProps(
-            menuFontBold.deriveFont(Font.BOLD, 14.00f),
-            new Color(248, 92, 24), true
-        );
+        // declare all labels
+        TitleTextOrange menuTitle = new TitleTextOrange("Choose a Race", 350, 42);
+        LabelTextYellow descriptionEgyptians = new LabelTextYellow("Ramadamses (hard)", 125, 357);
+        LabelTextYellow descriptionRomans = new LabelTextYellow("Septimus Marius (easy)", 342, 505);
+        LabelTextYellow descriptionAsians = new LabelTextYellow("Tsu Tang (medium)", 602, 357);
 
-        TextProps regularTextProps = new TextProps(
-            menuFont.deriveFont(Font.PLAIN, 11.00f),
-                new Color(248, 220, 0), false
-        );
-
-        OriginalMenuText[] textList = {
-            new OriginalMenuText("Choose a Race", 350, 53, titleTextProps),
-            new OriginalMenuText("Ramadamses (hard)", 125, 367, regularTextProps),
-            new OriginalMenuText("Septimus Marius (easy)", 342, 515, regularTextProps),
-            new OriginalMenuText("Tsu Tang (medium)", 602, 367, regularTextProps)
+        JLabel[] labelList = {
+            menuTitle,
+            descriptionEgyptians,
+            descriptionRomans,
+            descriptionAsians
         };
 
-        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, textList, null);
+        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, labelList, null);
 
         this.add(background);
 

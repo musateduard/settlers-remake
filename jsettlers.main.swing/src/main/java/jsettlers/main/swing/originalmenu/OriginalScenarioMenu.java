@@ -10,6 +10,7 @@ import java.awt.image.RescaleOp;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -209,28 +210,24 @@ public class OriginalScenarioMenu extends JPanel {
             test1
         };
 
-        // declare all text
-        TextProps titleProps = new TextProps(menuFontBold.deriveFont(Font.BOLD, 14.00f), titleColor, true);
+        // declare all labels
+        TitleTextOrange gameSetup = new TitleTextOrange("Game Setup", 371, 38);
+        TitleTextOrange mapSettings = new TitleTextOrange("Map settings", 22, 142);
+        TitleTextOrange commonTeamSetups = new TitleTextOrange("Common Team Setups", 22, 302);
+        TitleTextOrange teamSettingsGeneral = new TitleTextOrange("Team Settings: General", 22, 426);
+        TitleTextOrange teamSettingsSpecific = new TitleTextOrange("Team Settings: Specific", 574, 142);
 
-        OriginalMenuText gameSetup = new OriginalMenuText("Game Setup", 371, 49, titleProps);
-        OriginalMenuText mapSettings = new OriginalMenuText("Map settings", 22, 153, titleProps);
-        OriginalMenuText commonTeamSetups = new OriginalMenuText("Common Team Setups", 22, 313, titleProps);
-        OriginalMenuText teamSettingsGeneral = new OriginalMenuText("Team Settings: General", 22, 437, titleProps);
-        OriginalMenuText teamSettingsSpecific = new OriginalMenuText("Team Settings: Specific", 574, 153, titleProps);
+        LabelTextYellow nameOfGame = new LabelTextYellow("Name of the Game", 254, 86);
+        LabelTextYellow map = new LabelTextYellow("Map:", 22, 174);
+        LabelTextYellow mapType = new LabelTextYellow("Map Type", 22, 206);
+        LabelTextYellow goods = new LabelTextYellow("Goods:", 22, 238);
+        LabelTextYellow gameType = new LabelTextYellow("Game Type:", 22, 334);
+        LabelTextYellow nrOfTeams = new LabelTextYellow("Number of Teams:", 22, 458);
+        LabelTextYellow playersPerTeam = new LabelTextYellow("Players per Team:", 22, 490);
+        LabelTextYellow players = new LabelTextYellow("Players", 629, 169);
+        LabelTextYellow computers = new LabelTextYellow("Computers", 697, 169);
 
-        TextProps regularTextProps = new TextProps(menuFont.deriveFont(Font.PLAIN, 11.00f), regularColor, false);
-
-        OriginalMenuText nameOfGame = new OriginalMenuText("Name of the Game", 254, 96, regularTextProps);
-        OriginalMenuText map = new OriginalMenuText("Map:", 22, 184, regularTextProps);
-        OriginalMenuText mapType = new OriginalMenuText("Map Type", 22, 216, regularTextProps);
-        OriginalMenuText goods = new OriginalMenuText("Goods:", 22, 248, regularTextProps);
-        OriginalMenuText gameType = new OriginalMenuText("Game Type:", 22, 344, regularTextProps);
-        OriginalMenuText nrOfTeams = new OriginalMenuText("Number of Teams:", 22, 468, regularTextProps);
-        OriginalMenuText playersPerTeam = new OriginalMenuText("Players per Team:", 22, 500, regularTextProps);
-        OriginalMenuText players = new OriginalMenuText("Players", 629, 179, regularTextProps);
-        OriginalMenuText computers = new OriginalMenuText("Computers", 697, 179, regularTextProps);
-
-        OriginalMenuText[] labelList = {
+        JLabel[] labelList = {
             gameSetup,
             mapSettings,
             commonTeamSetups,

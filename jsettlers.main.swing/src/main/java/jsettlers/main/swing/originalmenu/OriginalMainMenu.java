@@ -4,6 +4,9 @@ import java.awt.Font;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.RescaleOp;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
@@ -212,16 +215,15 @@ public class OriginalMainMenu extends JPanel {
 
         // todo: finish all event listeners
 
-        // declare all text
-        TextProps textProps = new TextProps(menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(255, 223, 0), false);
-        OriginalMenuText version = new OriginalMenuText(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 588, textProps);
+        // declare all labels
+        LabelTextYellow version = new LabelTextYellow(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 578);
 
-        OriginalMenuText[] textList = {
+        LabelTextYellow[] labelList = {
             version
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, textList, null);
+        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, null);
         this.add(background);
 
         return;

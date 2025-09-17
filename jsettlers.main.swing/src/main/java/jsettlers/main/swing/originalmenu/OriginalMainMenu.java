@@ -90,19 +90,19 @@ public class OriginalMainMenu extends JPanel {
             menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(0, 12, 64), false
         );
 
-        OriginalMenuButton tutorialButton = new OriginalMenuButton("Tutorial", 80, 20, buttonProps);
-        OriginalMenuButton campaignButton = new OriginalMenuButton("Campaign", 80, 60, buttonProps);
-        OriginalMenuButton missionCDCampaignButton = new OriginalMenuButton("Mission CD Campaign", 80, 100, buttonProps);
-        OriginalMenuButton amazonCampaignButton = new OriginalMenuButton("Amazon Campaign", 80, 140, buttonProps);
-        OriginalMenuButton campaignDifficultyButton = new OriginalMenuButton("Campaign: Normal", 80, 180, buttonProps);
-        OriginalMenuButton singlePlayerScenarioButton = new OriginalMenuButton("Single Player: Scenario", 80, 220, buttonProps);
-        OriginalMenuButton multiplayerGameLanButton = new OriginalMenuButton("Multi-player Game: LAN", 80, 260, buttonProps);
-        OriginalMenuButton multiplayerGameInternetButton = new OriginalMenuButton("Multi-player Game: Internet", 80, 300, buttonProps);
-        OriginalMenuButton loadGameButton = new OriginalMenuButton("Load Game", 80, 340, buttonProps);
-        OriginalMenuButton onlineHelpButton = new OriginalMenuButton("Online Help", 80, 400, buttonProps);
-        OriginalMenuButton tipsTricksButton = new OriginalMenuButton("Tips & Tricks", 80, 440, buttonProps);
-        OriginalMenuButton creditsButton = new OriginalMenuButton("Credits", 80, 480, buttonProps);
-        OriginalMenuButton exitGameButton = new OriginalMenuButton("Exit Game", 80, 540, buttonProps);
+        OriginalButton tutorialButton = new OriginalButton("Tutorial", 80, 20, buttonProps);
+        OriginalButton campaignButton = new OriginalButton("Campaign", 80, 60, buttonProps);
+        OriginalButton missionCDCampaignButton = new OriginalButton("Mission CD Campaign", 80, 100, buttonProps);
+        OriginalButton amazonCampaignButton = new OriginalButton("Amazon Campaign", 80, 140, buttonProps);
+        OriginalButton campaignDifficultyButton = new OriginalButton("Campaign: Normal", 80, 180, buttonProps);
+        OriginalButton singlePlayerScenarioButton = new OriginalButton("Single Player: Scenario", 80, 220, buttonProps);
+        OriginalButton multiplayerGameLanButton = new OriginalButton("Multi-player Game: LAN", 80, 260, buttonProps);
+        OriginalButton multiplayerGameInternetButton = new OriginalButton("Multi-player Game: Internet", 80, 300, buttonProps);
+        OriginalButton loadGameButton = new OriginalButton("Load Game", 80, 340, buttonProps);
+        OriginalButton onlineHelpButton = new OriginalButton("Online Help", 80, 400, buttonProps);
+        OriginalButton tipsTricksButton = new OriginalButton("Tips & Tricks", 80, 440, buttonProps);
+        OriginalButton creditsButton = new OriginalButton("Credits", 80, 480, buttonProps);
+        OriginalButton exitGameButton = new OriginalButton("Exit Game", 80, 540, buttonProps);
 
         // todo: finish all event listeners
 
@@ -181,7 +181,7 @@ public class OriginalMainMenu extends JPanel {
         creditsButton.addActionListener(menuListener);
         exitGameButton.addActionListener(menuListener);
 
-        OriginalMenuButton[] buttonList = {
+        OriginalButton[] buttonList = {
             tutorialButton,
             campaignButton,
             missionCDCampaignButton,

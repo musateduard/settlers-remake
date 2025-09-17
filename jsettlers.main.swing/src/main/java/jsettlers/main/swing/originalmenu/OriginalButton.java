@@ -12,7 +12,7 @@ import javax.swing.JButton;
 
 
 /**
- * note: {@link OriginalMenuButton} only receives events if they're dispatched from
+ * note: {@link OriginalButton} only receives events if they're dispatched from
  * {@link MenuBackground}. this is because this class and other swing components are only
  * added to the internal panel of {@link MenuBackground} and are not rendered directly
  * to the frame.
@@ -39,7 +39,7 @@ import javax.swing.JButton;
  * }
  * </pre>
  */
-public class OriginalMenuButton extends JButton implements MouseListener, MouseMotionListener {
+public class OriginalButton extends JButton implements MouseListener, MouseMotionListener {
 
     public final int buttonWidth;
     public final int buttonHeight;
@@ -56,7 +56,7 @@ public class OriginalMenuButton extends JButton implements MouseListener, MouseM
     public final BufferedImage buttonImagePressed;
 
 
-    public OriginalMenuButton(String buttonText, int offsetX, int offsetY, ButtonProps props) {
+    public OriginalButton(String buttonText, int offsetX, int offsetY, ButtonProps props) {
 
         this.textFont = props.textFont();
         this.textShadow = props.shadow();

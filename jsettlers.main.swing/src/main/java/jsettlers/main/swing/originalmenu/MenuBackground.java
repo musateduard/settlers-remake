@@ -52,17 +52,17 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
     public final JPanel internalPanel;
     public final BufferedImage menuImage;
     public final BufferedImage tempBuffer;
-    public final OriginalMenuButton[] buttonList;
+    public final OriginalButton[] buttonList;
     public final double idealAspectRatio = (double) 800 / (double) 600;
-    public OriginalMenuButton pressedButton;
-    public OriginalMenuButton hoveredButton;
+    public OriginalButton pressedButton;
+    public OriginalButton hoveredButton;
 
     public ArrayList<JPanel> overlayList;
 
 
     public MenuBackground(
         BufferedImage menuImage,
-        OriginalMenuButton[] buttonList,
+        OriginalButton[] buttonList,
         JLabel[] labelList,
         JFormattedTextField[] inputFieldList) {
 
@@ -77,7 +77,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         this.internalPanel.setBounds(0, 0, 800, 600);
 
         if (buttonList != null) {
-            for (OriginalMenuButton button : this.buttonList) {
+            for (OriginalButton button : this.buttonList) {
                 this.internalPanel.add(button);
             }
         }
@@ -236,7 +236,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             // do nothing
         }
 
-        else if (component instanceof OriginalMenuButton) {
+        else if (component instanceof OriginalButton) {
 
             /*
             note:
@@ -249,8 +249,8 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
                 this.hoveredButton.hovered = false;
             }
 
-            ((OriginalMenuButton) component).hovered = true;
-            this.hoveredButton = (OriginalMenuButton) component;
+            ((OriginalButton) component).hovered = true;
+            this.hoveredButton = (OriginalButton) component;
         }
 
         else {
@@ -277,14 +277,14 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             // do nothing
         }
 
-        else if (component instanceof OriginalMenuButton) {
+        else if (component instanceof OriginalButton) {
 
             if (component != this.pressedButton && this.pressedButton != null) {
                 this.pressedButton.pressed = false;
             }
 
-            ((OriginalMenuButton) component).pressed = true;
-            this.pressedButton = (OriginalMenuButton) component;
+            ((OriginalButton) component).pressed = true;
+            this.pressedButton = (OriginalButton) component;
             anyButtonPressed = true;
         }
 
@@ -310,9 +310,9 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         // no button was pressed prior to release
         if (this.pressedButton == null) {
 
-            if (component instanceof OriginalMenuButton) {
-                ((OriginalMenuButton) component).hovered = true;
-                this.hoveredButton = (OriginalMenuButton) component;
+            if (component instanceof OriginalButton) {
+                ((OriginalButton) component).hovered = true;
+                this.hoveredButton = (OriginalButton) component;
             }
         }
 
@@ -332,9 +332,9 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
                 this.pressedButton.hovered = false;
 
                 // mark new button as hovered
-                if (component instanceof OriginalMenuButton) {
-                    ((OriginalMenuButton) component).hovered = true;
-                    this.hoveredButton = (OriginalMenuButton) component;
+                if (component instanceof OriginalButton) {
+                    ((OriginalButton) component).hovered = true;
+                    this.hoveredButton = (OriginalButton) component;
                 }
             }
 

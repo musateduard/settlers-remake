@@ -12,7 +12,6 @@ import java.io.InputStream;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
@@ -157,17 +156,17 @@ public class OriginalScenarioMenu extends JPanel {
         todo: add text inputs
         */
 
-        OriginalMenuButton cancelButton = new OriginalMenuButton("Cancel", 560, 556, buttonProps);
-        OriginalMenuButton okButton = new OriginalMenuButton("OK", 680, 556, buttonProps);
-        OriginalMenuButton mapsButton = new OriginalMenuButton(null, 321, 170, mapsButtonProps);
+        OriginalButton cancelButton = new OriginalButton("Cancel", 560, 556, buttonProps);
+        OriginalButton okButton = new OriginalButton("OK", 680, 556, buttonProps);
+        OriginalButton mapsButton = new OriginalButton(null, 321, 170, mapsButtonProps);
 
-        OriginalMenuButton goodsArrow = new OriginalMenuButton(null, 369, 246, downArrowProps);
-        OriginalMenuButton gameTypeArrow = new OriginalMenuButton(null, 369, 342, downArrowProps);
-        OriginalMenuButton freeForAllArrow = new OriginalMenuButton(null, 369, 374, downArrowProps);
-        OriginalMenuButton nrOfTeamsUpArrow = new OriginalMenuButton(null, 301, 457, upArrowProps);
-        OriginalMenuButton nrOfTeamsDownArrow = new OriginalMenuButton(null, 301, 466, downArrowProps);
-        OriginalMenuButton playersPerTeamUpArrow = new OriginalMenuButton(null, 301, 489, upArrowProps);
-        OriginalMenuButton playersPerTeamDownArrow = new OriginalMenuButton(null, 301, 498, downArrowProps);
+        OriginalButton goodsArrow = new OriginalButton(null, 369, 246, downArrowProps);
+        OriginalButton gameTypeArrow = new OriginalButton(null, 369, 342, downArrowProps);
+        OriginalButton freeForAllArrow = new OriginalButton(null, 369, 374, downArrowProps);
+        OriginalButton nrOfTeamsUpArrow = new OriginalButton(null, 301, 457, upArrowProps);
+        OriginalButton nrOfTeamsDownArrow = new OriginalButton(null, 301, 466, downArrowProps);
+        OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
+        OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
         cancelButton.addActionListener(
             (event) -> {
@@ -183,7 +182,7 @@ public class OriginalScenarioMenu extends JPanel {
             }
         );
 
-        OriginalMenuButton[] buttonList = {
+        OriginalButton[] buttonList = {
             cancelButton,
             okButton,
             mapsButton,
@@ -194,20 +193,6 @@ public class OriginalScenarioMenu extends JPanel {
             nrOfTeamsDownArrow,
             playersPerTeamUpArrow,
             playersPerTeamDownArrow
-        };
-
-        // declare all input fields and their event listeners
-        JFormattedTextField test1 = new JFormattedTextField("player's game");
-
-        test1.setBounds(380, 86, 228, 13);
-        test1.setOpaque(false);
-        test1.setBackground(new Color(0, 0, 0, 0));
-        test1.setForeground(regularColor);
-        test1.setBorder(null);
-        test1.setFont(menuFont.deriveFont(Font.PLAIN, 11.00f));
-
-        JFormattedTextField[] inputFieldList = {
-            test1
         };
 
         // declare all labels
@@ -243,6 +228,23 @@ public class OriginalScenarioMenu extends JPanel {
             players,
             computers
         };
+
+        // declare all input fields and their event listeners
+        JFormattedTextField test1 = new JFormattedTextField("player's game");
+
+        test1.setBounds(380, 86, 228, 13);
+        test1.setOpaque(false);
+        test1.setBackground(new Color(0, 0, 0, 0));
+        test1.setForeground(regularColor);
+        test1.setBorder(null);
+        test1.setFont(menuFont.deriveFont(Font.PLAIN, 11.00f));
+
+        JFormattedTextField[] inputFieldList = {
+            test1
+        };
+
+        // declare all dropdowns
+        OriginalDropdownList[] dropdownList = {};
 
         // add background to menu
         MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList);

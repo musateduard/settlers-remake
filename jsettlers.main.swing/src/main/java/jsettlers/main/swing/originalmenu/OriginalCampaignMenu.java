@@ -96,10 +96,10 @@ public class OriginalCampaignMenu extends JPanel {
             menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(248, 220, 0), true
         );
 
-        OriginalMenuButton[] buttonList = {
-            new OriginalMenuButton("Egyptians", 56, 164, buttonProps),
-            new OriginalMenuButton("Romans", 240, 440, buttonProps),
-            new OriginalMenuButton("Asians", 664, 200, buttonProps)
+        OriginalButton[] buttonList = {
+            new OriginalButton("Egyptians", 56, 164, buttonProps),
+            new OriginalButton("Romans", 240, 440, buttonProps),
+            new OriginalButton("Asians", 664, 200, buttonProps)
         };
 
         // todo: add button event listeners

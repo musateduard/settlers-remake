@@ -11,6 +11,34 @@ import java.awt.image.BufferedImage;
 import javax.swing.JButton;
 
 
+/**
+ * note: {@link OriginalMenuButton} only receives events if they're dispatched from
+ * {@link MenuBackground}. this is because this class and other swing components are only
+ * added to the internal panel of {@link MenuBackground} and are not rendered directly
+ * to the frame.
+ *
+ * <p>
+ * example:
+ * </p>
+ *
+ * <pre>
+ * {@code
+ * Point scaledPoint = this.getScaledPosition(event);
+ * Component component = this.internalPanel.getComponentAt(cursor);
+ *
+ * int eventType = MouseEvent.MOUSE_MOVED;
+ * int offsetX = scaledPoint.x - component.getX();
+ * int offsetY = scaledPoint.y - component.getY();
+ * long when = event.getWhen();
+ * int modifiers = event.getModifiersEx();
+ * int count = event.getClickCount();
+ * boolean popup = event.isPopupTrigger();
+ *
+ * MouseEvent newEvent = new MouseEvent(component, eventType, when, modifiers, offsetX, offsetY, count, popup);
+ * component.dispatchEvent(newEvent);
+ * }
+ * </pre>
+ */
 public class OriginalMenuButton extends JButton implements MouseListener, MouseMotionListener {
 
     public final int buttonWidth;
@@ -100,14 +128,13 @@ public class OriginalMenuButton extends JButton implements MouseListener, MouseM
 
 
     @Override
-    public void mouseClicked(MouseEvent event) {
+    public void mouseMoved(MouseEvent event) {
         return;
     }
 
 
     @Override
     public void mousePressed(MouseEvent event) {
-        System.out.printf("mouse pressed dfghjfdgjhdfgjg\n");
         return;
     }
 
@@ -119,28 +146,25 @@ public class OriginalMenuButton extends JButton implements MouseListener, MouseM
 
 
     @Override
+    public void mouseClicked(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
     public void mouseEntered(MouseEvent event) {
-        System.out.printf("mouse entered button %s\n", this.getText());
         return;
     }
 
 
     @Override
     public void mouseExited(MouseEvent event) {
-        System.out.printf("mouse exited button %s\n", this.getText());
         return;
     }
 
 
     @Override
     public void mouseDragged(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseMoved(MouseEvent event) {
-        System.out.printf("mouse moved inside button %s\n", this.getText());
         return;
     }
 }

@@ -1,11 +1,15 @@
 package jsettlers.main.swing.originalmenu;
 
 import java.awt.Color;
+import java.awt.Point;
 import java.awt.Graphics;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
-import java.awt.FontMetrics;
 import java.awt.RenderingHints;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -14,16 +18,30 @@ import java.util.ArrayList;
 
 
 /**
- * this class is a canvas on which all menu elements get painted. it holds an internal {@link BufferedImage}
- * of fixed size of 800 x 600 and all images and text get painted on this buffer. the buffer
- * then gets painted on the {@link JPanel} background and the panel is added to the actual menu component.
- * this panel is set to scale at a fixed aspect ratio of 4:3.
+ * this class is a {@link JPanel} derived class that acts as a canvas on which all menu elements get painted.
+ * it holds an internal {@link BufferedImage} of fixed size 800 x 600 and all images and text get painted
+ * on this buffer. the buffer then gets painted on the {@link JPanel} background using {@link #paintComponent(Graphics)}
+ * and the panel is added to the actual menu component. this panel is set to scale at a fixed aspect ratio of 4:3.
  */
-public class MenuBackground extends JPanel {
+public class MenuBackground extends JPanel implements MouseListener, MouseMotionListener {
 
     // todo: use JLayeredPane to to draw dialogs and dropdown lists
     // todo: create bold version of ms sans serif 13
     // todo: draw all overlays if any
+
+    /*
+    todo: add active overlay member that holds current active overlay
+    todo: move implements MouseListener, MouseMotionListener to MenuBackground
+
+    note:
+    mouse events should be passed to the upper most overlay
+    the menus underneath should keep their previous state while overlay is visible
+
+    note:
+    button list always refers to the current menu's button list
+    this needs to be adjusted to the current layer's button list
+    we need to be able to retrieve the current layer button list
+    */
 
     /*
     note:
@@ -32,12 +50,13 @@ public class MenuBackground extends JPanel {
     in font letter spacing, labels are currently drawn inside paintComponent using context.drawString
     */
 
+    public final JPanel internalPanel;
     public final BufferedImage menuImage;
     public final BufferedImage tempBuffer;
-    public final JPanel internalPanel;
     public final OriginalMenuButton[] buttonList;
-    public final OriginalMenuEventListener eventListener;
     public final double idealAspectRatio = (double) 800 / (double) 600;
+    public OriginalMenuButton pressedButton;
+    public OriginalMenuButton hoveredButton;
 
     public ArrayList<JPanel> overlayList;
 
@@ -76,11 +95,9 @@ public class MenuBackground extends JPanel {
             }
         }
 
-        // add event listener
-        this.eventListener = new OriginalMenuEventListener(this, this.buttonList, this.internalPanel);
-
-        this.addMouseListener(this.eventListener);
-        this.addMouseMotionListener(this.eventListener);
+        // add event listeners
+        this.addMouseListener(this);
+        this.addMouseMotionListener(this);
 
         return;
     }
@@ -101,6 +118,25 @@ public class MenuBackground extends JPanel {
     public void openDropDownList() {
         System.out.printf("opening dropdown list\n");
         return;
+    }
+
+
+    /**
+     * this method takes the current position of the cursor and returns a {@link Point} with the equivalent
+     * coordinates on an 800 x 600 screen. this is used for positioning the cursor inside the
+     * inner buffer of menu panels in order to determine if a button is pressed or hovered.
+     */
+    public Point getScaledPosition(MouseEvent event) {
+
+        int parentWidth = this.getWidth();
+        int parentHeight = this.getHeight();
+
+        int translatedX = (int) (((double) event.getX() / (double) parentWidth) * (double) 800);
+        int translatedY = (int) (((double) event.getY() / (double) parentHeight) * (double) 600);
+
+        Point position = new Point(translatedX, translatedY);
+
+        return position;
     }
 
 
@@ -173,5 +209,165 @@ public class MenuBackground extends JPanel {
 
             return newSize;
         }
+    }
+
+
+    @Override
+    public void mouseMoved(MouseEvent event) {
+
+        Point cursor = this.getScaledPosition(event);
+        Component component = this.internalPanel.getComponentAt(cursor);
+
+        if (component == this.internalPanel) {
+
+            // mark no button as hovered or pressed
+            if (this.hoveredButton != null) {
+                this.hoveredButton.hovered = false;
+            }
+
+            if (this.pressedButton != null) {
+                this.pressedButton.pressed = false;
+            }
+
+            this.hoveredButton = null;
+            this.pressedButton = null;
+        }
+
+        else if (component instanceof JLabel) {
+            // do nothing
+        }
+
+        else if (component instanceof OriginalMenuButton) {
+
+            /*
+            note:
+
+            normally we use dispatchEvent and let child handle the event
+            that is too much overhead for this case
+            */
+
+            if (component != this.hoveredButton && this.hoveredButton != null) {
+                this.hoveredButton.hovered = false;
+            }
+
+            ((OriginalMenuButton) component).hovered = true;
+            this.hoveredButton = (OriginalMenuButton) component;
+        }
+
+        else {
+            System.out.printf("other element hovered\n");
+        }
+
+        this.repaint();
+        return;
+    }
+
+
+    @Override
+    public void mousePressed(MouseEvent event) {
+
+        Point cursor = this.getScaledPosition(event);
+        Component component = this.internalPanel.getComponentAt(cursor);
+        boolean anyButtonPressed = false;
+
+        if (component == this.internalPanel) {
+            // do nothing
+        }
+
+        else if (component instanceof JLabel) {
+            // do nothing
+        }
+
+        else if (component instanceof OriginalMenuButton) {
+
+            if (component != this.pressedButton && this.pressedButton != null) {
+                this.pressedButton.pressed = false;
+            }
+
+            ((OriginalMenuButton) component).pressed = true;
+            this.pressedButton = (OriginalMenuButton) component;
+            anyButtonPressed = true;
+        }
+
+        else {
+            System.out.printf("other element pressed\n");
+        }
+
+        if (anyButtonPressed == false) {
+            this.pressedButton = null;
+        }
+
+        this.repaint();
+        return;
+    }
+
+
+    @Override
+    public void mouseReleased(MouseEvent event) {
+
+        Point cursor = this.getScaledPosition(event);
+        Component component = this.internalPanel.getComponentAt(cursor);
+
+        // no button was pressed prior to release
+        if (this.pressedButton == null) {
+
+            if (component instanceof OriginalMenuButton) {
+                ((OriginalMenuButton) component).hovered = true;
+                this.hoveredButton = (OriginalMenuButton) component;
+            }
+        }
+
+        // a button was pressed prior to release
+        else {
+
+            // same button pressed and released
+            if (this.pressedButton == component) {
+                this.pressedButton.hovered = true;
+                this.pressedButton.doClick();
+            }
+
+            // button pressed but released somewhere else
+            else {
+
+                // mark previous button as not hovered
+                this.pressedButton.hovered = false;
+
+                // mark new button as hovered
+                if (component instanceof OriginalMenuButton) {
+                    ((OriginalMenuButton) component).hovered = true;
+                    this.hoveredButton = (OriginalMenuButton) component;
+                }
+            }
+
+            this.pressedButton.pressed = false;
+            this.pressedButton = null;
+        }
+
+        this.repaint();
+        return;
+    }
+
+
+    @Override
+    public void mouseDragged(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseClicked(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseEntered(MouseEvent event) {
+        return;
+    }
+
+
+    @Override
+    public void mouseExited(MouseEvent event) {
+        return;
     }
 }

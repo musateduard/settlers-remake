@@ -7,11 +7,11 @@ import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
-import java.io.IOException;
-import java.io.InputStream;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import java.io.IOException;
+import java.io.InputStream;
 
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
@@ -160,7 +160,7 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton okButton = new OriginalButton("OK", 680, 556, buttonProps);
         OriginalButton mapsButton = new OriginalButton(null, 321, 170, mapsButtonProps);
 
-        OriginalButton goodsArrow = new OriginalButton(null, 369, 246, downArrowProps);
+        // OriginalButton goodsArrow = new OriginalButton(null, 369, 246, downArrowProps);
         OriginalButton gameTypeArrow = new OriginalButton(null, 369, 342, downArrowProps);
         OriginalButton freeForAllArrow = new OriginalButton(null, 369, 374, downArrowProps);
         OriginalButton nrOfTeamsUpArrow = new OriginalButton(null, 301, 457, upArrowProps);
@@ -186,7 +186,7 @@ public class OriginalScenarioMenu extends JPanel {
             cancelButton,
             okButton,
             mapsButton,
-            goodsArrow,
+            // goodsArrow,
             gameTypeArrow,
             freeForAllArrow,
             nrOfTeamsUpArrow,
@@ -244,10 +244,19 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // declare all dropdowns
-        OriginalDropdownList[] dropdownList = {};
+        String[] list1 = {"Default", "Low", "Medium", "High"};
+        OriginalDropdownList goodsDropdown = new OriginalDropdownList(
+            list1, 149, 234, 231, 22,
+            menuFont.deriveFont(Font.PLAIN, 11.00f), regularColor,
+            downArrow.convertToBufferedImage(), downArrowHovered
+        );
+
+        OriginalDropdownList[] dropdownList = {
+            goodsDropdown
+        };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList);
+        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
         this.add(background);
 
         return;

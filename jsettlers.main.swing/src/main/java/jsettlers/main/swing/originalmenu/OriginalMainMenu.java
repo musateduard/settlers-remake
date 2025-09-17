@@ -205,7 +205,7 @@ public class OriginalMainMenu extends JPanel {
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, null);
+        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, null, null);
         this.add(background);
 
         return;

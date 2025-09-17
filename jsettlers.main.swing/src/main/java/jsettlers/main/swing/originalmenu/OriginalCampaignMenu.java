@@ -1,8 +1,8 @@
 package jsettlers.main.swing.originalmenu;
 
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.event.KeyEvent;
 import java.awt.image.RescaleOp;
@@ -117,7 +117,7 @@ public class OriginalCampaignMenu extends JPanel {
             descriptionAsians
         };
 
-        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, labelList, null);
+        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, labelList, null, null);
 
         this.add(background);
 

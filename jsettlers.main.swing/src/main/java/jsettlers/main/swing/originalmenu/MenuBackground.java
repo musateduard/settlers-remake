@@ -56,6 +56,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
     public final double idealAspectRatio = (double) 800 / (double) 600;
     public OriginalButton pressedButton;
     public OriginalButton hoveredButton;
+    public OriginalDropdownList hoveredDropdown;
 
     public ArrayList<JPanel> overlayList;
 
@@ -64,7 +65,8 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         BufferedImage menuImage,
         OriginalButton[] buttonList,
         JLabel[] labelList,
-        JFormattedTextField[] inputFieldList) {
+        JFormattedTextField[] inputFieldList,
+        OriginalDropdownList[] dropdownList) {
 
         this.menuImage = menuImage;
         this.buttonList = buttonList;
@@ -91,6 +93,12 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         if (labelList != null) {
             for (JLabel label : labelList) {
                 internalPanel.add(label);
+            }
+        }
+
+        if (dropdownList != null) {
+            for (OriginalDropdownList dropdown : dropdownList) {
+                internalPanel.add(dropdown);
             }
         }
 
@@ -219,6 +227,8 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
         if (component == this.internalPanel) {
 
+            // todo: add common interface hor hoverable and pressable elements
+
             // mark no button as hovered or pressed
             if (this.hoveredButton != null) {
                 this.hoveredButton.hovered = false;
@@ -228,8 +238,14 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
                 this.pressedButton.pressed = false;
             }
 
+            if (this.hoveredDropdown != null) {
+                this.hoveredDropdown.hovered = false;
+            }
+
             this.hoveredButton = null;
             this.pressedButton = null;
+
+            this.hoveredDropdown = null;
         }
 
         else if (component instanceof JLabel) {
@@ -251,6 +267,16 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
             ((OriginalButton) component).hovered = true;
             this.hoveredButton = (OriginalButton) component;
+        }
+
+        else if (component instanceof OriginalDropdownList) {
+
+            if (component != this.hoveredDropdown && this.hoveredDropdown != null) {
+                this.hoveredDropdown.hovered = false;
+            }
+
+            ((OriginalDropdownList) component).hovered = true;
+            this.hoveredDropdown = (OriginalDropdownList) component;
         }
 
         else {

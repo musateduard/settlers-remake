@@ -31,7 +31,6 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
     /*
     todo: add active overlay member that holds current active overlay
-    todo: move implements MouseListener, MouseMotionListener to MenuBackground
 
     note:
     mouse events should be passed to the upper most overlay

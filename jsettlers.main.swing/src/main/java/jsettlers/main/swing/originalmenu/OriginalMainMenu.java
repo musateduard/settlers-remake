@@ -4,12 +4,10 @@ import java.awt.Font;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.image.RescaleOp;
-import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
+import java.awt.FontFormatException;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.InputStream;
 import javax.swing.JPanel;
@@ -106,96 +104,82 @@ public class OriginalMainMenu extends JPanel {
         OriginalMenuButton creditsButton = new OriginalMenuButton("Credits", 80, 480, buttonProps);
         OriginalMenuButton exitGameButton = new OriginalMenuButton("Exit Game", 80, 540, buttonProps);
 
-        tutorialButton.addActionListener(
-            (event) -> {
+        // todo: finish all event listeners
+
+        ActionListener menuListener = (event) -> {
+
+            if (event.getSource() == tutorialButton) {
                 System.out.printf("tutorials button pressed\n");
-                return;
             }
-        );
 
-        campaignButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == campaignButton) {
                 this.mainFrame.showOriginalCampaignMenu();
-                return;
             }
-        );
 
-        missionCDCampaignButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == missionCDCampaignButton) {
                 System.out.printf("mission cd campaign pressed\n");
-                return;
             }
-        );
 
-        amazonCampaignButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == amazonCampaignButton) {
                 System.out.printf("amazon campaign pressed\n");
-                return;
             }
-        );
 
-        campaignDifficultyButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == campaignDifficultyButton) {
                 System.out.printf("campaign difficulty toggled\n");
-                return;
             }
-        );
 
-        singlePlayerScenarioButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == singlePlayerScenarioButton) {
                 this.mainFrame.showOriginalScenarioMenu();
-                return;
             }
-        );
 
-        multiplayerGameLanButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == multiplayerGameLanButton) {
                 System.out.printf("multiplayer lan pressed\n");
-                return;
             }
-        );
 
-        multiplayerGameInternetButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == multiplayerGameInternetButton) {
                 System.out.printf("multiplayer online pressed\n");
-                return;
             }
-        );
 
-        loadGameButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == loadGameButton) {
                 System.out.printf("load game pressed\n");
-                return;
             }
-        );
 
-        onlineHelpButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == onlineHelpButton) {
                 System.out.printf("online help pressed\n");
-                return;
             }
-        );
 
-        tipsTricksButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == tipsTricksButton) {
                 System.out.printf("tips and tricks pressed\n");
-                return;
             }
-        );
 
-        creditsButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == creditsButton) {
                 System.out.printf("credits pressed\n");
-                return;
             }
-        );
 
-        exitGameButton.addActionListener(
-            (event) -> {
+            else if (event.getSource() == exitGameButton) {
                 System.exit(0);
-                return;
             }
-        );
+
+            else {
+                System.out.printf("button not recognized\n");
+            }
+
+            return;
+        };
+
+        tutorialButton.addActionListener(menuListener);
+        campaignButton.addActionListener(menuListener);
+        missionCDCampaignButton.addActionListener(menuListener);
+        amazonCampaignButton.addActionListener(menuListener);
+        campaignDifficultyButton.addActionListener(menuListener);
+        singlePlayerScenarioButton.addActionListener(menuListener);
+        multiplayerGameLanButton.addActionListener(menuListener);
+        multiplayerGameInternetButton.addActionListener(menuListener);
+        loadGameButton.addActionListener(menuListener);
+        onlineHelpButton.addActionListener(menuListener);
+        tipsTricksButton.addActionListener(menuListener);
+        creditsButton.addActionListener(menuListener);
+        exitGameButton.addActionListener(menuListener);
 
         OriginalMenuButton[] buttonList = {
             tutorialButton,
@@ -212,8 +196,6 @@ public class OriginalMainMenu extends JPanel {
             creditsButton,
             exitGameButton
         };
-
-        // todo: finish all event listeners
 
         // declare all labels
         LabelTextYellow version = new LabelTextYellow(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 578);

@@ -8,9 +8,9 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 
 
-public class OriginalDropdownList extends JComboBox<String> {
+public class OriginalDropdownList extends JComboBox<String> implements Hoverable {
 
-    public boolean hovered;
+    private boolean hovered;
     public final BufferedImage arrow;
     public final BufferedImage arrowHovered;
 
@@ -35,6 +35,12 @@ public class OriginalDropdownList extends JComboBox<String> {
         this.setFont(textFont);
         this.setForeground(textColor);
 
+        return;
+    }
+
+
+    public void setHovered(boolean hoveredValue) {
+        this.hovered = hoveredValue;
         return;
     }
 

@@ -39,14 +39,14 @@ import javax.swing.JButton;
  * }
  * </pre>
  */
-public class OriginalButton extends JButton implements MouseListener, MouseMotionListener {
+public class OriginalButton extends JButton implements MouseListener, MouseMotionListener, Hoverable {
 
     public final int buttonWidth;
     public final int buttonHeight;
     public final int offsetX;
     public final int offsetY;
-    public boolean hovered;
     public boolean pressed;
+    private boolean hovered;
 
     public final Font textFont;
     public final boolean textShadow;
@@ -83,6 +83,12 @@ public class OriginalButton extends JButton implements MouseListener, MouseMotio
         this.addMouseMotionListener(this);
         this.addMouseListener(this);
 
+        return;
+    }
+
+
+    public void setHovered(boolean hoveredValue) {
+        this.hovered = hoveredValue;
         return;
     }
 

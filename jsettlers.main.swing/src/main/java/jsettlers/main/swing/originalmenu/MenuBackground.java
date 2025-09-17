@@ -55,8 +55,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
     public final OriginalButton[] buttonList;
     public final double idealAspectRatio = (double) 800 / (double) 600;
     public OriginalButton pressedButton;
-    public OriginalButton hoveredButton;
-    public OriginalDropdownList hoveredDropdown;
+    public Hoverable hoveredElement;
 
     public ArrayList<JPanel> overlayList;
 
@@ -227,32 +226,24 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
         if (component == this.internalPanel) {
 
-            // todo: add common interface hor hoverable and pressable elements
-
-            // mark no button as hovered or pressed
-            if (this.hoveredButton != null) {
-                this.hoveredButton.hovered = false;
+            if (this.hoveredElement != null) {
+                this.hoveredElement.setHovered(false);
             }
 
             if (this.pressedButton != null) {
                 this.pressedButton.pressed = false;
             }
 
-            if (this.hoveredDropdown != null) {
-                this.hoveredDropdown.hovered = false;
-            }
-
-            this.hoveredButton = null;
             this.pressedButton = null;
 
-            this.hoveredDropdown = null;
+            this.hoveredElement = null;
         }
 
         else if (component instanceof JLabel) {
             // do nothing
         }
 
-        else if (component instanceof OriginalButton) {
+        else if (component instanceof Hoverable) {
 
             /*
             note:
@@ -261,22 +252,12 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             that is too much overhead for this case
             */
 
-            if (component != this.hoveredButton && this.hoveredButton != null) {
-                this.hoveredButton.hovered = false;
+            if (component != this.hoveredElement && this.hoveredElement != null) {
+                this.hoveredElement.setHovered(false);
             }
 
-            ((OriginalButton) component).hovered = true;
-            this.hoveredButton = (OriginalButton) component;
-        }
-
-        else if (component instanceof OriginalDropdownList) {
-
-            if (component != this.hoveredDropdown && this.hoveredDropdown != null) {
-                this.hoveredDropdown.hovered = false;
-            }
-
-            ((OriginalDropdownList) component).hovered = true;
-            this.hoveredDropdown = (OriginalDropdownList) component;
+            ((Hoverable) component).setHovered(true);
+            this.hoveredElement = (Hoverable) component;
         }
 
         else {
@@ -290,6 +271,8 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
     @Override
     public void mousePressed(MouseEvent event) {
+
+        // todo: add common interface for pressable elements
 
         Point cursor = this.getScaledPosition(event);
         Component component = this.internalPanel.getComponentAt(cursor);
@@ -336,9 +319,9 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         // no button was pressed prior to release
         if (this.pressedButton == null) {
 
-            if (component instanceof OriginalButton) {
-                ((OriginalButton) component).hovered = true;
-                this.hoveredButton = (OriginalButton) component;
+            if (component instanceof Hoverable) {
+                ((Hoverable) component).setHovered(true);
+                this.hoveredElement = (Hoverable) component;
             }
         }
 
@@ -347,7 +330,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
             // same button pressed and released
             if (this.pressedButton == component) {
-                this.pressedButton.hovered = true;
+                this.pressedButton.setHovered(true);
                 this.pressedButton.doClick();
             }
 
@@ -355,12 +338,12 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             else {
 
                 // mark previous button as not hovered
-                this.pressedButton.hovered = false;
+                this.pressedButton.setHovered(false);
 
                 // mark new button as hovered
-                if (component instanceof OriginalButton) {
-                    ((OriginalButton) component).hovered = true;
-                    this.hoveredButton = (OriginalButton) component;
+                if (component instanceof Hoverable) {
+                    ((Hoverable) component).setHovered(true);
+                    this.hoveredElement = (Hoverable) component;
                 }
             }
 

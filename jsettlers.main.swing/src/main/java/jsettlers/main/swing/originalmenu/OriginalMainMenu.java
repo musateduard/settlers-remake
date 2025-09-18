@@ -19,6 +19,9 @@ import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.image.NullImage;
 import jsettlers.main.swing.JSettlersFrame;
+import jsettlers.main.swing.originalmenu.components.ButtonProps;
+import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
+import jsettlers.main.swing.originalmenu.components.OriginalButton;
 
 
 /**

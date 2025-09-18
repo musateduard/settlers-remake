@@ -19,6 +19,11 @@ import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.common.images.OriginalImageLink;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.main.swing.JSettlersFrame;
+import jsettlers.main.swing.originalmenu.components.ButtonProps;
+import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
+import jsettlers.main.swing.originalmenu.components.OriginalButton;
+import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
+import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
 
 
 public class OriginalScenarioMenu extends JPanel {

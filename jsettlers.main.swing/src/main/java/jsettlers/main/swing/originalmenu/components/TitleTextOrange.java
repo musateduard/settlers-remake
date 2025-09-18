@@ -1,4 +1,4 @@
-package jsettlers.main.swing.originalmenu;
+package jsettlers.main.swing.originalmenu.components;
 
 import java.awt.Font;
 import java.awt.Color;

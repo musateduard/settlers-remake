@@ -1,4 +1,4 @@
-package jsettlers.main.swing.originalmenu;
+package jsettlers.main.swing.originalmenu.components;
 
 
 public interface Hoverable {

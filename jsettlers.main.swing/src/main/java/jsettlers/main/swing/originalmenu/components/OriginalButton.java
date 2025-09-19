@@ -149,6 +149,11 @@ public class OriginalButton extends JButton implements MouseListener, MouseMotio
 
     @Override
     public void mouseReleased(MouseEvent event) {
+
+        if (this.pressed == true) {
+            this.doClick();
+        }
+
         return;
     }
 

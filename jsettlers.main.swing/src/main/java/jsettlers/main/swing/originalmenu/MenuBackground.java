@@ -1,9 +1,5 @@
 package jsettlers.main.swing.originalmenu;
 
-import jsettlers.main.swing.originalmenu.components.Hoverable;
-import jsettlers.main.swing.originalmenu.components.OriginalButton;
-import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
-
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.Graphics;
@@ -16,10 +12,13 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.util.ArrayList;
+
+import jsettlers.main.swing.originalmenu.components.Hoverable;
+import jsettlers.main.swing.originalmenu.components.OriginalButton;
+import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
 
 
 /**
@@ -30,28 +29,13 @@ import java.util.ArrayList;
  */
 public class MenuBackground extends JPanel implements MouseListener, MouseMotionListener {
 
-    // todo: use JLayeredPane to to draw dialogs and dropdown lists
     // todo: create bold version of ms sans serif 13
     // todo: draw all overlays if any
 
     /*
-    todo: add active overlay member that holds current active overlay
-
     note:
-    mouse events should be passed to the upper most overlay
+    mouse events should be passed to the uppermost overlay
     the menus underneath should keep their previous state while overlay is visible
-
-    note:
-    button list always refers to the current menu's button list
-    this needs to be adjusted to the current layer's button list
-    we need to be able to retrieve the current layer button list
-    */
-
-    /*
-    note:
-    overlays should be handled inside the internal panel not in paintComponent
-    ideally all elements should be handled inside the internal panel but due to limitations
-    in font letter spacing, labels are currently drawn inside paintComponent using context.drawString
     */
 
     public final JLayeredPane internalPanel;
@@ -61,8 +45,6 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
     public final double idealAspectRatio = (double) 800 / (double) 600;
     public OriginalButton pressedButton;
     public Hoverable hoveredElement;
-
-    public ArrayList<JPanel> overlayList;
 
 
     public MenuBackground(
@@ -84,25 +66,25 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
 
         if (buttonList != null) {
             for (OriginalButton button : this.buttonList) {
-                this.internalPanel.add(button);
+                this.internalPanel.add(button, JLayeredPane.DEFAULT_LAYER);
             }
         }
 
         if (inputFieldList != null) {
             for (JFormattedTextField input : inputFieldList) {
-                internalPanel.add(input);
+                internalPanel.add(input, JLayeredPane.DEFAULT_LAYER);
             }
         }
 
         if (labelList != null) {
             for (JLabel label : labelList) {
-                internalPanel.add(label);
+                internalPanel.add(label, JLayeredPane.DEFAULT_LAYER);
             }
         }
 
         if (dropdownList != null) {
             for (OriginalDropdownList dropdown : dropdownList) {
-                internalPanel.add(dropdown);
+                internalPanel.add(dropdown, JLayeredPane.DEFAULT_LAYER);
             }
         }
 
@@ -234,8 +216,8 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             /*
             note:
 
-            normally we use dispatchEvent and let child handle the event
-            that is too much overhead for this case
+            normally we use dispatchEvent and let child handle the event but that is too much overhead for this case
+            button states also need to be managed at the parent level not the child
             */
 
             if (component != this.hoveredElement && this.hoveredElement != null) {
@@ -271,6 +253,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
         Point cursor = this.getScaledPosition(event);
         Component component = this.internalPanel.getComponentAt(cursor);
 
+        // keep state of currently pressed button
         if (component instanceof OriginalButton) {
 
             if (component != this.pressedButton && this.pressedButton != null) {
@@ -281,34 +264,21 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             this.pressedButton = (OriginalButton) component;
         }
 
-        else if (component instanceof OriginalDropdownList) {
-
-            /*
-            note:
-
-            this won't work because dropdown list is not visible
-            we need to use an overlay with event listener
-            */
-
-            // show dropdown list
-            // ((OriginalDropdownList) component).setPopupVisible(true);
-
-            // dispatch event to dropdown component
-            int eventType = MouseEvent.MOUSE_PRESSED;
-            int offsetX = cursor.x - component.getX();
-            int offsetY = cursor.y - component.getY();
-            long when = event.getWhen();
-            int modifiers = event.getModifiersEx();
-            int count = event.getClickCount();
-            boolean popup = event.isPopupTrigger();
-
-            MouseEvent newEvent = new MouseEvent(component, eventType, when, modifiers, offsetX, offsetY, count, popup);
-            component.dispatchEvent(newEvent);
-        }
-
         else {
             this.pressedButton = null;
         }
+
+        // dispatch event to component
+        int eventType = MouseEvent.MOUSE_PRESSED;
+        int offsetX = cursor.x - component.getX();
+        int offsetY = cursor.y - component.getY();
+        long when = event.getWhen();
+        int modifiers = event.getModifiersEx();
+        int count = event.getClickCount();
+        boolean popup = event.isPopupTrigger();
+
+        MouseEvent newEvent = new MouseEvent(component, eventType, when, modifiers, offsetX, offsetY, count, popup);
+        component.dispatchEvent(newEvent);
 
         this.repaint();
         return;
@@ -330,13 +300,12 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
             }
         }
 
-        // a button was pressed prior to release
+        // button pressed prior to release
         else {
 
             // same button pressed and released
             if (component == this.pressedButton) {
                 this.pressedButton.setHovered(true);
-                this.pressedButton.doClick();
             }
 
             // button pressed but released somewhere else
@@ -350,7 +319,27 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
                     ((Hoverable) component).setHovered(true);
                     this.hoveredElement = (Hoverable) component;
                 }
+
+                // mark no element as hovered
+                else {
+                    this.hoveredElement.setHovered(false);
+                    this.hoveredElement = null;
+                }
             }
+
+            // note: this pattern will not work if other components need to process mouseReleased
+
+            // dispatch event to component
+            int eventType = MouseEvent.MOUSE_RELEASED;
+            int offsetX = cursor.x - component.getX();
+            int offsetY = cursor.y - component.getY();
+            long when = event.getWhen();
+            int modifiers = event.getModifiersEx();
+            int count = event.getClickCount();
+            boolean popup = event.isPopupTrigger();
+
+            MouseEvent newEvent = new MouseEvent(component, eventType, when, modifiers, offsetX, offsetY, count, popup);
+            component.dispatchEvent(newEvent);
 
             this.pressedButton.pressed = false;
             this.pressedButton = null;

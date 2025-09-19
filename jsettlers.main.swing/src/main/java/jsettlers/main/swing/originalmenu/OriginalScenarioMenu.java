@@ -261,7 +261,7 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
+        MenuCanvas background = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
         this.add(background);
 
         return;

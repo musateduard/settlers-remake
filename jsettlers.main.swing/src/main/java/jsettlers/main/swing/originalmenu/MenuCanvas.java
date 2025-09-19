@@ -27,7 +27,7 @@ import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
  * on this buffer. the buffer then gets painted on the {@link JPanel} background using {@link #paintComponent(Graphics)}
  * and the panel is added to the actual menu component. this panel is set to scale at a fixed aspect ratio of 4:3.
  */
-public class MenuBackground extends JPanel implements MouseListener, MouseMotionListener {
+public class MenuCanvas extends JPanel implements MouseListener, MouseMotionListener {
 
     // todo: create bold version of ms sans serif 13
     // todo: draw all overlays if any
@@ -47,7 +47,7 @@ public class MenuBackground extends JPanel implements MouseListener, MouseMotion
     public Hoverable hoveredElement;
 
 
-    public MenuBackground(
+    public MenuCanvas(
         BufferedImage menuImage,
         OriginalButton[] buttonList,
         JLabel[] labelList,

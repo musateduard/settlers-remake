@@ -1,6 +1,6 @@
 package jsettlers.main.swing.originalmenu.components;
 
-import jsettlers.main.swing.originalmenu.MenuBackground;
+import jsettlers.main.swing.originalmenu.MenuCanvas;
 
 import java.awt.Font;
 import java.awt.Color;
@@ -15,8 +15,8 @@ import javax.swing.JButton;
 
 /**
  * note: {@link OriginalButton} only receives events if they're dispatched from
- * {@link MenuBackground}. this is because this class and other swing components are only
- * added to the internal panel of {@link MenuBackground} and are not rendered directly
+ * {@link MenuCanvas}. this is because this class and other swing components are only
+ * added to the internal panel of {@link MenuCanvas} and are not rendered directly
  * to the frame.
  *
  * <p>

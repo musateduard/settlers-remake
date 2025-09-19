@@ -121,7 +121,7 @@ public class OriginalCampaignMenu extends JPanel {
             descriptionAsians
         };
 
-        MenuBackground background = new MenuBackground(backgroundImage.convertToBufferedImage(), buttonList, labelList, null, null);
+        MenuCanvas background = new MenuCanvas(backgroundImage.convertToBufferedImage(), buttonList, labelList, null, null);
 
         this.add(background);
 

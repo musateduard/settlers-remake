@@ -27,7 +27,7 @@ import jsettlers.main.swing.originalmenu.components.OriginalButton;
 /**
  * this panel is used as a container for the actual main menu background.
  * it is set to a black background and covers the entire frame regardless of size and aspect ratio.
- * it then contains an additional {@link MenuBackground} background panel set to a fixed aspect ratio of 4:3.<br>
+ * it then contains an additional {@link MenuCanvas} background panel set to a fixed aspect ratio of 4:3.<br>
  * the background panel then contains in image buffer that is set to a fixed resolution of 800 x 600.
  * this buffer is set to fill the entire background panel and contains the actual image of the main menu
  * as well as the buttons and any additional text painted onto the menu.
@@ -208,7 +208,7 @@ public class OriginalMainMenu extends JPanel {
         };
 
         // add background to menu
-        MenuBackground background = new MenuBackground(menuImage.convertToBufferedImage(), buttonList, labelList, null, null);
+        MenuCanvas background = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, null, null);
         this.add(background);
 
         return;

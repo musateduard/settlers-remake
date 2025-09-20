@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import javax.swing.JFormattedTextField;
@@ -20,6 +21,7 @@ import jsettlers.common.images.OriginalImageLink;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.main.swing.JSettlersFrame;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
+import jsettlers.main.swing.originalmenu.components.DropdownProps;
 import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
 import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
@@ -166,8 +168,8 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton mapsButton = new OriginalButton(null, 321, 170, mapsButtonProps);
 
         // OriginalButton goodsArrow = new OriginalButton(null, 369, 246, downArrowProps);
-        OriginalButton gameTypeArrow = new OriginalButton(null, 369, 342, downArrowProps);
-        OriginalButton freeForAllArrow = new OriginalButton(null, 369, 374, downArrowProps);
+        // OriginalButton gameTypeArrow = new OriginalButton(null, 369, 342, downArrowProps);
+        // OriginalButton freeForAllArrow = new OriginalButton(null, 369, 374, downArrowProps);
         OriginalButton nrOfTeamsUpArrow = new OriginalButton(null, 301, 457, upArrowProps);
         OriginalButton nrOfTeamsDownArrow = new OriginalButton(null, 301, 466, downArrowProps);
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
@@ -192,8 +194,8 @@ public class OriginalScenarioMenu extends JPanel {
             okButton,
             mapsButton,
             // goodsArrow,
-            gameTypeArrow,
-            freeForAllArrow,
+            // gameTypeArrow,
+            // freeForAllArrow,
             nrOfTeamsUpArrow,
             nrOfTeamsDownArrow,
             playersPerTeamUpArrow,
@@ -210,7 +212,7 @@ public class OriginalScenarioMenu extends JPanel {
         LabelTextYellow nameOfGame = new LabelTextYellow("Name of the Game", 254, 86);
         LabelTextYellow map = new LabelTextYellow("Map:", 22, 174);
         LabelTextYellow mapType = new LabelTextYellow("Map Type", 22, 206);
-        LabelTextYellow goods = new LabelTextYellow("Goods:", 22, 238);
+        LabelTextYellow goodsLabel = new LabelTextYellow("Goods:", 22, 238);
         LabelTextYellow gameType = new LabelTextYellow("Game Type:", 22, 334);
         LabelTextYellow nrOfTeams = new LabelTextYellow("Number of Teams:", 22, 458);
         LabelTextYellow playersPerTeam = new LabelTextYellow("Players per Team:", 22, 490);
@@ -226,7 +228,7 @@ public class OriginalScenarioMenu extends JPanel {
             nameOfGame,
             map,
             mapType,
-            goods,
+            goodsLabel,
             gameType,
             nrOfTeams,
             playersPerTeam,
@@ -249,15 +251,33 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // declare all dropdowns
-        String[] list1 = {"Default", "Low", "Medium", "High"};
-        OriginalDropdownList goodsDropdown = new OriginalDropdownList(
-            list1, 149, 234, 231, 22,
+        DropdownProps dropdownProps = new DropdownProps(
+            231, 22,
             menuFont.deriveFont(Font.PLAIN, 11.00f), regularColor,
             downArrow.convertToBufferedImage(), downArrowHovered
         );
 
+        String[] goodsList = {"Default", "Low", "Medium", "High"};
+        String[] gameTypeList = {"Map Default", "No Teams", "Teams"};
+        String[] gameTypePresetList = {"preset1", "preset2"};  // this list is dynamically allocated based on game type selected
+
+        OriginalDropdownList goodsDropdown = new OriginalDropdownList(goodsList, 149, 234, dropdownProps);
+        OriginalDropdownList gameTypeDropdown = new OriginalDropdownList(gameTypeList, 149, 327, dropdownProps);
+        OriginalDropdownList gameTypePresetDropdown = new OriginalDropdownList(gameTypePresetList, 149, 359, dropdownProps);
+
+        ActionListener goodsListener = (event) -> {
+            System.out.printf("new goods selected %s\n", event.getSource());
+            return;
+        };
+
+        goodsDropdown.addActionListener(goodsListener);
+        gameTypeDropdown.addActionListener(goodsListener);
+        gameTypePresetDropdown.addActionListener(goodsListener);
+
         OriginalDropdownList[] dropdownList = {
-            goodsDropdown
+            goodsDropdown,
+            gameTypeDropdown,
+            gameTypePresetDropdown
         };
 
         // add background to menu

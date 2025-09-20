@@ -5,7 +5,6 @@ import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JLayeredPane;
 import javax.swing.JComboBox;
 
@@ -18,14 +17,15 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
     public final String[] optionList;
 
 
-    public OriginalDropdownList(String[] itemList, int offsetX, int offsetY, DropdownProps props) {
+    public OriginalDropdownList(String[] itemList, int offsetX, int offsetY, int defaultIndex, DropdownProps props) {
+
+        super(itemList);
 
         this.hovered = false;
         this.arrow = props.arrow();
         this.arrowHovered = props.arrowHovered();
         this.optionList = itemList;
 
-        this.setModel(new DefaultComboBoxModel<>(this.optionList));
         this.setBounds(offsetX, offsetY, props.width(), props.height());
         this.setBackground(Color.CYAN);
         this.setOpaque(false);
@@ -35,6 +35,12 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
         this.setForeground(props.textColor());
 
         this.addMouseListener(this);
+
+        if (defaultIndex != 0) {
+            this.setSelectedIndex(defaultIndex);
+            this.revalidate();
+            this.repaint();
+        }
 
         return;
     }

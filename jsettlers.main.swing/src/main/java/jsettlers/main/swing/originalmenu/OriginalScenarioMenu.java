@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
@@ -13,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
@@ -31,6 +33,7 @@ import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
 public class OriginalScenarioMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
+    public final MenuCanvas canvas;
 
 
     public OriginalScenarioMenu(JSettlersFrame mainFrame) {
@@ -258,21 +261,75 @@ public class OriginalScenarioMenu extends JPanel {
         );
 
         String[] goodsList = {"Default", "Low", "Medium", "High"};
-        String[] gameTypeList = {"Map Default", "No Teams", "Teams"};
-        String[] gameTypePresetList = {"preset1", "preset2"};  // this list is dynamically allocated based on game type selected
+        String[] gameTypeList = {"Map Default", "No Teams", "Teams"};  // default value: No Teams
+        String[] gameTypePresetList = {"League", "Free for All", "Free Alliances", "Play Alone"};  // dynamically allocated based on game type
 
-        OriginalDropdownList goodsDropdown = new OriginalDropdownList(goodsList, 149, 234, dropdownProps);
-        OriginalDropdownList gameTypeDropdown = new OriginalDropdownList(gameTypeList, 149, 327, dropdownProps);
-        OriginalDropdownList gameTypePresetDropdown = new OriginalDropdownList(gameTypePresetList, 149, 359, dropdownProps);
+        OriginalDropdownList goodsDropdown = new OriginalDropdownList(goodsList, 149, 234, 0, dropdownProps);
+        OriginalDropdownList gameTypeDropdown = new OriginalDropdownList(gameTypeList, 149, 327, 1, dropdownProps);
+        OriginalDropdownList gameTypePresetDropdown = new OriginalDropdownList(gameTypePresetList, 149, 359, 1, dropdownProps);
 
-        ActionListener goodsListener = (event) -> {
-            System.out.printf("new goods selected %s\n", event.getSource());
+        ActionListener dropdownListener = (event) -> {
+
+            OriginalDropdownList element = (OriginalDropdownList) event.getSource();
+            String selectedItem = (String) element.getSelectedItem();
+
+            if (element == goodsDropdown) {
+                System.out.printf("goods selected\n");
+            }
+
+            else if (element == gameTypeDropdown) {
+
+                System.out.printf("game type selected %s\n", selectedItem);
+
+                // todo: game type should update game preset list
+
+                // create new preset dropdown
+                String[] newPresetList;
+                int newDefaultIndex;
+
+                if (Objects.equals(selectedItem, "Map Defaults")) {
+                    newPresetList = new String[] {"No map defaults"};
+                    newDefaultIndex = 0;
+                }
+
+                else if (Objects.equals(selectedItem, "No Teams")) {
+                    newPresetList = new String[] {"League", "Free for All", "Free Alliances", "Play Alone"};
+                    newDefaultIndex = 1;
+                }
+
+                else {
+                    newPresetList = new String[] {"2 vs. 2", "3 vs. 3", "4 vs. 4", "2 vs. 2 vs. 2", "other"};
+                    newDefaultIndex = 0;
+                }
+
+                OriginalDropdownList newPresetDropdown = new OriginalDropdownList(
+                    newPresetList,
+                    gameTypePresetDropdown.getX(), gameTypePresetDropdown.getY(),
+                    newDefaultIndex, dropdownProps
+                );
+
+                // remove current preset dropdown
+                // JLayeredPane internalPanel = this.canvas.internalPanel;
+                // note: how do i remove old preset dropdown from internal panel?
+
+                // add new preset dropdown to internal panel
+                // revalidate/repaint
+            }
+
+            else if (element == gameTypePresetDropdown) {
+                System.out.printf("game preset selected\n");
+            }
+
+            else {
+                System.out.printf("other dropdown clicked\n");
+            }
+
             return;
         };
 
-        goodsDropdown.addActionListener(goodsListener);
-        gameTypeDropdown.addActionListener(goodsListener);
-        gameTypePresetDropdown.addActionListener(goodsListener);
+        goodsDropdown.addActionListener(dropdownListener);
+        gameTypeDropdown.addActionListener(dropdownListener);
+        gameTypePresetDropdown.addActionListener(dropdownListener);
 
         OriginalDropdownList[] dropdownList = {
             goodsDropdown,
@@ -281,9 +338,14 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // add background to menu
-        MenuCanvas background = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
-        this.add(background);
+        this.canvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
+        this.add(this.canvas);
 
+        return;
+    }
+
+
+    public void dropdownListener(ActionEvent event) {
         return;
     }
 

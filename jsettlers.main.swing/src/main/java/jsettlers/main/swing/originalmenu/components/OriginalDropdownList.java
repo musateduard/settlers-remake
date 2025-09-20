@@ -1,12 +1,10 @@
 package jsettlers.main.swing.originalmenu.components;
 
-import java.awt.Font;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Container;
-import java.awt.image.BufferedImage;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JLayeredPane;
 import javax.swing.JComboBox;
@@ -20,28 +18,21 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
     public final String[] optionList;
 
 
-    public OriginalDropdownList(
-        String[] itemList,
-        int offsetX, int offsetY,
-        int width, int height,
-        Font textFont, Color textColor,
-        BufferedImage arrow, BufferedImage arrowHovered) {
-
-        // todo: add DropdownProps
+    public OriginalDropdownList(String[] itemList, int offsetX, int offsetY, DropdownProps props) {
 
         this.hovered = false;
-        this.arrow = arrow;
-        this.arrowHovered = arrowHovered;
+        this.arrow = props.arrow();
+        this.arrowHovered = props.arrowHovered();
         this.optionList = itemList;
 
         this.setModel(new DefaultComboBoxModel<>(this.optionList));
-        this.setBounds(offsetX, offsetY, width, height);
+        this.setBounds(offsetX, offsetY, props.width(), props.height());
         this.setBackground(Color.CYAN);
         this.setOpaque(false);
         this.setBorder(null);
         this.setSelectedItem(itemList[0]);
-        this.setFont(textFont);
-        this.setForeground(textColor);
+        this.setFont(props.textFont());
+        this.setForeground(props.textColor());
 
         this.addMouseListener(this);
 
@@ -83,12 +74,14 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
     @Override
     public void mousePressed(MouseEvent event) {
 
-        Container parent = this.getParent();
+        JLayeredPane internalPanel = (JLayeredPane) this.getParent();
         OriginalPopup list = new OriginalPopup(this);
-        OriginalOverlay overlay = new OriginalOverlay(list);
+        OriginalOverlay overlay = new OriginalOverlay();
 
-        parent.add(overlay, JLayeredPane.PALETTE_LAYER);
-        parent.repaint();
+        overlay.add(list);
+
+        internalPanel.add(overlay, JLayeredPane.PALETTE_LAYER);
+        internalPanel.repaint();
 
         return;
     }

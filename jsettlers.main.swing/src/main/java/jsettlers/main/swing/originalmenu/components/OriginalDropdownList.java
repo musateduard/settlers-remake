@@ -1,39 +1,40 @@
 package jsettlers.main.swing.originalmenu.components;
 
-import jsettlers.main.swing.originalmenu.MenuBackground;
-
-import java.awt.Container;
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Container;
+import java.awt.image.BufferedImage;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.image.BufferedImage;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JLayeredPane;
 import javax.swing.JComboBox;
-import javax.swing.JPanel;
 
 
-public class OriginalDropdownList extends JComboBox<String> implements MouseListener, MouseMotionListener, Hoverable {
+public class OriginalDropdownList extends JComboBox<String> implements MouseListener, Hoverable {
 
     private boolean hovered;
     public final BufferedImage arrow;
     public final BufferedImage arrowHovered;
+    public final String[] optionList;
 
 
-    public OriginalDropdownList(String[] itemList, int offsetX, int offsetY, int width, int height, Font textFont, Color textColor, BufferedImage arrow, BufferedImage arrowHovered) {
+    public OriginalDropdownList(
+        String[] itemList,
+        int offsetX, int offsetY,
+        int width, int height,
+        Font textFont, Color textColor,
+        BufferedImage arrow, BufferedImage arrowHovered) {
 
-        // create new overlay panel
-        // create list panel with items
-        // add list to overlay
-        // add overlay to background panel
+        // todo: add DropdownProps
 
         this.hovered = false;
         this.arrow = arrow;
         this.arrowHovered = arrowHovered;
+        this.optionList = itemList;
 
-        this.setModel(new DefaultComboBoxModel<>(itemList));
+        this.setModel(new DefaultComboBoxModel<>(this.optionList));
         this.setBounds(offsetX, offsetY, width, height);
         this.setBackground(Color.CYAN);
         this.setOpaque(false);
@@ -43,7 +44,6 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
         this.setForeground(textColor);
 
         this.addMouseListener(this);
-        this.addMouseMotionListener(this);
 
         return;
     }
@@ -81,38 +81,15 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
 
 
     @Override
-    public void mouseMoved(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
     public void mousePressed(MouseEvent event) {
 
-        System.out.printf("event received\n");
-
-        // create new jpanel
-        // add it to parent component
-        // repaint
-
         Container parent = this.getParent();
+        OriginalPopup list = new OriginalPopup(this);
+        OriginalOverlay overlay = new OriginalOverlay(list);
 
-        JPanel overlay = new JPanel(null);
-
-        overlay.setBounds(0, 0, 800, 600);
-        overlay.setBackground(Color.BLUE);
-        overlay.setOpaque(true);
-
-        JPanel list = new JPanel();
-
-        list.setBounds(100, 100, 100, 100);
-        list.setBackground(Color.YELLOW);
-        list.setOpaque(true);
-
-        overlay.add(list);
-        parent.add(overlay, 1);
-
+        parent.add(overlay, JLayeredPane.PALETTE_LAYER);
         parent.repaint();
+
         return;
     }
 
@@ -137,12 +114,6 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
 
     @Override
     public void mouseExited(MouseEvent event) {
-        return;
-    }
-
-
-    @Override
-    public void mouseDragged(MouseEvent event) {
         return;
     }
 }

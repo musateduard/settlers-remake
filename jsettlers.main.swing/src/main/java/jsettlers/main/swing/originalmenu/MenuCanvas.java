@@ -250,6 +250,8 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     @Override
     public void mousePressed(MouseEvent event) {
 
+        // todo: fix component not finding popup panel when overlay is visible
+
         Point cursor = this.getScaledPosition(event);
         Component component = this.internalPanel.getComponentAt(cursor);
 

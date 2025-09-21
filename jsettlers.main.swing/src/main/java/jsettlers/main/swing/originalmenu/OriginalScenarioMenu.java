@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
@@ -15,35 +14,60 @@ import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Objects;
+import java.util.List;
 
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
+import jsettlers.graphics.map.MapContent;
 import jsettlers.graphics.map.draw.ImageProvider;
-import jsettlers.common.images.OriginalImageLink;
+import jsettlers.logic.map.loading.MapLoader;
+import jsettlers.logic.map.loading.list.MapList;
 import jsettlers.common.images.EImageLinkType;
-import jsettlers.main.swing.JSettlersFrame;
+import jsettlers.common.images.OriginalImageLink;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
 import jsettlers.main.swing.originalmenu.components.DropdownProps;
 import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
 import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
+import jsettlers.main.swing.originalmenu.components.OriginalMapsDialog;
 import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
+import jsettlers.main.swing.JSettlersFrame;
 
 
 public class OriginalScenarioMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
     public final MenuCanvas canvas;
+    public OriginalDropdownList currentGamePreset;
+    public MapContent gameMap;
 
 
     public OriginalScenarioMenu(JSettlersFrame mainFrame) {
+
+        /*
+        note:
+
+        this class should hold a MapContent instance whose properties are set by the various menu settings
+        after map settings are set the class should call mainFrame.setContent()
+        the start game function should be implemented similar to startGameListener in JoinGamePanel.setSinglePlayerMap()
+        */
 
         // todo: add all input fields
         // todo: add player rows
         // todo: add event listener to cancel button
         // todo: add initial map dialog
+        // todo: implement start game method using MapContent
+
+        List<MapLoader> mapList = MapList.getDefaultList().getFreshMaps().getItems();
+
+        System.out.printf("total maps %d\n", mapList.size());
+
+        for (MapLoader item : mapList) {
+            System.out.printf("%s\n", item.getMapName());
+        }
 
         this.mainFrame = mainFrame;
+        // this.gameMap = new MapContent();
 
         this.setOpaque(true);
         this.setBackground(Color.BLACK);
@@ -178,19 +202,30 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
         OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
-        cancelButton.addActionListener(
-            (event) -> {
-                this.returnToMainMenu();
-                return;
-            }
-        );
+        ActionListener buttonListener = (event) -> {
 
-        okButton.addActionListener(
-            (event) -> {
-                System.out.printf("ok button pressed\n");
-                return;
+            if (event.getSource() == cancelButton) {
+                this.returnToMainMenu();
             }
-        );
+
+            else if (event.getSource() == okButton) {
+                System.out.printf("ok button pressed\n");
+            }
+
+            else if (event.getSource() == mapsButton) {
+                this.showMapsDialog();
+            }
+
+            else {
+                System.out.printf("button missing action listener %s\n", event.getSource());
+            }
+
+            return;
+        };
+
+        cancelButton.addActionListener(buttonListener);
+        okButton.addActionListener(buttonListener);
+        mapsButton.addActionListener(buttonListener);
 
         OriginalButton[] buttonList = {
             cancelButton,
@@ -239,6 +274,8 @@ public class OriginalScenarioMenu extends JPanel {
             computers
         };
 
+        // todo: finish game name input field
+
         // declare all input fields and their event listeners
         JFormattedTextField test1 = new JFormattedTextField("player's game");
 
@@ -261,12 +298,14 @@ public class OriginalScenarioMenu extends JPanel {
         );
 
         String[] goodsList = {"Default", "Low", "Medium", "High"};
-        String[] gameTypeList = {"Map Default", "No Teams", "Teams"};  // default value: No Teams
-        String[] gameTypePresetList = {"League", "Free for All", "Free Alliances", "Play Alone"};  // dynamically allocated based on game type
+        String[] gameTypeList = {"Map Defaults", "No Teams", "Teams"};  // default value: No Teams
+        String[] gamePresetList = {"League", "Free for All", "Free Alliances", "Play Alone"};  // dynamically allocated based on game type
 
         OriginalDropdownList goodsDropdown = new OriginalDropdownList(goodsList, 149, 234, 0, dropdownProps);
         OriginalDropdownList gameTypeDropdown = new OriginalDropdownList(gameTypeList, 149, 327, 1, dropdownProps);
-        OriginalDropdownList gameTypePresetDropdown = new OriginalDropdownList(gameTypePresetList, 149, 359, 1, dropdownProps);
+        OriginalDropdownList gamePresetDropdown = new OriginalDropdownList(gamePresetList, 149, 359, 1, dropdownProps);
+
+        this.currentGamePreset = gamePresetDropdown;
 
         ActionListener dropdownListener = (event) -> {
 
@@ -278,50 +317,15 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (element == gameTypeDropdown) {
-
-                System.out.printf("game type selected %s\n", selectedItem);
-
-                // todo: game type should update game preset list
-
-                // create new preset dropdown
-                String[] newPresetList;
-                int newDefaultIndex;
-
-                if (Objects.equals(selectedItem, "Map Defaults")) {
-                    newPresetList = new String[] {"No map defaults"};
-                    newDefaultIndex = 0;
-                }
-
-                else if (Objects.equals(selectedItem, "No Teams")) {
-                    newPresetList = new String[] {"League", "Free for All", "Free Alliances", "Play Alone"};
-                    newDefaultIndex = 1;
-                }
-
-                else {
-                    newPresetList = new String[] {"2 vs. 2", "3 vs. 3", "4 vs. 4", "2 vs. 2 vs. 2", "other"};
-                    newDefaultIndex = 0;
-                }
-
-                OriginalDropdownList newPresetDropdown = new OriginalDropdownList(
-                    newPresetList,
-                    gameTypePresetDropdown.getX(), gameTypePresetDropdown.getY(),
-                    newDefaultIndex, dropdownProps
-                );
-
-                // remove current preset dropdown
-                // JLayeredPane internalPanel = this.canvas.internalPanel;
-                // note: how do i remove old preset dropdown from internal panel?
-
-                // add new preset dropdown to internal panel
-                // revalidate/repaint
+                this.updateGamePresetDropdown(selectedItem);
             }
 
-            else if (element == gameTypePresetDropdown) {
+            else if (element == gamePresetDropdown) {
                 System.out.printf("game preset selected\n");
             }
 
             else {
-                System.out.printf("other dropdown clicked\n");
+                System.out.printf("dropdown element missing action listener %s\n", event.getSource());
             }
 
             return;
@@ -329,12 +333,12 @@ public class OriginalScenarioMenu extends JPanel {
 
         goodsDropdown.addActionListener(dropdownListener);
         gameTypeDropdown.addActionListener(dropdownListener);
-        gameTypePresetDropdown.addActionListener(dropdownListener);
+        gamePresetDropdown.addActionListener(dropdownListener);
 
         OriginalDropdownList[] dropdownList = {
             goodsDropdown,
             gameTypeDropdown,
-            gameTypePresetDropdown
+            gamePresetDropdown
         };
 
         // add background to menu
@@ -345,13 +349,69 @@ public class OriginalScenarioMenu extends JPanel {
     }
 
 
-    public void dropdownListener(ActionEvent event) {
+    public void updateGamePresetDropdown(String selectedItem) {
+
+        // create new preset dropdown
+        String[] newPresetList;
+        int newDefaultIndex;
+
+        if (Objects.equals(selectedItem, "Map Defaults")) {
+            newPresetList = new String[] {"No map defaults"};
+            newDefaultIndex = 0;
+        }
+
+        else if (Objects.equals(selectedItem, "No Teams")) {
+            newPresetList = new String[] {"League", "Free for All", "Free Alliances", "Play Alone"};
+            newDefaultIndex = 1;
+        }
+
+        else {
+            newPresetList = new String[] {"2 vs. 2", "3 vs. 3", "4 vs. 4", "2 vs. 2 vs. 2", "other"};
+            newDefaultIndex = 0;
+        }
+
+        DropdownProps props = new DropdownProps(
+            this.currentGamePreset.getWidth(), this.currentGamePreset.getHeight(),
+            this.currentGamePreset.getFont(), this.currentGamePreset.getForeground(),
+            this.currentGamePreset.arrow, this.currentGamePreset.arrowHovered
+        );
+
+        OriginalDropdownList newPresetDropdown = new OriginalDropdownList(
+            newPresetList, this.currentGamePreset.getX(), this.currentGamePreset.getY(),
+            newDefaultIndex, props
+        );
+
+        // remove current preset dropdown
+        this.canvas.internalPanel.remove(this.currentGamePreset);
+        this.currentGamePreset = newPresetDropdown;
+
+        // add new preset dropdown to internal panel
+        this.canvas.internalPanel.add(this.currentGamePreset);
+        this.canvas.internalPanel.revalidate();
+        this.canvas.internalPanel.repaint();
+
         return;
     }
 
 
     public void returnToMainMenu() {
         this.mainFrame.showOriginalMainMenu();
+        return;
+    }
+
+
+    public void showMapsDialog() {
+
+        System.out.printf("maps button pressed\n");
+
+        // create maps dialog component
+        OriginalMapsDialog mapsDialog = new OriginalMapsDialog();
+
+        // add dialog to overlay
+        // repaint
+        // when user clicks ok set selected map
+        // close dialog and remove overlay
+
         return;
     }
 

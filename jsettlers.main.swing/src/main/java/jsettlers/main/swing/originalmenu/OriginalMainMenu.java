@@ -164,7 +164,7 @@ public class OriginalMainMenu extends JPanel {
             }
 
             else {
-                System.out.printf("button not recognized\n");
+                System.out.printf("button missing action listener %s\n", event.getSource());
             }
 
             return;

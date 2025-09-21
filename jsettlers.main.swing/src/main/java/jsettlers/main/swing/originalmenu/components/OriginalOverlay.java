@@ -10,7 +10,12 @@ import javax.swing.JPanel;
 
 public class OriginalOverlay extends JPanel implements MouseListener {
 
-    public OriginalOverlay() {
+    public final boolean clickOutside;
+
+
+    public OriginalOverlay(boolean clickOutside) {
+
+        this.clickOutside = clickOutside;
 
         this.setLayout(null);
         this.setBounds(0, 0, 800, 600);
@@ -44,9 +49,12 @@ public class OriginalOverlay extends JPanel implements MouseListener {
         }
 
         else {
-            JLayeredPane internalPanel = (JLayeredPane) this.getParent();
-            internalPanel.remove(this);
-            internalPanel.repaint();
+
+            if (this.clickOutside == true) {
+                JLayeredPane internalPanel = (JLayeredPane) this.getParent();
+                internalPanel.remove(this);
+                internalPanel.repaint();
+            }
         }
 
         return;

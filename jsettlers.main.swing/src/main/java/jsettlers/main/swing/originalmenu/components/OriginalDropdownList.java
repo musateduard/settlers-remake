@@ -82,7 +82,7 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
 
         JLayeredPane internalPanel = (JLayeredPane) this.getParent();
         OriginalPopup list = new OriginalPopup(this);
-        OriginalOverlay overlay = new OriginalOverlay();
+        OriginalOverlay overlay = new OriginalOverlay(true);
 
         overlay.add(list);
 

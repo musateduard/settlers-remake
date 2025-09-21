@@ -68,10 +68,15 @@ import jsettlers.main.swing.menu.joinpanel.slots.factories.ClientOfMultiplayerPl
 import jsettlers.main.swing.menu.joinpanel.slots.factories.HostOfMultiplayerPlayerSlotFactory;
 import jsettlers.main.swing.menu.joinpanel.slots.factories.IPlayerSlotFactory;
 import jsettlers.main.swing.menu.joinpanel.slots.factories.SinglePlayerSlotFactory;
+import jsettlers.main.swing.menu.openpanel.OpenPanel;
+
 
 /**
+ * this class is used to render the join game panel after user selected the map
+ * from the Start Single Player Game menu.
+ *
  * Layout:
- * 
+ *
  * +---------------------------------------------------------------+
  * |              titleLabel                                       |
  * +------------------------+--------------------------------------+
@@ -81,7 +86,7 @@ import jsettlers.main.swing.menu.joinpanel.slots.factories.SinglePlayerSlotFacto
  * |                        +--------------------------------------+
  * |                        |       southPanel                     |
  * +------------------------+--------------------------------------+
- * 
+ *
  * @author codingberlin
  */
 public class JoinGamePanel extends BackgroundPanel {
@@ -158,7 +163,7 @@ public class JoinGamePanel extends BackgroundPanel {
 		chatPanel.add(chatInputPanel, BorderLayout.SOUTH);
 		chatInputPanel.add(chatInputField, BorderLayout.CENTER);
 		chatInputPanel.add(sendChatMessageButton, BorderLayout.EAST);
-		
+
 		playerSlotsPanel.setLayout(new GridBagLayout());
 		playerSlotsPanel.setBorder(new EmptyBorder(20, 25, 20, 20));
 		JPanel southPanel = new JPanel();
@@ -167,7 +172,7 @@ public class JoinGamePanel extends BackgroundPanel {
 		southPanel.add(cancelButton);
 		startGameButton.setBorder(BorderFactory.createEmptyBorder(10, 5, 10, 15));
 		southPanel.add(startGameButton);
-		
+
 		JPanel content = new JPanel(new GridBagLayout());
 		content.add(titleLabel, new GBC().grid(0, 0).size(2, 1).fillx().insets(0, 0, 30, 0));
 		content.add(westPanel, new GBC().grid(0, 1).size(1, 3).filly());
@@ -214,39 +219,68 @@ public class JoinGamePanel extends BackgroundPanel {
 		sendChatMessageButton.setText(Labels.getString("join-game-panel-send-chat-message"));
 	}
 
+
+    /**
+     * this method runs after the user selects a map from the map list menu. it also sets the action listener
+     * for the {@link JoinGamePanel#startGameButton}. the {@link JoinGamePanel#startGameButton} listener
+     * is a lambda function that creates a new {@link JSettlersGame} instance and calls {@link JSettlersGame#start}
+     * on it. after that it calls {@link JSettlersFrame#showStartingGamePanel}
+     * to display the loading screen and finally it returns. the mapLoader argument is provided
+     * by the {@link OpenPanel#getSelectedMap()} method after user double clicked the selected map.
+     *
+     * @param mapLoader {@link MapLoader} instance that contains .map file data.
+     */
 	public void setSinglePlayerMap(MapLoader mapLoader) {
+
 		this.playerSlotFactory = new SinglePlayerSlotFactory();
-		titleLabel.setText(Labels.getString("join-game-panel-new-single-player-game-title"));
-		peaceTimeComboBox.setEnabled(true);
-		startResourcesComboBox.setEnabled(true);
-		startGameButton.setVisible(true);
-		setChatVisible(false);
-		cancelButton.addActionListener(e -> settlersFrame.showMainMenu());
-		setStartButtonActionListener(e -> {
-			long randomSeed = System.currentTimeMillis();
-			PlayerSetting[] playerSettings = playerSlots.stream()
-					.sorted(Comparator.comparingInt(PlayerSlot::getSlot))
-					.map(playerSlot -> {
-						if (playerSlot.isAvailable()) {
-							return new PlayerSetting(playerSlot.getPlayerType(), playerSlot.getCivilisation(),
-									playerSlot.getTeam());
-						} else {
-							return new PlayerSetting();
-						}
-					})
-					.toArray(PlayerSetting[]::new);
+		this.titleLabel.setText(Labels.getString("join-game-panel-new-single-player-game-title"));
+		this.peaceTimeComboBox.setEnabled(true);
+		this.startResourcesComboBox.setEnabled(true);
+		this.startGameButton.setVisible(true);
+		this.setChatVisible(false);
+		this.cancelButton.addActionListener((event) -> this.settlersFrame.showMainMenu());
 
-			MapStartResourcesUIWrapper selected = (MapStartResourcesUIWrapper) startResourcesComboBox.getSelectedItem();
-			InitialGameState initialGameState = new InitialGameState(playerSlots.get(0).getSlot(), playerSettings, randomSeed, selected.getStartResources());
-			JSettlersGame game = new JSettlersGame(mapLoader, initialGameState);
-			IStartingGame startingGame = game.start();
-			settlersFrame.showStartingGamePanel(startingGame);
-		});
-		setCancelButtonActionListener(e -> settlersFrame.showMainMenu());
+        ActionListener startGameListener = (event) -> {
 
-		prepareUiFor(mapLoader);
-		numberOfPlayersComboBox.informGame(null);
+            long randomSeed = System.currentTimeMillis();
+
+            PlayerSetting[] playerSettings = this.playerSlots.stream()
+                .sorted(Comparator.comparingInt(PlayerSlot::getSlot))
+                .map(
+                    (playerSlot) -> {
+                        if (playerSlot.isAvailable()) {
+                            return new PlayerSetting(playerSlot.getPlayerType(), playerSlot.getCivilisation(), playerSlot.getTeam());
+                        }
+
+                        else {
+                            return new PlayerSetting();
+                        }
+                    }
+                )
+                .toArray(PlayerSetting[]::new);
+
+            MapStartResourcesUIWrapper startResourcesDropdown = (MapStartResourcesUIWrapper) this.startResourcesComboBox.getSelectedItem();
+            EMapStartResources startingResources = startResourcesDropdown.getStartResources();
+            byte playerId = this.playerSlots.get(0).getSlot();
+
+            InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, startingResources);
+            JSettlersGame game = new JSettlersGame(mapLoader, initialGameState);
+            IStartingGame startingGame = game.start();
+
+            this.settlersFrame.showStartingGamePanel(startingGame);
+
+            return;
+        };
+
+        this.setStartButtonActionListener(startGameListener);
+		this.setCancelButtonActionListener((event) -> this.settlersFrame.showMainMenu());
+
+		this.prepareUiFor(mapLoader);
+		this.numberOfPlayersComboBox.informGame(null);
+
+        return;
 	}
+
 
 	public void setNewMultiPlayerMap(MapLoader mapLoader, IMultiplayerConnector connector) {
 		this.playerSlotFactory = new HostOfMultiplayerPlayerSlotFactory(connector);
@@ -449,11 +483,23 @@ public class JoinGamePanel extends BackgroundPanel {
 		}
 	}
 
+
+    /**
+     * this method removes all current action listeners from {@link JoinGamePanel#startGameButton}
+     * and adds the new listener provided as argument to it.
+     *
+     * @param actionListener {@link ActionListener} object to add to {@link JoinGamePanel#startGameButton}
+     */
 	private void setStartButtonActionListener(ActionListener actionListener) {
-		ActionListener[] actionListeners = startGameButton.getActionListeners();
-		Arrays.stream(actionListeners).forEach(startGameButton::removeActionListener);
-		startGameButton.addActionListener(actionListener);
+
+		ActionListener[] actionListeners = this.startGameButton.getActionListeners();
+		Arrays.stream(actionListeners).forEach(this.startGameButton::removeActionListener);
+
+        this.startGameButton.addActionListener(actionListener);
+
+        return;
 	}
+
 
 	private void setCancelButtonActionListener(ActionListener actionListener) {
 		ActionListener[] actionListeners = cancelButton.getActionListeners();

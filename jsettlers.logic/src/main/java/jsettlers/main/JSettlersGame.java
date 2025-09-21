@@ -144,18 +144,22 @@ public class JSettlersGame {
 		}
 	}
 
+
 	/**
 	 * Starts the game in a new thread. Returns immediately.
 	 *
-	 * @return
+	 * @return {@link IStartedGame}
 	 */
 	public synchronized IStartingGame start() {
-		if (!started) {
-			started = true;
-			new Thread(null, gameRunner, "GameThread", 16 * 1024 * 1024).start();
+
+		if (!this.started) {
+			this.started = true;
+			new Thread(null, this.gameRunner, "GameThread", 16 * 1024 * 1024).start();
 		}
-		return gameRunner;
+
+		return this.gameRunner;
 	}
+
 
 	public void stop() {
 		synchronized (stopMutex) {

@@ -29,9 +29,9 @@ import jsettlers.logic.player.PlayerSetting;
 
 import java.util.Locale;
 
+
 /**
- * This is the base class that prvides support for loading maps and starting a new game from them.
- * 
+ * This is the base class that provides support for loading maps and starting a new game from them.
  */
 public abstract class MapLoader implements IGameCreator, Comparable<MapLoader>, IMapDefinition {
 
@@ -109,7 +109,7 @@ public abstract class MapLoader implements IGameCreator, Comparable<MapLoader>, 
 
 	/**
 	 * Gets the map data for this loader, if the data is available.
-	 * 
+	 *
 	 * @return
 	 */
 	public abstract IMapData getMapData() throws MapLoadException;

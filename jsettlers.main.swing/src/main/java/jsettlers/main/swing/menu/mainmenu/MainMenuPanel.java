@@ -19,6 +19,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionListener;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -47,6 +48,7 @@ import jsettlers.main.swing.menu.multiplayer.lan.LANConnectionPanel;
 import jsettlers.main.swing.menu.multiplayer.EditServerEntryPanel;
 import jsettlers.main.swing.menu.multiplayer.ServerConnectionPanel;
 import jsettlers.main.swing.menu.multiplayer.ServerListConnectionPanel;
+import jsettlers.main.swing.menu.openpanel.IMapSelectedListener;
 import jsettlers.main.swing.menu.openpanel.OpenPanel;
 import jsettlers.main.swing.menu.settingsmenu.SettingsMenuPanel;
 import jsettlers.main.swing.settings.ServerEntry;
@@ -76,10 +78,16 @@ public class MainMenuPanel extends SplitedBackgroundPanel {
 
 	private final OpenPanel openSinglePlayerPanel;
 
+
 	public MainMenuPanel(JSettlersFrame settlersFrame) {
+
 		this.settlersFrame = settlersFrame;
 
-		openSinglePlayerPanel = new OpenPanel(MapList.getDefaultList().getFreshMaps().getItems(), settlersFrame::showNewSinglePlayerGameMenu);
+        List<MapLoader> singlePlayerMapList = MapList.getDefaultList().getFreshMaps().getItems();
+        IMapSelectedListener mapSelectListener = this.settlersFrame::showNewSinglePlayerGameMenu;
+
+		this.openSinglePlayerPanel = new OpenPanel(singlePlayerMapList, mapSelectListener);
+
 		OpenPanel openSaveGamePanel = new OpenPanel(MapList.getDefaultList().getSavedMaps(), this::loadSavegame);
 		SettingsMenuPanel settingsPanel = new SettingsMenuPanel(this);
 

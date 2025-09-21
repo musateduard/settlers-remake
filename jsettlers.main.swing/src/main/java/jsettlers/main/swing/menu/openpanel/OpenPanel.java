@@ -39,13 +39,14 @@ import jsettlers.graphics.localization.Labels;
 import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.main.swing.lookandfeel.ELFStyle;
 
+
 /**
  * Panel to open an existing map
  *
  * @author Andreas Butti
  *
  */
-public class OpenPanel extends JPanel {
+public class OpenPanel extends JPanel implements DocumentListener {
 	private static final long serialVersionUID = 1L;
 
 	/**
@@ -78,95 +79,93 @@ public class OpenPanel extends JPanel {
 	 */
 	private EMapFilter currentFilter = EMapFilter.ALL;
 
-	/**
-	 * Constructor
-	 *
-	 * @param doubleclickListener
-	 *            Gets called when an entry is double clicked, can be <code>null</code>
-	 */
-	public OpenPanel(final ChangingList<? extends MapLoader> maps, IMapSelectedListener mapSelectedListener) {
-		this(maps.getItems(), mapSelectedListener);
-		maps.setListener(changedLister -> {
-			setMapLoaders(changedLister.getItems());
-		});
-	}
 
 	/**
 	 * Constructor
 	 *
-	 * @param maps
-	 *            Maps to display
-	 * @param doubleclickListener
-	 *            Gets called when an entry is double clicked, can be <code>null</code>
+	 * @param maps {@link ChangingList<MapLoader>} list of maps to display
+     * @param mapSelectedListener {@link IMapSelectedListener} action listener for selected map
+	 */
+	public OpenPanel(final ChangingList<? extends MapLoader> maps, IMapSelectedListener mapSelectedListener) {
+
+        this(maps.getItems(), mapSelectedListener);
+		maps.setListener((changedLister) -> this.setMapLoaders(changedLister.getItems()));
+
+        return;
+	}
+
+
+	/**
+	 * Constructor
+	 *
+     * @param maps {@link ChangingList<MapLoader>} list of maps to display
+     * @param mapSelectedListener {@link IMapSelectedListener} action listener for selected map
 	 */
 	public OpenPanel(final List<? extends MapLoader> maps, IMapSelectedListener mapSelectedListener) {
 		this(maps, mapSelectedListener, new MapListCellRenderer());
+        return;
 	}
+
 
 	/**
 	 * Constructor
 	 *
-	 * @param maps
-	 *            Maps to display
-	 * @param doubleclickListener
-	 *            Gets called when an entry is double clicked, can be <code>null</code>
-	 * @param cellRenderer
-	 *            Cell renderer to use
+     * @param maps {@link ChangingList<MapLoader>} list of maps to display
+     * @param mapSelectedListener {@link IMapSelectedListener} action listener for selected map
+	 * @param cellRenderer {@link ListCellRenderer<MapLoader>} Cell renderer to use
 	 */
-	public OpenPanel(final List<? extends MapLoader> maps, final IMapSelectedListener mapSelectedListener,
-			final ListCellRenderer<MapLoader> cellRenderer) {
-		setMapLoadersWithoutSearchChanged(maps);
-		setLayout(new BorderLayout());
+	public OpenPanel(
+        final List<? extends MapLoader> maps,
+        final IMapSelectedListener mapSelectedListener,
+        final ListCellRenderer<MapLoader> cellRenderer) {
 
-		initFilter();
+		this.setMapLoadersWithoutSearchChanged(maps);
+		this.setLayout(new BorderLayout());
 
-		searchTextField = new SearchTextField();
-		searchTextField.putClientProperty(ELFStyle.KEY, ELFStyle.TEXT_DEFAULT);
+		this.initFilter();
+
+		this.searchTextField = new SearchTextField();
+		this.searchTextField.putClientProperty(ELFStyle.KEY, ELFStyle.TEXT_DEFAULT);
 
 		Box box = Box.createVerticalBox();
-		box.add(filterPanel);
-		box.add(searchTextField);
+		box.add(this.filterPanel);
+		box.add(this.searchTextField);
 
-		add(box, BorderLayout.NORTH);
+		this.add(box, BorderLayout.NORTH);
 
-		searchTextField.getDocument().addDocumentListener(new DocumentListener() {
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				searchChanged();
-			}
+        this.searchTextField.getDocument().addDocumentListener(this);
 
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				searchChanged();
-			}
+        MouseAdapter mapClickListener = new MouseAdapter() {
 
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				searchChanged();
-			}
-		});
+            @Override
+            public void mouseClicked(MouseEvent event) {
 
-		mapList = new JList<>(listModelFiltered);
-		mapList.setCellRenderer(cellRenderer);
-		mapList.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2) {
-					if (mapSelectedListener != null) {
-						mapSelectedListener.mapSelected(getSelectedMap());
-					}
-				}
-			}
-		});
-		mapList.setOpaque(false);
-		add(new JScrollPane(mapList), BorderLayout.CENTER);
+                if (event.getClickCount() == 2) {
+                    if (mapSelectedListener != null) {
+                        mapSelectedListener.mapSelected(getSelectedMap());
+                    }
+                }
 
-		searchChanged();
+                return;
+            }
+        };
+
+		this.mapList = new JList<>(this.listModelFiltered);
+		this.mapList.setCellRenderer(cellRenderer);
+		this.mapList.addMouseListener(mapClickListener);
+		this.mapList.setOpaque(false);
+
+		this.add(new JScrollPane(this.mapList), BorderLayout.CENTER);
+
+		this.searchChanged();
 
 		if (maps.size() > 0) {
-			mapList.setSelectedIndex(0);
+			this.mapList.setSelectedIndex(0);
 		}
+
+        return;
 	}
+
 
 	public void addMapLoader(MapLoader newMap) {
 		availableMaps.add(newMap);
@@ -250,12 +249,15 @@ public class OpenPanel extends JPanel {
 
 	}
 
+
 	/**
 	 * @return The selected map
 	 */
 	public MapLoader getSelectedMap() {
-		return mapList.getSelectedValue();
+		MapLoader selectedMap = this.mapList.getSelectedValue();
+        return selectedMap;
 	}
+
 
 	/**
 	 * @return true if there are no maps in the list
@@ -263,4 +265,25 @@ public class OpenPanel extends JPanel {
 	public boolean isEmpty() {
 		return availableMaps.isEmpty();
 	}
+
+
+    @Override
+    public void removeUpdate(DocumentEvent event) {
+        this.searchChanged();
+        return;
+    }
+
+
+    @Override
+    public void insertUpdate(DocumentEvent event) {
+        this.searchChanged();
+        return;
+    }
+
+
+    @Override
+    public void changedUpdate(DocumentEvent event) {
+        this.searchChanged();
+        return;
+    }
 }

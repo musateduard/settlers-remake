@@ -19,6 +19,7 @@ import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
+import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 
@@ -77,8 +78,6 @@ public class JSettlersFrame extends JFrame {
 		this.setTitle("JSettlers - Version: " + CommitInfo.COMMIT_HASH_SHORT);
 		this.setIconImage(JSettlersSwingUtil.APP_ICON);
 
-		SettingsManager settingsManager = SettingsManager.getInstance();
-
 		this.mainPanel = new MainMenuPanel(this);
 
         // jsettlers look and feel menu
@@ -95,22 +94,23 @@ public class JSettlersFrame extends JFrame {
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
 
+        SettingsManager settingsManager = SettingsManager.getInstance();
+
 		this.fullScreen = settingsManager.getFullScreenMode();
 		this.updateFullScreenMode();
 
-		KeyboardFocusManager keyboardFocusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        KeyEventDispatcher altEnterListener = (event) -> {
 
-		keyboardFocusManager.addKeyEventDispatcher(
-            (event) -> {
-
-                if (event.getID() == KeyEvent.KEY_PRESSED && event.isAltDown() && event.getKeyCode() == KeyEvent.VK_ENTER) {
-                    this.toggleFullScreenMode();
-                    return true;  // consume this key event.
-                }
-
-                return false;
+            if (event.getID() == KeyEvent.KEY_PRESSED && event.isAltDown() && event.getKeyCode() == KeyEvent.VK_ENTER) {
+                this.toggleFullScreenMode();
+                return true;  // consume this key event.
             }
-        );
+
+            return false;
+        };
+
+		KeyboardFocusManager keyManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+		keyManager.addKeyEventDispatcher(altEnterListener);
 
         return;
 	}
@@ -180,9 +180,19 @@ public class JSettlersFrame extends JFrame {
     }
 
 
+    /**
+     * this method is called right after user clicks Start Game on New Singleplayer Game menu
+     * in order to display the loading screen. this method is called from startGameButton's action listener
+     * in {@link JoinGamePanel}.
+     *
+     * @param startingGame {@link IStartingGame} interface
+     */
 	public void showStartingGamePanel(IStartingGame startingGame) {
-		startingGamePanel.setStartingGame(startingGame);
-		setNewContentPane(startingGamePanel);
+
+        this.startingGamePanel.setStartingGame(startingGame);
+		this.setNewContentPane(this.startingGamePanel);
+
+        return;
 	}
 
 

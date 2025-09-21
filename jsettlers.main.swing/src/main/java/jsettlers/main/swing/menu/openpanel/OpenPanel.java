@@ -211,42 +211,51 @@ public class OpenPanel extends JPanel implements DocumentListener {
 		}
 	}
 
+
 	/**
-	 * Search has changed, update the list
+	 * this method is called each time the {@link OpenPanel#searchTextField} changes and updates
+     * the {@link OpenPanel#listModelFiltered} accordingly. it's also called in the constructor
+     * when the map list is first initialized.
 	 */
 	protected void searchChanged() {
-		String search = searchTextField.getText().toLowerCase(Locale.ENGLISH);
 
-		listModelFiltered.clear();
+		String search = this.searchTextField.getText().toLowerCase(Locale.ENGLISH);
 
-		availableMaps.stream()
-				.filter(currentFilter::filter)
-				.filter(mapLoader -> matchesSearch(mapLoader, search))
-				.forEach(listModelFiltered::addElement);
+		this.listModelFiltered.clear();
+
+		this.availableMaps.stream()
+            .filter(this.currentFilter::filter)
+            .filter((mapLoader) -> this.matchesSearch(mapLoader, search))
+            .forEach(this.listModelFiltered::addElement);
+
+        return;
 	}
+
 
 	/**
 	 * Checks if a map matches the search criteria
 	 *
-	 * @param m
+	 * @param map
 	 *            Map
 	 * @param search
 	 *            Criteria
 	 * @return true if yes, false if no
 	 */
-	private boolean matchesSearch(MapLoader m, String search) {
+	private boolean matchesSearch(MapLoader map, String search) {
+
 		if (search.isEmpty()) {
 			return true;
 		}
 
-		if (m.getMapName().toLowerCase(Locale.ENGLISH).contains(search)) {
+		if (map.getMapName().toLowerCase(Locale.ENGLISH).contains(search)) {
 			return true;
 		}
-		if (m.getDescription().toLowerCase(Locale.ENGLISH).contains(search)) {
-			return true;
-		}
-		return m.getMapId().toLowerCase(Locale.ENGLISH).contains(search);
 
+		if (map.getDescription().toLowerCase(Locale.ENGLISH).contains(search)) {
+			return true;
+		}
+
+		return map.getMapId().toLowerCase(Locale.ENGLISH).contains(search);
 	}
 
 

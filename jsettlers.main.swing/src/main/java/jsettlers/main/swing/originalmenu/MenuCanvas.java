@@ -18,7 +18,7 @@ import javax.swing.JPanel;
 
 import jsettlers.main.swing.originalmenu.components.Hoverable;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
-import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
+import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
 
 
 /**
@@ -52,7 +52,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
         OriginalButton[] buttonList,
         JLabel[] labelList,
         JFormattedTextField[] inputFieldList,
-        OriginalDropdownList[] dropdownList) {
+        OriginalDropdown[] dropdownList) {
 
         this.menuImage = menuImage;
         this.buttonList = buttonList;
@@ -83,7 +83,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
         }
 
         if (dropdownList != null) {
-            for (OriginalDropdownList dropdown : dropdownList) {
+            for (OriginalDropdown dropdown : dropdownList) {
                 internalPanel.add(dropdown, JLayeredPane.DEFAULT_LAYER);
             }
         }

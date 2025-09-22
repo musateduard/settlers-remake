@@ -9,7 +9,7 @@ import javax.swing.JLayeredPane;
 import javax.swing.JComboBox;
 
 
-public class OriginalDropdownList extends JComboBox<String> implements MouseListener, Hoverable {
+public class OriginalDropdown extends JComboBox<String> implements MouseListener, Hoverable {
 
     private boolean hovered;
     public final BufferedImage arrow;
@@ -17,7 +17,7 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
     public final String[] optionList;
 
 
-    public OriginalDropdownList(String[] itemList, int offsetX, int offsetY, int defaultIndex, DropdownProps props) {
+    public OriginalDropdown(String[] itemList, int offsetX, int offsetY, int defaultIndex, DropdownProps props) {
 
         super(itemList);
 
@@ -80,14 +80,14 @@ public class OriginalDropdownList extends JComboBox<String> implements MouseList
     @Override
     public void mousePressed(MouseEvent event) {
 
-        JLayeredPane internalPanel = (JLayeredPane) this.getParent();
+        JLayeredPane dropdownParent = (JLayeredPane) this.getParent();
         OriginalPopup list = new OriginalPopup(this);
         OriginalOverlay overlay = new OriginalOverlay(true);
 
         overlay.add(list);
 
-        internalPanel.add(overlay, JLayeredPane.PALETTE_LAYER);
-        internalPanel.repaint();
+        dropdownParent.add(overlay, JLayeredPane.PALETTE_LAYER);
+        dropdownParent.repaint();
 
         return;
     }

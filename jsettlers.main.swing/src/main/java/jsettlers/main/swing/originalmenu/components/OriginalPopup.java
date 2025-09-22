@@ -10,10 +10,10 @@ import javax.swing.JList;
 
 public class OriginalPopup extends JList<String> implements MouseListener {
 
-    public final OriginalDropdownList dropdown;
+    public final OriginalDropdown dropdown;
 
 
-    public OriginalPopup(OriginalDropdownList parent) {
+    public OriginalPopup(OriginalDropdown parent) {
 
         super(parent.optionList);
 

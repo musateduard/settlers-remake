@@ -11,7 +11,6 @@ import java.awt.FontFormatException;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +21,9 @@ import jsettlers.common.images.OriginalImageLink;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.main.swing.JSettlersFrame;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
-import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
+import jsettlers.main.swing.originalmenu.components.LabelProps;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
-import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
+import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 
 
 public class OriginalCampaignMenu extends JPanel {
@@ -75,18 +74,21 @@ public class OriginalCampaignMenu extends JPanel {
         assert fontStream != null;
         assert fontBoldStream != null;
 
-        Font menuFont;
-        Font menuFontBold;
+        Font labelFont;
+        Font titleFont;
+
+        Color labelColor = new Color(248, 220, 0);
+        Color titleColor = new Color(248, 92, 24);
 
         try {
-            menuFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            menuFontBold = Font.createFont(Font.TRUETYPE_FONT, fontBoldStream);
+            labelFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.PLAIN, 11.00f);
+            titleFont = Font.createFont(Font.TRUETYPE_FONT, fontBoldStream).deriveFont(Font.BOLD, 14.00f);
         }
 
         catch (IOException | FontFormatException exception) {
 
-            menuFont = new Font("Arial", Font.PLAIN, 11);
-            menuFontBold = new Font("Arial", Font.BOLD, 14);
+            labelFont = new Font("Arial", Font.PLAIN, 11);
+            titleFont = new Font("Arial", Font.BOLD, 14);
 
             System.out.printf("failed to open menu font: %s\n", loader.getName());
             exception.printStackTrace();
@@ -97,7 +99,7 @@ public class OriginalCampaignMenu extends JPanel {
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,
             buttonImagePressed.convertToBufferedImage(),
-            menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(248, 220, 0), true
+            labelFont, labelColor, true
         );
 
         OriginalButton[] buttonList = {
@@ -109,12 +111,15 @@ public class OriginalCampaignMenu extends JPanel {
         // todo: add button event listeners
 
         // declare all labels
-        TitleTextOrange menuTitle = new TitleTextOrange("Choose a Race", 350, 42);
-        LabelTextYellow descriptionEgyptians = new LabelTextYellow("Ramadamses (hard)", 125, 357);
-        LabelTextYellow descriptionRomans = new LabelTextYellow("Septimus Marius (easy)", 342, 505);
-        LabelTextYellow descriptionAsians = new LabelTextYellow("Tsu Tang (medium)", 602, 357);
+        LabelProps titleProps = new LabelProps(titleFont, titleColor);
+        LabelProps labelProps = new LabelProps(labelFont, labelColor);
 
-        JLabel[] labelList = {
+        OriginalLabel menuTitle = new OriginalLabel("Choose a Race", 350, 42, titleProps);
+        OriginalLabel descriptionEgyptians = new OriginalLabel("Ramadamses (hard)", 125, 357, labelProps);
+        OriginalLabel descriptionRomans = new OriginalLabel("Septimus Marius (easy)", 342, 505, labelProps);
+        OriginalLabel descriptionAsians = new OriginalLabel("Tsu Tang (medium)", 602, 357, labelProps);
+
+        OriginalLabel[] labelList = {
             menuTitle,
             descriptionEgyptians,
             descriptionRomans,

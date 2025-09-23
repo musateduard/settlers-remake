@@ -9,7 +9,6 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import java.io.IOException;
@@ -27,12 +26,12 @@ import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
 import jsettlers.main.swing.originalmenu.components.DropdownProps;
-import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
+import jsettlers.main.swing.originalmenu.components.LabelProps;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
 import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
 import jsettlers.main.swing.originalmenu.components.OriginalDialog;
 import jsettlers.main.swing.originalmenu.components.OriginalOverlay;
-import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
+import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 import jsettlers.main.swing.JSettlersFrame;
 
 
@@ -64,9 +63,9 @@ public class OriginalScenarioMenu extends JPanel {
 
         System.out.printf("total maps %d\n", mapList.size());
 
-        for (MapLoader item : mapList) {
-            System.out.printf("%s\n", item.getMapName());
-        }
+        // for (MapLoader item : mapList) {
+        //     System.out.printf("%s\n", item.getMapName());
+        // }
 
         this.mainFrame = mainFrame;
         // this.gameMap = new MapContent();
@@ -75,10 +74,6 @@ public class OriginalScenarioMenu extends JPanel {
         this.setBackground(Color.BLACK);
         this.setLayout(new GridBagLayout());
         this.setMinimumSize(new Dimension(800, 600));
-
-        // text colors
-        Color regularColor = new Color(255, 223, 0);
-        Color titleColor = new Color(248, 92, 24);
 
         // load all images
         ImageProvider imageProvider = ImageProvider.getInstance();
@@ -142,18 +137,21 @@ public class OriginalScenarioMenu extends JPanel {
         assert fontStream != null;
         assert fontBoldStream != null;
 
-        Font menuFont;
-        Font menuFontBold;
+        Font labelFont;
+        Font titleFont;
+
+        Color labelColor = new Color(255, 223, 0);
+        Color titleColor = new Color(248, 92, 24);
 
         try {
-            menuFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
-            menuFontBold = Font.createFont(Font.TRUETYPE_FONT, fontBoldStream);
+            labelFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.PLAIN, 11.00f);
+            titleFont = Font.createFont(Font.TRUETYPE_FONT, fontBoldStream).deriveFont(Font.BOLD, 14.00f);
         }
 
         catch (IOException | FontFormatException exception) {
 
-            menuFont = new Font("Arial", Font.PLAIN, 11);
-            menuFontBold = new Font("Arial", Font.BOLD, 14);
+            labelFont = new Font("Arial", Font.PLAIN, 11);
+            titleFont = new Font("Arial", Font.BOLD, 14);
 
             System.out.printf("failed to open menu font: %s\n", loader.getName());
             exception.printStackTrace();
@@ -164,7 +162,7 @@ public class OriginalScenarioMenu extends JPanel {
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,
             buttonImagePressed.convertToBufferedImage(),
-            menuFont.deriveFont(Font.PLAIN, 11.00f), regularColor, true
+            labelFont, labelColor, true
         );
 
         ButtonProps mapsButtonProps = new ButtonProps(
@@ -212,7 +210,17 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
         OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
-        Font dialogFont = menuFont.deriveFont(Font.PLAIN, 11.00f);
+        Font dialogFont = labelFont;
+        LabelProps titleProps = new LabelProps(titleFont, titleColor);
+        LabelProps labelProps = new LabelProps(labelFont, labelColor);
+
+        ButtonProps buttonWideProps = new ButtonProps(
+            buttonImage120.convertToBufferedImage(),
+            buttonImage120Hovered,
+            buttonImage120Pressed.convertToBufferedImage(),
+            dialogFont, labelColor, true
+        );
+
         ActionListener buttonListener = (event) -> {
 
             if (event.getSource() == cancelButton) {
@@ -224,13 +232,6 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (event.getSource() == mapsButton) {
-
-                ButtonProps buttonWideProps = new ButtonProps(
-                    buttonImage120.convertToBufferedImage(),
-                    buttonImage120Hovered,
-                    buttonImage120Pressed.convertToBufferedImage(),
-                    dialogFont, regularColor, true
-                );
 
                 // todo: make map category buttons togglable
 
@@ -251,17 +252,17 @@ public class OriginalScenarioMenu extends JPanel {
                     dialogUser
                 };
 
-                LabelTextYellow worldSizeLabel = new LabelTextYellow("World size:", 182, 46);
-                LabelTextYellow mirroredMapLabel = new LabelTextYellow("Mirrored Map:", 182, 86);
+                OriginalLabel worldSizeLabel = new OriginalLabel("World size:", 182, 46, labelProps);
+                OriginalLabel mirroredMapLabel = new OriginalLabel("Mirrored Map:", 182, 86, labelProps);
 
-                LabelTextYellow[] dialogLabelList = {
+                OriginalLabel[] dialogLabelList = {
                     worldSizeLabel,
                     mirroredMapLabel
                 };
 
                 DropdownProps dialogDropdownProps = new DropdownProps(
                     168, 22,
-                    dialogFont, regularColor,
+                    dialogFont, labelColor,
                     downArrow.convertToBufferedImage(), downArrowHovered
                 );
 
@@ -303,23 +304,23 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // declare all labels
-        TitleTextOrange gameSetup = new TitleTextOrange("Game Setup", 371, 38);
-        TitleTextOrange mapSettings = new TitleTextOrange("Map settings", 22, 142);
-        TitleTextOrange commonTeamSetups = new TitleTextOrange("Common Team Setups", 22, 302);
-        TitleTextOrange teamSettingsGeneral = new TitleTextOrange("Team Settings: General", 22, 426);
-        TitleTextOrange teamSettingsSpecific = new TitleTextOrange("Team Settings: Specific", 574, 142);
+        OriginalLabel gameSetup = new OriginalLabel("Game Setup", 371, 38, titleProps);
+        OriginalLabel mapSettings = new OriginalLabel("Map settings", 22, 142, titleProps);
+        OriginalLabel commonTeamSetups = new OriginalLabel("Common Team Setups", 22, 302, titleProps);
+        OriginalLabel teamSettingsGeneral = new OriginalLabel("Team Settings: General", 22, 426, titleProps);
+        OriginalLabel teamSettingsSpecific = new OriginalLabel("Team Settings: Specific", 574, 142, titleProps);
 
-        LabelTextYellow nameOfGame = new LabelTextYellow("Name of the Game", 254, 86);
-        LabelTextYellow map = new LabelTextYellow("Map:", 22, 174);
-        LabelTextYellow mapType = new LabelTextYellow("Map Type", 22, 206);
-        LabelTextYellow goodsLabel = new LabelTextYellow("Goods:", 22, 238);
-        LabelTextYellow gameType = new LabelTextYellow("Game Type:", 22, 334);
-        LabelTextYellow nrOfTeams = new LabelTextYellow("Number of Teams:", 22, 458);
-        LabelTextYellow playersPerTeam = new LabelTextYellow("Players per Team:", 22, 490);
-        LabelTextYellow players = new LabelTextYellow("Players", 629, 169);
-        LabelTextYellow computers = new LabelTextYellow("Computers", 697, 169);
+        OriginalLabel nameOfGame = new OriginalLabel("Name of the Game", 254, 86, labelProps);
+        OriginalLabel map = new OriginalLabel("Map:", 22, 174, labelProps);
+        OriginalLabel mapType = new OriginalLabel("Map Type", 22, 206, labelProps);
+        OriginalLabel goodsLabel = new OriginalLabel("Goods:", 22, 238, labelProps);
+        OriginalLabel gameType = new OriginalLabel("Game Type:", 22, 334, labelProps);
+        OriginalLabel nrOfTeams = new OriginalLabel("Number of Teams:", 22, 458, labelProps);
+        OriginalLabel playersPerTeam = new OriginalLabel("Players per Team:", 22, 490, labelProps);
+        OriginalLabel players = new OriginalLabel("Players", 629, 169, labelProps);
+        OriginalLabel computers = new OriginalLabel("Computers", 697, 169, labelProps);
 
-        JLabel[] labelList = {
+        OriginalLabel[] labelList = {
             gameSetup,
             mapSettings,
             commonTeamSetups,
@@ -344,18 +345,17 @@ public class OriginalScenarioMenu extends JPanel {
         test1.setBounds(380, 86, 228, 13);
         test1.setOpaque(false);
         test1.setBackground(new Color(0, 0, 0, 0));
-        test1.setForeground(regularColor);
+        test1.setForeground(labelColor);
         test1.setBorder(null);
-        test1.setFont(menuFont.deriveFont(Font.PLAIN, 11.00f));
+        test1.setFont(labelFont);
 
-        JFormattedTextField[] inputFieldList = {
+        JFormattedTextField[] inputList = {
             test1
         };
 
         // declare all dropdowns
         DropdownProps dropdownProps = new DropdownProps(
-            231, 22,
-            menuFont.deriveFont(Font.PLAIN, 11.00f), regularColor,
+            231, 22, labelFont, labelColor,
             downArrow.convertToBufferedImage(), downArrowHovered
         );
 
@@ -404,7 +404,7 @@ public class OriginalScenarioMenu extends JPanel {
         };
 
         // add background to menu
-        this.menuCanvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
+        this.menuCanvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputList, dropdownList);
         this.add(this.menuCanvas);
 
         return;

@@ -20,8 +20,9 @@ import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.image.NullImage;
 import jsettlers.main.swing.JSettlersFrame;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
-import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
+import jsettlers.main.swing.originalmenu.components.LabelProps;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
+import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 
 
 /**
@@ -73,8 +74,11 @@ public class OriginalMainMenu extends JPanel {
 
         Font menuFont;
 
+        Color buttonTextColor = new Color(0, 12, 64);
+        Color labelColor = new Color(248, 220, 0);
+
         try {
-            menuFont = Font.createFont(Font.TRUETYPE_FONT, fontStream);
+            menuFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(Font.PLAIN, 11.00f);
         }
 
         catch (IOException | FontFormatException exception) {
@@ -90,7 +94,7 @@ public class OriginalMainMenu extends JPanel {
             buttonImage.convertToBufferedImage(),
             buttonImageHovered,
             buttonImagePressed.convertToBufferedImage(),
-            menuFont.deriveFont(Font.PLAIN, 11.00f), new Color(0, 12, 64), false
+            menuFont, buttonTextColor, false
         );
 
         OriginalButton tutorialButton = new OriginalButton("Tutorial", 80, 20, buttonProps);
@@ -201,9 +205,12 @@ public class OriginalMainMenu extends JPanel {
         };
 
         // declare all labels
-        LabelTextYellow version = new LabelTextYellow(String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 578);
+        OriginalLabel version = new OriginalLabel(
+            String.format("Version %s", CommitInfo.COMMIT_HASH_SHORT), 34, 578,
+            new LabelProps(menuFont, labelColor)
+        );
 
-        LabelTextYellow[] labelList = {
+        OriginalLabel[] labelList = {
             version
         };
 

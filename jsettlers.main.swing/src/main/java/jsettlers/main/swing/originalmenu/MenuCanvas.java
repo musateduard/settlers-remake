@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import jsettlers.main.swing.originalmenu.components.Hoverable;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
 import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
+import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 
 
 /**
@@ -50,7 +51,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     public MenuCanvas(
         BufferedImage menuImage,
         OriginalButton[] buttonList,
-        JLabel[] labelList,
+        OriginalLabel[] labelList,
         JFormattedTextField[] inputFieldList,
         OriginalDropdown[] dropdownList) {
 
@@ -137,7 +138,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
      * this method runs each time the menu canvas element gets redrawn. this happens on mouse move,
      * mouse press, mouse release and window resize.
      *
-     * @param graphics the <code>Graphics</code> object the provides the context to draw on.
+     * @param graphics the {@code Graphics} object the provides the context to draw on.
      */
     @Override
     public void paintComponent(Graphics graphics) {
@@ -249,8 +250,6 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
 
     @Override
     public void mousePressed(MouseEvent event) {
-
-        // todo: fix component not finding popup panel when overlay is visible
 
         Point cursor = this.getScaledPosition(event);
         Component component = this.internalPanel.getComponentAt(cursor);

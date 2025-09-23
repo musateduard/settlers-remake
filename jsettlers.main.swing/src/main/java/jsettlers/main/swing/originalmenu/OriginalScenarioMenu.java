@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,8 +29,9 @@ import jsettlers.main.swing.originalmenu.components.ButtonProps;
 import jsettlers.main.swing.originalmenu.components.DropdownProps;
 import jsettlers.main.swing.originalmenu.components.LabelTextYellow;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
-import jsettlers.main.swing.originalmenu.components.OriginalDropdownList;
-import jsettlers.main.swing.originalmenu.components.OriginalMapsDialog;
+import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
+import jsettlers.main.swing.originalmenu.components.OriginalDialog;
+import jsettlers.main.swing.originalmenu.components.OriginalOverlay;
 import jsettlers.main.swing.originalmenu.components.TitleTextOrange;
 import jsettlers.main.swing.JSettlersFrame;
 
@@ -37,8 +39,8 @@ import jsettlers.main.swing.JSettlersFrame;
 public class OriginalScenarioMenu extends JPanel {
 
     public final JSettlersFrame mainFrame;
-    public final MenuCanvas canvas;
-    public OriginalDropdownList currentGamePreset;
+    public final MenuCanvas menuCanvas;
+    public OriginalDropdown currentGamePreset;
     public MapContent gameMap;
 
 
@@ -84,11 +86,15 @@ public class OriginalScenarioMenu extends JPanel {
         SingleImage menuImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 13));
         SingleImage buttonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 1, 0));
         SingleImage buttonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 1, 1));
-        BufferedImage buttonImageHovered = new BufferedImage(buttonImagePressed.getWidth(), buttonImagePressed.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        BufferedImage buttonImageHovered = new BufferedImage(buttonImage.getWidth(), buttonImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        SingleImage buttonImage120 = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 3, 0));
+        SingleImage buttonImage120Pressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 3, 1));
+        BufferedImage buttonImage120Hovered = new BufferedImage(buttonImage120.getWidth(), buttonImage120.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
         SingleImage mapsButtonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 0));
         SingleImage mapsButtonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 1));
         BufferedImage mapsButtonImageHovered = new BufferedImage(59, 22, BufferedImage.TYPE_INT_ARGB);
+        SingleImage mapsDialogImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 12));
 
         SingleImage upArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 6, 0));
         BufferedImage upArrowHovered = new BufferedImage(upArrow.getWidth(), upArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -99,8 +105,11 @@ public class OriginalScenarioMenu extends JPanel {
         assert menuImage instanceof NullImage == false;
         assert buttonImage instanceof NullImage == false;
         assert buttonImagePressed instanceof NullImage == false;
+        assert buttonImage120 instanceof NullImage == false;
+        assert buttonImage120Pressed instanceof NullImage == false;
         assert mapsButtonImage instanceof NullImage == false;
         assert mapsButtonImagePressed instanceof NullImage == false;
+        assert mapsDialogImage instanceof NullImage == false;
         assert upArrow instanceof NullImage == false;
         assert downArrow instanceof NullImage == false;
 
@@ -110,6 +119,7 @@ public class OriginalScenarioMenu extends JPanel {
         brightness.filter(mapsButtonImage.convertToBufferedImage(), mapsButtonImageHovered);
         brightness.filter(upArrow.convertToBufferedImage(), upArrowHovered);
         brightness.filter(downArrow.convertToBufferedImage(), downArrowHovered);
+        brightness.filter(buttonImage120.convertToBufferedImage(), buttonImage120Hovered);
 
         // load all fonts
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -202,6 +212,7 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
         OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
+        Font dialogFont = menuFont;
         ActionListener buttonListener = (event) -> {
 
             if (event.getSource() == cancelButton) {
@@ -213,7 +224,40 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (event.getSource() == mapsButton) {
-                this.showMapsDialog();
+
+                ButtonProps buttonWideProps = new ButtonProps(
+                    buttonImage120.convertToBufferedImage(),
+                    buttonImage120Hovered,
+                    buttonImage120Pressed.convertToBufferedImage(),
+                    dialogFont.deriveFont(Font.PLAIN, 11.00f), regularColor, true
+                );
+
+                // todo: make category buttons togglable
+
+                // create maps dialog component
+                OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
+                OriginalButton dialogOk = new OriginalButton("OK", 480, 356, buttonProps);
+                OriginalButton dialogRandom = new OriginalButton("Random", 20, 20, buttonWideProps);
+                OriginalButton dialogSinglePlayer = new OriginalButton("Single Player Map", 20, 44, buttonWideProps);
+                OriginalButton dialogMultiPlayer = new OriginalButton("Multi-player Map", 20, 68, buttonWideProps);
+                OriginalButton dialogUser = new OriginalButton("User", 20, 92, buttonWideProps);
+
+                OriginalButton[] dialogButtonList = {
+                    dialogCancel,
+                    dialogOk,
+                    dialogRandom,
+                    dialogSinglePlayer,
+                    dialogMultiPlayer,
+                    dialogUser
+                };
+
+                // todo: add dialog labels
+                // todo: add dialog dropdowns
+                // todo: make buttons togglable
+
+                OriginalDialog mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, null);
+
+                this.showMapsDialog(mapsDialog);
             }
 
             else {
@@ -301,15 +345,15 @@ public class OriginalScenarioMenu extends JPanel {
         String[] gameTypeList = {"Map Defaults", "No Teams", "Teams"};  // default value: No Teams
         String[] gamePresetList = {"League", "Free for All", "Free Alliances", "Play Alone"};  // dynamically allocated based on game type
 
-        OriginalDropdownList goodsDropdown = new OriginalDropdownList(goodsList, 149, 234, 0, dropdownProps);
-        OriginalDropdownList gameTypeDropdown = new OriginalDropdownList(gameTypeList, 149, 327, 1, dropdownProps);
-        OriginalDropdownList gamePresetDropdown = new OriginalDropdownList(gamePresetList, 149, 359, 1, dropdownProps);
+        OriginalDropdown goodsDropdown = new OriginalDropdown(goodsList, 149, 234, 0, dropdownProps);
+        OriginalDropdown gameTypeDropdown = new OriginalDropdown(gameTypeList, 149, 327, 1, dropdownProps);
+        OriginalDropdown gamePresetDropdown = new OriginalDropdown(gamePresetList, 149, 359, 1, dropdownProps);
 
         this.currentGamePreset = gamePresetDropdown;
 
         ActionListener dropdownListener = (event) -> {
 
-            OriginalDropdownList element = (OriginalDropdownList) event.getSource();
+            OriginalDropdown element = (OriginalDropdown) event.getSource();
             String selectedItem = (String) element.getSelectedItem();
 
             if (element == goodsDropdown) {
@@ -335,15 +379,15 @@ public class OriginalScenarioMenu extends JPanel {
         gameTypeDropdown.addActionListener(dropdownListener);
         gamePresetDropdown.addActionListener(dropdownListener);
 
-        OriginalDropdownList[] dropdownList = {
+        OriginalDropdown[] dropdownList = {
             goodsDropdown,
             gameTypeDropdown,
             gamePresetDropdown
         };
 
         // add background to menu
-        this.canvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
-        this.add(this.canvas);
+        this.menuCanvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputFieldList, dropdownList);
+        this.add(this.menuCanvas);
 
         return;
     }
@@ -376,19 +420,19 @@ public class OriginalScenarioMenu extends JPanel {
             this.currentGamePreset.arrow, this.currentGamePreset.arrowHovered
         );
 
-        OriginalDropdownList newPresetDropdown = new OriginalDropdownList(
+        OriginalDropdown newPresetDropdown = new OriginalDropdown(
             newPresetList, this.currentGamePreset.getX(), this.currentGamePreset.getY(),
             newDefaultIndex, props
         );
 
         // remove current preset dropdown
-        this.canvas.internalPanel.remove(this.currentGamePreset);
+        this.menuCanvas.internalPanel.remove(this.currentGamePreset);
         this.currentGamePreset = newPresetDropdown;
 
         // add new preset dropdown to internal panel
-        this.canvas.internalPanel.add(this.currentGamePreset);
-        this.canvas.internalPanel.revalidate();
-        this.canvas.internalPanel.repaint();
+        this.menuCanvas.internalPanel.add(this.currentGamePreset);
+        this.menuCanvas.internalPanel.revalidate();
+        this.menuCanvas.internalPanel.repaint();
 
         return;
     }
@@ -400,14 +444,20 @@ public class OriginalScenarioMenu extends JPanel {
     }
 
 
-    public void showMapsDialog() {
+    public void showMapsDialog(OriginalDialog dialogElement) {
 
         System.out.printf("maps button pressed\n");
 
-        // create maps dialog component
-        OriginalMapsDialog mapsDialog = new OriginalMapsDialog();
-
         // add dialog to overlay
+        OriginalOverlay overlay = new OriginalOverlay(false);
+
+        overlay.add(dialogElement);
+
+        // add overlay to internal panel
+        this.menuCanvas.internalPanel.add(overlay, JLayeredPane.PALETTE_LAYER);
+        this.menuCanvas.internalPanel.revalidate();
+        this.menuCanvas.internalPanel.repaint();
+
         // repaint
         // when user clicks ok set selected map
         // close dialog and remove overlay

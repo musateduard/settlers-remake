@@ -13,7 +13,11 @@ public class OriginalDialog extends JPanel implements MouseListener {
     public final BufferedImage dialogImage;
 
 
-    public OriginalDialog(BufferedImage dialogImage, OriginalButton[] buttonList, OriginalDropdown[] dropdownList) {
+    public OriginalDialog(
+        BufferedImage dialogImage,
+        OriginalButton[] buttonList,
+        LabelTextYellow[] labelList,
+        OriginalDropdown[] dropdownList) {
 
         super();
 
@@ -28,6 +32,20 @@ public class OriginalDialog extends JPanel implements MouseListener {
 
             for (OriginalButton button : buttonList) {
                 this.add(button);
+            }
+        }
+
+        if (labelList != null) {
+
+            for (LabelTextYellow label : labelList) {
+                this.add(label);
+            }
+        }
+
+        if (dropdownList != null) {
+
+            for (OriginalDropdown dropdown : dropdownList) {
+                this.add(dropdown);
             }
         }
 

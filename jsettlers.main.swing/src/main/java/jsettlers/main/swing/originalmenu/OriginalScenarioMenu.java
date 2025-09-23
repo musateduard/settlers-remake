@@ -212,7 +212,7 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
         OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
-        Font dialogFont = menuFont;
+        Font dialogFont = menuFont.deriveFont(Font.PLAIN, 11.00f);
         ActionListener buttonListener = (event) -> {
 
             if (event.getSource() == cancelButton) {
@@ -229,10 +229,10 @@ public class OriginalScenarioMenu extends JPanel {
                     buttonImage120.convertToBufferedImage(),
                     buttonImage120Hovered,
                     buttonImage120Pressed.convertToBufferedImage(),
-                    dialogFont.deriveFont(Font.PLAIN, 11.00f), regularColor, true
+                    dialogFont, regularColor, true
                 );
 
-                // todo: make category buttons togglable
+                // todo: make map category buttons togglable
 
                 // create maps dialog component
                 OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
@@ -251,11 +251,29 @@ public class OriginalScenarioMenu extends JPanel {
                     dialogUser
                 };
 
-                // todo: add dialog labels
-                // todo: add dialog dropdowns
-                // todo: make buttons togglable
+                LabelTextYellow worldSizeLabel = new LabelTextYellow("World size:", 182, 46);
+                LabelTextYellow mirroredMapLabel = new LabelTextYellow("Mirrored Map:", 182, 86);
 
-                OriginalDialog mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, null);
+                LabelTextYellow[] dialogLabelList = {
+                    worldSizeLabel,
+                    mirroredMapLabel
+                };
+
+                DropdownProps dialogDropdownProps = new DropdownProps(
+                    168, 22,
+                    dialogFont, regularColor,
+                    downArrow.convertToBufferedImage(), downArrowHovered
+                );
+
+                OriginalDropdown worldSize = new OriginalDropdown(new String[] {"384", "448", "512", "576", "640", "704", "768"}, 314, 42, 0, dialogDropdownProps);
+                OriginalDropdown mirroredMap = new OriginalDropdown(new String[] {"None", "Along Short Axis", "Along Long Axis", "Along Both Axes"}, 314, 82, 0, dialogDropdownProps);
+
+                OriginalDropdown[] dialogDropdownList = {
+                    worldSize,
+                    mirroredMap
+                };
+
+                OriginalDialog mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, dialogLabelList, dialogDropdownList);
 
                 this.showMapsDialog(mapsDialog);
             }

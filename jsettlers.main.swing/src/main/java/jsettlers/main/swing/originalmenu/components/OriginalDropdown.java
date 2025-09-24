@@ -1,6 +1,7 @@
 package jsettlers.main.swing.originalmenu.components;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -80,14 +81,29 @@ public class OriginalDropdown extends JComboBox<String> implements MouseListener
     @Override
     public void mousePressed(MouseEvent event) {
 
-        JLayeredPane dropdownParent = (JLayeredPane) this.getParent();
+        // note: dropdown can either be on menu component or dialog component that sits on an overlay
+
+        Component internalPanel = this.getParent();
+
+        while (true) {
+
+            if (internalPanel instanceof JLayeredPane) {
+                break;
+            }
+
+            else {
+                internalPanel = internalPanel.getParent();
+                continue;
+            }
+        }
+
         OriginalPopup list = new OriginalPopup(this);
         OriginalOverlay overlay = new OriginalOverlay(true);
 
         overlay.add(list);
 
-        dropdownParent.add(overlay, JLayeredPane.PALETTE_LAYER);
-        dropdownParent.repaint();
+        ((JLayeredPane) internalPanel).add(overlay, JLayeredPane.POPUP_LAYER);
+        internalPanel.repaint();
 
         return;
     }

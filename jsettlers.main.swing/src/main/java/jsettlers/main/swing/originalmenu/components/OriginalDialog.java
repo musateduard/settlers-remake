@@ -1,8 +1,7 @@
 package jsettlers.main.swing.originalmenu.components;
 
-import javax.swing.JPanel;
-import java.awt.Color;
 import java.awt.Graphics;
+import javax.swing.JPanel;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
@@ -16,7 +15,7 @@ public class OriginalDialog extends JPanel implements MouseListener {
     public OriginalDialog(
         BufferedImage dialogImage,
         OriginalButton[] buttonList,
-        LabelTextYellow[] labelList,
+        OriginalLabel[] labelList,
         OriginalDropdown[] dropdownList) {
 
         super();
@@ -29,21 +28,18 @@ public class OriginalDialog extends JPanel implements MouseListener {
         this.setOpaque(true);
 
         if (buttonList != null) {
-
             for (OriginalButton button : buttonList) {
                 this.add(button);
             }
         }
 
         if (labelList != null) {
-
-            for (LabelTextYellow label : labelList) {
+            for (OriginalLabel label : labelList) {
                 this.add(label);
             }
         }
 
         if (dropdownList != null) {
-
             for (OriginalDropdown dropdown : dropdownList) {
                 this.add(dropdown);
             }

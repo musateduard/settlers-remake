@@ -8,6 +8,7 @@ import java.awt.FontFormatException;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
+import javax.swing.ButtonGroup;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
@@ -32,6 +33,7 @@ import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
 import jsettlers.main.swing.originalmenu.components.OriginalDialog;
 import jsettlers.main.swing.originalmenu.components.OriginalOverlay;
 import jsettlers.main.swing.originalmenu.components.OriginalLabel;
+import jsettlers.main.swing.originalmenu.components.OriginalToggleButton;
 import jsettlers.main.swing.JSettlersFrame;
 
 
@@ -40,7 +42,8 @@ public class OriginalScenarioMenu extends JPanel {
     public final JSettlersFrame mainFrame;
     public final MenuCanvas menuCanvas;
     public OriginalDropdown currentGamePreset;
-    public MapContent gameMap;
+    public OriginalDialog mapsDialog;
+    public MapContent selectedMap;
 
 
     public OriginalScenarioMenu(JSettlersFrame mainFrame) {
@@ -93,7 +96,6 @@ public class OriginalScenarioMenu extends JPanel {
 
         SingleImage upArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 6, 0));
         BufferedImage upArrowHovered = new BufferedImage(upArrow.getWidth(), upArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
-
         SingleImage downArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 5, 0));
         BufferedImage downArrowHovered = new BufferedImage(downArrow.getWidth(), downArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
 
@@ -214,13 +216,6 @@ public class OriginalScenarioMenu extends JPanel {
         final LabelProps titleProps = new LabelProps(titleFont, titleColor);
         final LabelProps labelProps = new LabelProps(labelFont, labelColor);
 
-        final ButtonProps buttonWideProps = new ButtonProps(
-            buttonImage120.convertToBufferedImage(),
-            buttonImage120Hovered,
-            buttonImage120Pressed.convertToBufferedImage(),
-            dialogFont, labelColor, true
-        );
-
         ActionListener buttonListener = (event) -> {
 
             if (event.getSource() == cancelButton) {
@@ -232,71 +227,7 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (event.getSource() == mapsButton) {
-
-                // todo: make map category buttons togglable
-
-                // create maps dialog component
-                OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
-                OriginalButton dialogOk = new OriginalButton("OK", 480, 356, buttonProps);
-                OriginalButton dialogRandom = new OriginalButton("Random", 20, 20, buttonWideProps);
-                OriginalButton dialogSinglePlayer = new OriginalButton("Single Player Map", 20, 44, buttonWideProps);
-                OriginalButton dialogMultiPlayer = new OriginalButton("Multi-player Map", 20, 68, buttonWideProps);
-                OriginalButton dialogUser = new OriginalButton("User", 20, 92, buttonWideProps);
-
-                ActionListener dialogButtonListener = (dialogEvent) -> {
-
-                    if (dialogEvent.getSource() == dialogCancel) {
-                        System.out.printf("dialog cancel pressed\n");
-                    }
-
-                    else if (dialogEvent.getSource() == dialogOk) {
-                        System.out.printf("dialog ok pressed\n");
-                    }
-
-                    else {
-                        System.out.printf("dialog button missing action listener %s\n", dialogEvent.getSource());
-                    }
-
-                    return;
-                };
-
-                dialogCancel.addActionListener(dialogButtonListener);
-                dialogOk.addActionListener(dialogButtonListener);
-
-                OriginalButton[] dialogButtonList = {
-                    dialogCancel,
-                    dialogOk,
-                    dialogRandom,
-                    dialogSinglePlayer,
-                    dialogMultiPlayer,
-                    dialogUser
-                };
-
-                OriginalLabel worldSizeLabel = new OriginalLabel("World size:", 182, 46, labelProps);
-                OriginalLabel mirroredMapLabel = new OriginalLabel("Mirrored Map:", 182, 86, labelProps);
-
-                OriginalLabel[] dialogLabelList = {
-                    worldSizeLabel,
-                    mirroredMapLabel
-                };
-
-                DropdownProps dialogDropdownProps = new DropdownProps(
-                    168, 22,
-                    dialogFont, labelColor,
-                    downArrow.convertToBufferedImage(), downArrowHovered
-                );
-
-                OriginalDropdown worldSize = new OriginalDropdown(new String[] {"384", "448", "512", "576", "640", "704", "768"}, 314, 42, 0, dialogDropdownProps);
-                OriginalDropdown mirroredMap = new OriginalDropdown(new String[] {"None", "Along Short Axis", "Along Long Axis", "Along Both Axes"}, 314, 82, 0, dialogDropdownProps);
-
-                OriginalDropdown[] dialogDropdownList = {
-                    worldSize,
-                    mirroredMap
-                };
-
-                OriginalDialog mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, dialogLabelList, dialogDropdownList);
-
-                this.showMapsDialog(mapsDialog);
+                this.showMapsDialog();
             }
 
             else {
@@ -387,15 +318,13 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalDropdown gameTypeDropdown = new OriginalDropdown(gameTypeList, 149, 327, 1, dropdownProps);
         OriginalDropdown gamePresetDropdown = new OriginalDropdown(gamePresetList, 149, 359, 1, dropdownProps);
 
-        this.currentGamePreset = gamePresetDropdown;
-
         ActionListener dropdownListener = (event) -> {
 
             OriginalDropdown element = (OriginalDropdown) event.getSource();
             String selectedItem = (String) element.getSelectedItem();
 
             if (element == goodsDropdown) {
-                System.out.printf("goods selected\n");
+                System.out.printf("setting initial goods\n");
             }
 
             else if (element == gameTypeDropdown) {
@@ -403,7 +332,7 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (element == gamePresetDropdown) {
-                System.out.printf("game preset selected\n");
+                System.out.printf("setting game preset\n");
             }
 
             else {
@@ -423,9 +352,108 @@ public class OriginalScenarioMenu extends JPanel {
             gamePresetDropdown
         };
 
+        this.currentGamePreset = gamePresetDropdown;
+
         // add background to menu
         this.menuCanvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputList, dropdownList);
         this.add(this.menuCanvas);
+
+        // declare maps dialog
+        final ButtonProps buttonWideProps = new ButtonProps(
+            buttonImage120.convertToBufferedImage(),
+            buttonImage120Hovered,
+            buttonImage120Pressed.convertToBufferedImage(),
+            dialogFont, labelColor, true
+        );
+
+        // todo: make map category buttons togglable
+        // note: maps button should only show the dialog but not construct it
+
+        OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
+        OriginalButton dialogOk = new OriginalButton("OK", 480, 356, buttonProps);
+
+        ActionListener dialogButtonListener = (dialogEvent) -> {
+
+            if (dialogEvent.getSource() == dialogCancel) {
+
+                // if (this.mapsDialog.initialDisplay == true) {
+                //     this.returnToMainMenu();
+                // }
+
+                OriginalOverlay overlay = (OriginalOverlay) this.mapsDialog.getParent();
+
+                // remove dialog element from modal layer
+                this.menuCanvas.internalPanel.remove(overlay);
+                this.revalidate();
+                this.repaint();
+            }
+
+            else if (dialogEvent.getSource() == dialogOk) {
+                System.out.printf("dialog ok pressed\n");
+                // note: pressing ok after selecting a map should clear the initialDisplay flag
+            }
+
+            else {
+                System.out.printf("dialog button missing action listener %s\n", dialogEvent.getSource());
+            }
+
+            return;
+        };
+
+        dialogCancel.addActionListener(dialogButtonListener);
+        dialogOk.addActionListener(dialogButtonListener);
+
+        OriginalButton[] dialogButtonList = {
+            dialogCancel,
+            dialogOk
+        };
+
+        OriginalToggleButton dialogRandom = new OriginalToggleButton("Random", 20, 20, buttonWideProps);
+        OriginalToggleButton dialogSinglePlayer = new OriginalToggleButton("Single Player Map", 20, 44, buttonWideProps);
+        OriginalToggleButton dialogMultiPlayer = new OriginalToggleButton("Multi-player Map", 20, 68, buttonWideProps);
+        OriginalToggleButton dialogUser = new OriginalToggleButton("User", 20, 92, buttonWideProps);
+
+        ButtonGroup mapFilterGroup = new ButtonGroup();
+
+        mapFilterGroup.add(dialogRandom);
+        mapFilterGroup.add(dialogSinglePlayer);
+        mapFilterGroup.add(dialogMultiPlayer);
+        mapFilterGroup.add(dialogUser);
+
+        // todo: add map filter event listeners
+
+        OriginalToggleButton[] dialogToggleList = {
+            dialogRandom,
+            dialogSinglePlayer,
+            dialogMultiPlayer,
+            dialogUser
+        };
+
+        OriginalLabel worldSizeLabel = new OriginalLabel("World size:", 182, 46, labelProps);
+        OriginalLabel mirroredMapLabel = new OriginalLabel("Mirrored Map:", 182, 86, labelProps);
+
+        OriginalLabel[] dialogLabelList = {
+            worldSizeLabel,
+            mirroredMapLabel
+        };
+
+        DropdownProps dialogDropdownProps = new DropdownProps(
+            168, 22, dialogFont, labelColor,
+            downArrow.convertToBufferedImage(), downArrowHovered
+        );
+
+        OriginalDropdown worldSize = new OriginalDropdown(new String[] {"384", "448", "512", "576", "640", "704", "768"}, 314, 42, 0, dialogDropdownProps);
+        OriginalDropdown mirroredMap = new OriginalDropdown(new String[] {"None", "Along Short Axis", "Along Long Axis", "Along Both Axes"}, 314, 82, 0, dialogDropdownProps);
+
+        OriginalDropdown[] dialogDropdownList = {
+            worldSize,
+            mirroredMap
+        };
+
+        this.mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, dialogToggleList, dialogLabelList, dialogDropdownList);
+
+        // show maps dialog
+        this.showMapsDialog();
 
         return;
     }
@@ -482,23 +510,17 @@ public class OriginalScenarioMenu extends JPanel {
     }
 
 
-    public void showMapsDialog(OriginalDialog dialogElement) {
-
-        System.out.printf("maps button pressed\n");
+    public void showMapsDialog() {
 
         // add dialog to overlay
         OriginalOverlay overlay = new OriginalOverlay(false);
 
-        overlay.add(dialogElement);
+        overlay.add(this.mapsDialog);
 
         // add overlay to internal panel
         this.menuCanvas.internalPanel.add(overlay, JLayeredPane.MODAL_LAYER);
         this.menuCanvas.internalPanel.revalidate();
         this.menuCanvas.internalPanel.repaint();
-
-        // repaint
-        // when user clicks ok set selected map
-        // close dialog and remove overlay
 
         return;
     }

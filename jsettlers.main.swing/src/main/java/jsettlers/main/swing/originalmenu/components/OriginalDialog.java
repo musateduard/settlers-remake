@@ -5,22 +5,26 @@ import javax.swing.JPanel;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 
 public class OriginalDialog extends JPanel implements MouseListener {
 
     public final BufferedImage dialogImage;
+    public boolean initialDisplay;
 
 
     public OriginalDialog(
         BufferedImage dialogImage,
         OriginalButton[] buttonList,
+        OriginalToggleButton[] toggleButtonList,
         OriginalLabel[] labelList,
         OriginalDropdown[] dropdownList) {
 
         super();
 
         this.dialogImage = dialogImage;
+        this.initialDisplay = true;
 
         this.setLayout(null);
         this.setBounds(100, 100, 600, 400);
@@ -30,6 +34,17 @@ public class OriginalDialog extends JPanel implements MouseListener {
         if (buttonList != null) {
             for (OriginalButton button : buttonList) {
                 this.add(button);
+            }
+        }
+
+        if (toggleButtonList != null) {
+            for (OriginalToggleButton toggleButton : toggleButtonList) {
+
+                if (Objects.equals(toggleButton.getText(), "Random")) {
+                    toggleButton.setSelected(true);
+                }
+
+                this.add(toggleButton);
             }
         }
 
@@ -70,7 +85,6 @@ public class OriginalDialog extends JPanel implements MouseListener {
 
     @Override
     public void mousePressed(MouseEvent event) {
-        System.out.printf("dialog received mouse press\n");
         return;
     }
 

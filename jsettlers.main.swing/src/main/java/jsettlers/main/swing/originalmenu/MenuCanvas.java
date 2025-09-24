@@ -31,7 +31,6 @@ import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 public class MenuCanvas extends JPanel implements MouseListener, MouseMotionListener {
 
     // todo: create bold version of ms sans serif 13
-    // todo: draw all overlays if any
 
     /*
     note:
@@ -206,11 +205,38 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     }
 
 
+    public Component findNestedComponent(Point initialCursor) {
+
+        Point cursor = initialCursor;
+        Component component = this.internalPanel.getComponentAt(cursor);
+        Component currentComponent = null;
+
+        while (true) {
+
+            currentComponent = component.getComponentAt(cursor);
+
+            // nested component found
+            if (currentComponent != component && currentComponent != null) {
+                cursor = new Point(cursor.x - currentComponent.getX(), cursor.y - currentComponent.getY());
+                component = currentComponent;
+                continue;
+            }
+
+            // no nested component found at cursor
+            else {
+                break;
+            }
+        }
+
+        return component;
+    }
+
+
     @Override
     public void mouseMoved(MouseEvent event) {
 
         Point cursor = this.getScaledPosition(event);
-        Component component = this.internalPanel.getComponentAt(cursor);
+        Component component = this.findNestedComponent(cursor);
 
         if (component instanceof Hoverable) {
 
@@ -252,7 +278,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     public void mousePressed(MouseEvent event) {
 
         Point cursor = this.getScaledPosition(event);
-        Component component = this.internalPanel.getComponentAt(cursor);
+        Component component = this.findNestedComponent(cursor);
 
         // keep state of currently pressed button
         if (component instanceof OriginalButton) {
@@ -290,7 +316,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     public void mouseReleased(MouseEvent event) {
 
         Point cursor = this.getScaledPosition(event);
-        Component component = this.internalPanel.getComponentAt(cursor);
+        Component component = this.findNestedComponent(cursor);
 
         // no button was pressed prior to release
         if (this.pressedButton == null) {

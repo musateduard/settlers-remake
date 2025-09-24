@@ -122,12 +122,12 @@ public class OriginalScenarioMenu extends JPanel {
         /*
         note:
 
-        the original ms sans serif is a bitmap font but the Font class doesn't handle bitmap fonts
+        the original font ms sans serif is a bitmap font but the Font class doesn't handle bitmap fonts
         the ttf fonts loaded here are vector fonts that trace the original bitmap pixels
         the original ms sans serif font has 2 sizes that are primarily used in settlers
         size 11 is used for regular text and size 13 bold is used for titles
         these fake bitmap fonts don't scale well to other sizes in java
-        ms-sans-serif-1.ttf is based on size 11 looks best at size 11.00
+        ms-sans-serif-1.ttf is based on size 11 and looks best at size 11.00
         ms-sans-serif-bold.ttf is based on size 13 but scales better at size 14.00
         */
 
@@ -210,11 +210,11 @@ public class OriginalScenarioMenu extends JPanel {
         OriginalButton playersPerTeamUpArrow = new OriginalButton(null, 301, 489, upArrowProps);
         OriginalButton playersPerTeamDownArrow = new OriginalButton(null, 301, 498, downArrowProps);
 
-        Font dialogFont = labelFont;
-        LabelProps titleProps = new LabelProps(titleFont, titleColor);
-        LabelProps labelProps = new LabelProps(labelFont, labelColor);
+        final Font dialogFont = labelFont;
+        final LabelProps titleProps = new LabelProps(titleFont, titleColor);
+        final LabelProps labelProps = new LabelProps(labelFont, labelColor);
 
-        ButtonProps buttonWideProps = new ButtonProps(
+        final ButtonProps buttonWideProps = new ButtonProps(
             buttonImage120.convertToBufferedImage(),
             buttonImage120Hovered,
             buttonImage120Pressed.convertToBufferedImage(),
@@ -242,6 +242,26 @@ public class OriginalScenarioMenu extends JPanel {
                 OriginalButton dialogSinglePlayer = new OriginalButton("Single Player Map", 20, 44, buttonWideProps);
                 OriginalButton dialogMultiPlayer = new OriginalButton("Multi-player Map", 20, 68, buttonWideProps);
                 OriginalButton dialogUser = new OriginalButton("User", 20, 92, buttonWideProps);
+
+                ActionListener dialogButtonListener = (dialogEvent) -> {
+
+                    if (dialogEvent.getSource() == dialogCancel) {
+                        System.out.printf("dialog cancel pressed\n");
+                    }
+
+                    else if (dialogEvent.getSource() == dialogOk) {
+                        System.out.printf("dialog ok pressed\n");
+                    }
+
+                    else {
+                        System.out.printf("dialog button missing action listener %s\n", dialogEvent.getSource());
+                    }
+
+                    return;
+                };
+
+                dialogCancel.addActionListener(dialogButtonListener);
+                dialogOk.addActionListener(dialogButtonListener);
 
                 OriginalButton[] dialogButtonList = {
                     dialogCancel,
@@ -472,7 +492,7 @@ public class OriginalScenarioMenu extends JPanel {
         overlay.add(dialogElement);
 
         // add overlay to internal panel
-        this.menuCanvas.internalPanel.add(overlay, JLayeredPane.PALETTE_LAYER);
+        this.menuCanvas.internalPanel.add(overlay, JLayeredPane.MODAL_LAYER);
         this.menuCanvas.internalPanel.revalidate();
         this.menuCanvas.internalPanel.repaint();
 

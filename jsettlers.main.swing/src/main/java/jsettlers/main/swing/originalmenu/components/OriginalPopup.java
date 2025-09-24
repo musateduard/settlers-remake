@@ -26,6 +26,8 @@ public class OriginalPopup extends JList<String> implements MouseListener {
 
         while (true) {
 
+            // note: this can lead to infinite loop if no parent has x and y set to 0
+
             if (currentParent.getX() == 0 && currentParent.getY() == 0) {
                 break;
             }

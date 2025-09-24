@@ -34,6 +34,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
 
     /*
     note:
+
     mouse events should be passed to the uppermost overlay
     the menus underneath should keep their previous state while overlay is visible
     */

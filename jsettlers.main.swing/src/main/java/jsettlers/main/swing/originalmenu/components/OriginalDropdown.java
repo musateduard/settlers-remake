@@ -87,6 +87,8 @@ public class OriginalDropdown extends JComboBox<String> implements MouseListener
 
         while (true) {
 
+            // note: this can lead to infinite loops if no JLayeredPane is found
+
             if (internalPanel instanceof JLayeredPane) {
                 break;
             }

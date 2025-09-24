@@ -2,6 +2,7 @@ package jsettlers.main.swing.originalmenu.components;
 
 import java.awt.Color;
 import java.awt.Point;
+import java.awt.Component;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import javax.swing.JLayeredPane;
@@ -19,8 +20,26 @@ public class OriginalPopup extends JList<String> implements MouseListener {
 
         this.dropdown = parent;
 
-        int offsetX = this.dropdown.getX();
-        int offsetY = this.dropdown.getY() + this.dropdown.getHeight() + 8;
+        int adjustX = 0;
+        int adjustY = 0;
+        Component currentParent = this.dropdown.getParent();
+
+        while (true) {
+
+            if (currentParent.getX() == 0 && currentParent.getY() == 0) {
+                break;
+            }
+
+            else {
+                adjustX += currentParent.getX();
+                adjustY += currentParent.getY();
+                currentParent = currentParent.getParent();
+                continue;
+            }
+        }
+
+        int offsetX = adjustX + this.dropdown.getX();
+        int offsetY = adjustY + this.dropdown.getY() + this.dropdown.getHeight() + 8;
         int width = this.dropdown.getWidth();
         int height = this.getCellBounds(0, 0).height * this.dropdown.getModel().getSize();
 
@@ -41,15 +60,15 @@ public class OriginalPopup extends JList<String> implements MouseListener {
 
         // get list item at cursor
         Point cursor = event.getPoint();
-        JLayeredPane internalPanel = (JLayeredPane) this.getParent().getParent();
-        OriginalOverlay overlay = (OriginalOverlay) this.getParent();
+        OriginalOverlay popupOverlay = (OriginalOverlay) this.getParent();
+        JLayeredPane internalPanel = (JLayeredPane) popupOverlay.getParent();  // note: this raises ClassCastException if parent is not JLayeredPane
         int index = this.locationToIndex(cursor);
 
         // set dropdown to selected item
         this.dropdown.setSelectedIndex(index);
 
         // close overlay
-        internalPanel.remove(overlay);
+        internalPanel.remove(popupOverlay);
         internalPanel.revalidate();
         internalPanel.repaint();
 

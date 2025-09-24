@@ -53,6 +53,11 @@ public class OriginalDropdown extends JComboBox<String> implements MouseListener
     }
 
 
+    public boolean getHovered() {
+        return this.hovered;
+    }
+
+
     @Override
     public void paintComponent(Graphics graphics) {
 

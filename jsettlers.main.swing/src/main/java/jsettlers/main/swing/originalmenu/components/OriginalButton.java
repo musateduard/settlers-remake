@@ -1,7 +1,5 @@
 package jsettlers.main.swing.originalmenu.components;
 
-import jsettlers.main.swing.originalmenu.MenuCanvas;
-
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -11,6 +9,8 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import javax.swing.JButton;
+
+import jsettlers.main.swing.originalmenu.MenuCanvas;
 
 
 /**
@@ -92,6 +92,11 @@ public class OriginalButton extends JButton implements MouseListener, MouseMotio
     public void setHovered(boolean hoveredValue) {
         this.hovered = hoveredValue;
         return;
+    }
+
+
+    public boolean getHovered() {
+        return this.hovered;
     }
 
 

@@ -1,11 +1,14 @@
 package jsettlers.main.swing.originalmenu;
 
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import javax.swing.ButtonGroup;
@@ -92,7 +95,8 @@ public class OriginalScenarioMenu extends JPanel {
         SingleImage mapsButtonImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 0));
         SingleImage mapsButtonImagePressed = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 21, 1));
         BufferedImage mapsButtonImageHovered = new BufferedImage(59, 22, BufferedImage.TYPE_INT_ARGB);
-        SingleImage mapsDialogImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 12));
+        SingleImage dialogMapPreviewImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 11));
+        SingleImage dialogRandomMapImage = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.GUI, 2, 12));
 
         SingleImage upArrow = (SingleImage) imageProvider.getImage(new OriginalImageLink(EImageLinkType.SETTLER, 2, 6, 0));
         BufferedImage upArrowHovered = new BufferedImage(upArrow.getWidth(), upArrow.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -106,7 +110,8 @@ public class OriginalScenarioMenu extends JPanel {
         assert buttonImage120Pressed instanceof NullImage == false;
         assert mapsButtonImage instanceof NullImage == false;
         assert mapsButtonImagePressed instanceof NullImage == false;
-        assert mapsDialogImage instanceof NullImage == false;
+        assert dialogMapPreviewImage instanceof NullImage == false;
+        assert dialogRandomMapImage instanceof NullImage == false;
         assert upArrow instanceof NullImage == false;
         assert downArrow instanceof NullImage == false;
 
@@ -366,7 +371,6 @@ public class OriginalScenarioMenu extends JPanel {
             dialogFont, labelColor, true
         );
 
-        // todo: make map category buttons togglable
         // note: maps button should only show the dialog but not construct it
 
         OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
@@ -389,8 +393,20 @@ public class OriginalScenarioMenu extends JPanel {
             }
 
             else if (dialogEvent.getSource() == dialogOk) {
+
                 System.out.printf("dialog ok pressed\n");
+                System.out.printf("setting selected map\n");
+
                 // note: pressing ok after selecting a map should clear the initialDisplay flag
+
+                // set selected map
+                // close dialog
+
+                OriginalButton button = (OriginalButton) dialogEvent.getSource();
+                OriginalDialog dialog = (OriginalDialog) button.getParent();
+                OriginalOverlay overlay = (OriginalOverlay) dialog.getParent();
+
+                this.menuCanvas.internalPanel.remove(overlay);
             }
 
             else {
@@ -422,6 +438,61 @@ public class OriginalScenarioMenu extends JPanel {
 
         // todo: add map filter event listeners
 
+        ItemListener mapsFilterListener = (itemEvent) -> {
+
+            if (itemEvent.getSource() == dialogRandom) {
+
+                System.out.printf("random map pressed\n");
+
+                /*
+                note:
+
+                if map filter is selected from OriginalDialog constructor it won't have access to parent
+                reason is because OriginalDialog is in unknown state
+                map filter buttons need access to parent dialog but they can't be selected from dialog constructor
+                if filter is selected from constructor then it won't have access to parent
+                */
+
+                OriginalToggleButton button = (OriginalToggleButton) itemEvent.getItem();
+                OriginalDialog parent = (OriginalDialog) button.getParent();
+
+                if (itemEvent.getStateChange() == ItemEvent.SELECTED) {
+                    for (Component item : parent.randomMapComponentList) {
+                        parent.add(item);
+                    }
+                }
+
+                else {
+                    for (Component item : parent.randomMapComponentList) {
+                        parent.remove(item);
+                    }
+                }
+            }
+
+            else if (itemEvent.getSource() == dialogSinglePlayer) {
+                System.out.printf("single player map pressed\n");
+            }
+
+            else if (itemEvent.getSource() == dialogMultiPlayer) {
+                System.out.printf("multiplayer map pressed\n");
+            }
+
+            else if (itemEvent.getSource() == dialogUser) {
+                System.out.printf("user maps pressed\n");
+            }
+
+            else {
+                System.out.printf("filter button missing action listener %s\n", itemEvent.getSource());
+            }
+
+            return;
+        };
+
+        dialogRandom.addItemListener(mapsFilterListener);
+        dialogSinglePlayer.addItemListener(mapsFilterListener);
+        dialogMultiPlayer.addItemListener(mapsFilterListener);
+        dialogUser.addItemListener(mapsFilterListener);
+
         OriginalToggleButton[] dialogToggleList = {
             dialogRandom,
             dialogSinglePlayer,
@@ -450,9 +521,14 @@ public class OriginalScenarioMenu extends JPanel {
             mirroredMap
         };
 
-        this.mapsDialog = new OriginalDialog(mapsDialogImage.convertToBufferedImage(), dialogButtonList, dialogToggleList, dialogLabelList, dialogDropdownList);
+        this.mapsDialog = new OriginalDialog(
+            dialogRandomMapImage.convertToBufferedImage(),
+            dialogMapPreviewImage.convertToBufferedImage(),
+            dialogButtonList, dialogToggleList, dialogLabelList, dialogDropdownList
+        );
 
         // show maps dialog
+        this.mapsDialog.randomMapButton.setSelected(true);
         this.showMapsDialog();
 
         return;

@@ -33,193 +33,243 @@ import jsettlers.logic.map.loading.list.IListedMap;
 import jsettlers.logic.map.loading.newmap.MapFileHeader;
 import jsettlers.logic.player.PlayerSetting;
 
+
 /**
  * @author codingberlin
  * @author Thomas Zeugner
  */
 public class OriginalMapLoader extends MapLoader {
+
 	private final IListedMap listedMap;
 	private final OriginalMapFileContentReader mapContent;
 	private final Date creationDate;
 	private final String fileName;
 	private Boolean isMapOK = false;
 
+
 	public OriginalMapLoader(IListedMap listedMap) throws MapLoadException {
+
 		this.listedMap = listedMap;
-		fileName = listedMap.getFileName();
-		creationDate = getCreationDateFrom(listedMap);
+		this.fileName = listedMap.getFileName();
+		this.creationDate = getCreationDateFrom(listedMap);
+
 		try {
-			mapContent = new OriginalMapFileContentReader(listedMap.getInputStream());
-		} catch (IOException e) {
-			throw new MapLoadException(e);
+			this.mapContent = new OriginalMapFileContentReader(listedMap.getInputStream());
 		}
 
-		if (!CommonConstants.DISABLE_ORIGINAL_MAPS_CHECKSUM && !mapContent.isChecksumValid()) {
-			throw new MapLoadException("Checksum of original map (" + fileName + ") is not valid!");
+        catch (IOException exception) {
+			throw new MapLoadException(exception);
 		}
 
-		// - read all important information from file
-		mapContent.loadMapResources();
-		mapContent.readBasicMapInformation(MapFileHeader.PREVIEW_IMAGE_SIZE, MapFileHeader.PREVIEW_IMAGE_SIZE);
+		if (!CommonConstants.DISABLE_ORIGINAL_MAPS_CHECKSUM && !this.mapContent.isChecksumValid()) {
+			throw new MapLoadException("Checksum of original map (" + this.fileName + ") is not valid!");
+		}
+
+		// read all important information from file
+		this.mapContent.loadMapResources();
+		this.mapContent.readBasicMapInformation(MapFileHeader.PREVIEW_IMAGE_SIZE, MapFileHeader.PREVIEW_IMAGE_SIZE);
 
 		// - free the DataBuffer
-		mapContent.freeBuffer();
+		this.mapContent.freeBuffer();
 
-		isMapOK = true;
+		this.isMapOK = true;
+        return;
 	}
 
+
 	private Date getCreationDateFrom(IListedMap listedMap) {
+
 		try {
 			return new Date(listedMap.getFile().lastModified());
-		} catch (UnsupportedOperationException e) {
+		}
+
+        catch (UnsupportedOperationException e) {
 			return new Date();
 		}
 	}
 
-	// ---------------------------//
-	// -- Interface MapLoader --//
-	// -------------------------//
+
+	//-------------------------//
+	//-- Interface MapLoader --//
+	//-------------------------//
 	@Override
 	public MapFileHeader getFileHeader() {
-		if (isMapOK) {
-			return new MapFileHeader(
-					MapFileHeader.MapType.NORMAL,
-					getMapName(),
-					getMapId(),
-					getDescription(),
-					(short) mapContent.widthHeight,
-					(short) mapContent.widthHeight,
-					(short) getMinPlayers(),
-					(short) getMaxPlayers(),
-					getCreationDate(),
-					getImage());
+
+		if (this.isMapOK) {
+
+            MapFileHeader header = new MapFileHeader(
+                MapFileHeader.MapType.NORMAL,
+                this.getMapName(),
+                this.getMapId(),
+                this.getDescription(),
+                (short) this.mapContent.widthHeight,
+                (short) this.mapContent.widthHeight,
+                (short) this.getMinPlayers(),
+                (short) this.getMaxPlayers(),
+                this.getCreationDate(),
+                this.getImage()
+            );
+
+			return header;
 		}
+
 		return null;
 	}
 
+
 	@Override
 	public IListedMap getListedMap() {
-		return listedMap;
+		return this.listedMap;
 	}
 
-	// ------------------------------//
-	// -- Interface IMapDefinition --//
-	// ------------------------------//
-	@Override
-	public String getMapName() {
-		// - remove the extension {.map or .edm} of filename and replace all '_' with ' ' (filename is without path)
-		if (fileName == null) {
-			return "";
-		}
 
-		int pos = fileName.lastIndexOf('.');
-		if (pos >= 0) {
-			return fileName.substring(0, pos).replace('_', ' ');
-		} else {
-			return fileName.replace('_', ' ');
-		}
-	}
+	//------------------------------//
+	//-- Interface IMapDefinition --//
+	//------------------------------//
+    @Override
+    public String getMapName() {
+
+        // remove the extension {.map or .edm} of filename and replace all '_' with ' ' (filename is without path)
+        if (this.fileName == null) {
+            return "";
+        }
+
+        int pos = this.fileName.lastIndexOf('.');
+
+        if (pos >= 0) {
+            return this.fileName.substring(0, pos).replace('_', ' ');
+        }
+
+        else {
+            return this.fileName.replace('_', ' ');
+        }
+    }
+
 
 	@Override
 	public int getMinPlayers() {
 		return 1;
 	}
 
+
 	@Override
 	public int getMaxPlayers() {
-		return mapContent.mapData.getPlayerCount();
+		return this.mapContent.mapData.getPlayerCount();
 	}
+
 
 	@Override
 	public Date getCreationDate() {
-		return creationDate;
+		return this.creationDate;
 	}
+
 
 	@Override
 	public String getDescription() {
+
 		try {
-			return mapContent.readMapQuestText();
-		} catch (MapLoadException e) {
+			return this.mapContent.readMapQuestText();
+		}
+
+        catch (MapLoadException e) {
 			return "";
 		}
 	}
 
+
 	@Override
 	public short[] getImage() {
-		return mapContent.getPreviewImage();
+		return this.mapContent.getPreviewImage();
 	}
+
 
 	@Override
 	public String getMapId() {
-		return mapContent.getChecksum() + getMapName();
+		return this.mapContent.getChecksum() + this.getMapName();
 	}
+
 
 	@Override
 	public List<ILoadableMapPlayer> getPlayers() {
-		return new ArrayList<>(); // - TODO
+        // TODO
+		return new ArrayList<>();
 	}
 
-	// ----------------------------//
-	// -- Interface IGameCreator --//
-	// ----------------------------//
 
+	//----------------------------//
+	//-- Interface IGameCreator --//
+	//----------------------------//
 	@Override
 	public MainGridWithUiSettings loadMainGrid(PlayerSetting[] playerSettings) throws MapLoadException {
-		return loadMainGrid(playerSettings, EMapStartResources.HIGH_GOODS);
+		return this.loadMainGrid(playerSettings, EMapStartResources.HIGH_GOODS);
 	}
 
 	@Override
 	public MainGridWithUiSettings loadMainGrid(PlayerSetting[] playerSettings, EMapStartResources startResources) throws MapLoadException {
+
 		MilliStopWatch watch = new MilliStopWatch();
 
-		loadMapData();
+		this.loadMapData();
 
-		playerSettings = setupStartConditions(playerSettings, startResources, mapContent.mapData);
+		playerSettings = this.setupStartConditions(playerSettings, startResources, this.mapContent.mapData);
 
-		OriginalMapFileContent mapData = mapContent.mapData;
+		OriginalMapFileContent mapData = this.mapContent.mapData;
 		mapData.calculateBlockedPartitions();
 
 		watch.stop("Loading original map data required");
 		MainGrid mainGrid = new MainGrid(getMapId(), getMapName(), mapData, playerSettings);
 
-		if(mapContent.isSinglePlayerMap()) {
-			 mapContent.readWinCondition(mainGrid).schedule();
-		} else {
+		if (this.mapContent.isSinglePlayerMap()) {
+		    this.mapContent.readWinCondition(mainGrid).schedule();
+		}
+
+        else {
 			new OriginalMultiPlayerWinLoseHandler(mainGrid).schedule();
 		}
 
 		return new MainGridWithUiSettings(mainGrid, PlayerSetting.getStates(playerSettings, mapData));
 	}
 
+
 	@Override
 	public IMapData getMapData() throws MapLoadException {
-		loadMapData();
 
-		OriginalMapFileContent mapData = mapContent.mapData;
+		this.loadMapData();
+
+		OriginalMapFileContent mapData = this.mapContent.mapData;
 		mapData.calculateBlockedPartitions();
 
 		return mapData;
 	}
 
+
 	private void loadMapData() throws MapLoadException {
+
 		try {
-			// - the map buffer of the class may is closed and need to reopen!
-			mapContent.reOpen(this.listedMap.getInputStream());
-		} catch (Exception e) {
-			throw new MapLoadException(e);
+			// the map buffer of the class may is closed and need to reopen!
+			this.mapContent.reOpen(this.listedMap.getInputStream());
 		}
 
-		// - load all common map information
-		mapContent.loadMapResources();
-		mapContent.readBasicMapInformation();
+        catch (Exception exception) {
+			throw new MapLoadException(exception);
+		}
 
-		// - read the landscape
-		mapContent.readMapData();
-		// - read Stacks
-		mapContent.readStacks();
-		// - read Settlers
-		mapContent.readSettlers();
-		// - read the buildings
-		mapContent.readBuildings();
+		// load all common map information
+		this.mapContent.loadMapResources();
+		this.mapContent.readBasicMapInformation();
+
+		// read the landscape
+		this.mapContent.readMapData();
+
+        // read Stacks
+		this.mapContent.readStacks();
+
+        // read Settlers
+		this.mapContent.readSettlers();
+
+        // read the buildings
+		this.mapContent.readBuildings();
+
+        return;
 	}
 }

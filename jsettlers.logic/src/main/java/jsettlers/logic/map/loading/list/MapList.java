@@ -40,6 +40,7 @@ import jsettlers.logic.map.loading.newmap.MapFileHeader.MapType;
 import jsettlers.logic.map.loading.newmap.RemakeMapLoader;
 import jsettlers.logic.timer.RescheduleTimer;
 
+
 /**
  * This is the main map list.
  * <p>
@@ -52,15 +53,6 @@ import jsettlers.logic.timer.RescheduleTimer;
  */
 public class MapList implements IMapListerCallable {
 
-	/**
-	 * Gives the currently used map extension for saving a map.
-	 *
-	 * @return
-	 */
-	public static String getMapExtension() {
-		return CommonConstants.USE_SAVEGAME_COMPRESSION ? MapLoader.MAP_EXTENSION_COMPRESSED : MapLoader.MAP_EXTENSION;
-	}
-
 	private static IMapListFactory mapListFactory = new DefaultMapListFactory();
 
 	private static MapList defaultList;
@@ -72,68 +64,100 @@ public class MapList implements IMapListerCallable {
 	private final ChangingList<RemakeMapLoader> savedMaps = new ChangingList<>();
 
 	private boolean fileListLoaded = false;
+    private static BiConsumer<Consumer<IListedMap>, String> mapDownloader = null;
+
 
 	public MapList(Collection<IMapLister> mapDirectories, IMapLister saveDirectory) {
-		this.mapDirectories = new ArrayList<>(mapDirectories);
+
+        this.mapDirectories = new ArrayList<>(mapDirectories);
 		this.saveDirectory = saveDirectory;
+
+        return;
 	}
+
+
+    /**
+     * Gives the currently used map extension for saving a map.
+     */
+    public static String getMapExtension() {
+        String extension = CommonConstants.USE_SAVEGAME_COMPRESSION ? MapLoader.MAP_EXTENSION_COMPRESSED : MapLoader.MAP_EXTENSION;
+        return extension;
+    }
+
 
 	private void loadFileList() {
-		freshMaps.clear();
-		savedMaps.clear();
 
-		for (IMapLister dir : mapDirectories) {
+        this.freshMaps.clear();
+		this.savedMaps.clear();
+
+		for (IMapLister dir : this.mapDirectories) {
 			dir.listMaps(this);
 		}
+
+        return;
 	}
+
 
 	@Override
 	public synchronized void foundMap(IListedMap map) {
+
 		MapLoader loader;
 
 		try {
 			loader = MapLoader.getLoaderForListedMap(map);
-		} catch (Exception e) {
-			System.err.println("Cought exception while loading header for " + map.getFileName());
-			e.printStackTrace();
+		}
+
+        catch (Exception exception) {
+			System.err.println("Caught exception while loading header for " + map.getFileName());
+			exception.printStackTrace();
 			return;
 		}
 
 		MapFileHeader mapHead = loader.getFileHeader();
 
-		// - if the map can't be load (e.g. caused by wrong format) the mapHead gets NULL! -> hide/ignore this map from user
+		// if the map can't be loaded (e.g. caused by wrong format) the mapHead gets NULL! -> hide/ignore this map from user
 		if (mapHead != null) {
+
 			MapType type = loader.getFileHeader().getType();
 
-			if ((type == MapType.SAVED_SINGLE)) {
-				savedMaps.add((RemakeMapLoader) loader);
-			} else {
-				freshMaps.add(loader);
+			if (type == MapType.SAVED_SINGLE) {
+				this.savedMaps.add((RemakeMapLoader) loader);
+			}
+
+            else {
+				this.freshMaps.add(loader);
 			}
 		}
 	}
 
+
 	public synchronized ChangingList<RemakeMapLoader> getSavedMaps() {
-		if (!fileListLoaded) {
-			loadFileList();
-			fileListLoaded = true;
+
+        if (!this.fileListLoaded) {
+			this.loadFileList();
+			this.fileListLoaded = true;
 		}
-		return savedMaps;
+
+		return this.savedMaps;
 	}
+
 
 	public synchronized ChangingList<MapLoader> getFreshMaps() {
-		if (!fileListLoaded) {
-			loadFileList();
-			fileListLoaded = true;
+
+		if (!this.fileListLoaded) {
+			this.loadFileList();
+			this.fileListLoaded = true;
 		}
-		return freshMaps;
+
+		return this.freshMaps;
 	}
 
-	private static BiConsumer<Consumer<IListedMap>, String> mapDownloader = null;
 
 	public static void setMapDownloader(BiConsumer<Consumer<IListedMap>, String> mapDownloader) {
 		MapList.mapDownloader = mapDownloader;
+        return;
 	}
+
 
 	/**
 	 * Gives the {@link MapLoader} for the map with the given id.
@@ -144,47 +168,57 @@ public class MapList implements IMapListerCallable {
 	 *         or null if no map with the given id has been found.
 	 */
 	public MapLoader getMapById(String id) {
-		MapLoader map = getMapByIdNoDownload(id);
-		if(map != null) return map;
 
-		if(mapDownloader != null) {
-			mapDownloader.accept(this::foundMap, id);
-			return getMapByIdNoDownload(id);
+		MapLoader map = getMapByIdNoDownload(id);
+
+		if (map != null) {
+            return map;
+        }
+
+		if (MapList.mapDownloader != null) {
+			MapList.mapDownloader.accept(this::foundMap, id);
+			return this.getMapByIdNoDownload(id);
 		}
 
 		return null;
-
 	}
 
+
 	private MapLoader getMapByIdNoDownload(String id) {
+
 		ArrayList<MapLoader> maps = new ArrayList<>();
-		maps.addAll(getFreshMaps().getItems());
-		maps.addAll(getSavedMaps().getItems());
+		maps.addAll(this.getFreshMaps().getItems());
+		maps.addAll(this.getSavedMaps().getItems());
 
 		for (MapLoader curr : maps) {
 			if (curr.getMapId().equals(id)) {
 				return curr;
 			}
 		}
+
 		return null;
 	}
 
+
 	public MapLoader getMapByName(String mapName) {
+
 		ArrayList<MapLoader> maps = new ArrayList<>();
-		maps.addAll(getFreshMaps().getItems());
-		maps.addAll(getSavedMaps().getItems());
+		maps.addAll(this.getFreshMaps().getItems());
+		maps.addAll(this.getSavedMaps().getItems());
 
 		for (MapLoader curr : maps) {
 			if (curr.getMapName().equals(mapName)) {
 				return curr;
 			}
 		}
+
 		return null;
 	}
 
+
 	/**
 	 * saves a static map to the given directory.
-	 * 
+	 *
 	 * @param header
 	 *            The header to use.
 	 * @param data
@@ -194,31 +228,42 @@ public class MapList implements IMapListerCallable {
 	 * @throws IOException
 	 *             If any IO error occurred.
 	 */
-	public synchronized void saveNewMap(jsettlers.logic.map.loading.newmap.MapFileHeader header, IMapData data, OutputStream out) throws IOException {
+	public synchronized void saveNewMap(
+        jsettlers.logic.map.loading.newmap.MapFileHeader header,
+        IMapData data,
+        OutputStream out) throws IOException {
+
 		try {
 			if (out == null) {
-				out = mapDirectories.iterator().next().getOutputStream(header);
+				out = this.mapDirectories.iterator().next().getOutputStream(header);
 			}
+
 			header.writeTo(out);
 			FreshMapSerializer.serialize(data, out);
-		} finally {
+		}
+
+        finally {
 			if (out != null) {
 				out.close();
 			}
 		}
-		loadFileList();
+
+		this.loadFileList();
+        return;
 	}
+
 
 	/**
 	 * Saves a map to disk. The map logic should be paused while calling this method.
-	 * 
+	 *
 	 * @param playerStates
 	 * @param grid
 	 * @throws IOException
 	 */
 	public synchronized void saveMap(PlayerState[] playerStates, MapFileHeader header, MainGrid grid) throws IOException {
+
 		MilliStopWatch watch = new MilliStopWatch();
-		OutputStream outStream = saveDirectory.getOutputStream(header);
+		OutputStream outStream = this.saveDirectory.getOutputStream(header);
 
 		header.writeTo(outStream);
 
@@ -232,108 +277,148 @@ public class MapList implements IMapListerCallable {
 		oos.close();
 		watch.stop("Writing savegame required");
 
-		loadFileList();
+		this.loadFileList();
+        return;
 	}
+
 
 	public ArrayList<MapLoader> getSavedMultiplayerMaps() {
 		// TODO: save multiplayer maps, so that we can load them.
 		return null;
 	}
 
+
 	/**
 	 * gets the list of the default directory.
-	 * 
+	 *
 	 * @return
 	 */
 	public static synchronized MapList getDefaultList() {
-		if (defaultList == null) {
-			defaultList = mapListFactory.getMapList();
+
+		if (MapList.defaultList == null) {
+			MapList.defaultList = MapList.mapListFactory.getMapList();
 		}
-		return defaultList;
+
+		return MapList.defaultList;
 	}
+
 
 	public static void setDefaultListFactory(IMapListFactory factory) {
-		mapListFactory = factory;
-		defaultList = null;
+
+		MapList.mapListFactory = factory;
+		MapList.defaultList = null;
+
+        return;
 	}
 
+
 	public static class DefaultMapListFactory implements IMapListFactory {
+
 		protected ArrayList<IMapLister> directories = new ArrayList<>();
 		protected IMapLister saveDirectory = null;
 
+
 		public void addMapDirectory(String directory, boolean create) {
-			directories.add(new DirectoryMapLister(new File(directory), create));
+			this.directories.add(new DirectoryMapLister(new File(directory), create));
+            return;
 		}
 
+
 		public void addSaveDirectory(IMapLister mapLister) {
-			saveDirectory = mapLister;
-			addMapDirectory(mapLister);
+			this.saveDirectory = mapLister;
+			this.addMapDirectory(mapLister);
+            return;
 		}
+
 
 		@Override
 		public MapList getMapList() {
+
 			IMapLister save = getSave();
-			if (saveDirectory == null) {
+
+            if (this.saveDirectory == null) {
 				throw new RuntimeException("Savegame directory not set.");
 			}
-			return new MapList(getMapListers(), saveDirectory);
+
+			return new MapList(this.getMapListers(), this.saveDirectory);
 		}
+
 
 		public void addResourcesDirectory(File resources) {
-			addMapDirectory(new DirectoryMapLister(new File(resources, "maps"), true));
-			saveDirectory = new DirectoryMapLister(new File(resources, "save"), true);
-			addMapDirectory(saveDirectory);
+
+            this.addMapDirectory(new DirectoryMapLister(new File(resources, "maps"), true));
+			this.saveDirectory = new DirectoryMapLister(new File(resources, "save"), true);
+			this.addMapDirectory(this.saveDirectory);
+
+            return;
 		}
+
 
 		protected IMapLister getSave() {
-			return saveDirectory;
+			return this.saveDirectory;
 		}
 
+
 		public Collection<IMapLister> getMapListers() {
-			return directories;
+			return this.directories;
 		}
+
 
 		public void addMapDirectory(IMapLister dir) {
 			this.directories.add(dir);
+            return;
 		}
 	}
 
+
 	public static class ListedResourceMap implements IListedMap {
-		private String path;
+
+		private final String path;
+
 
 		public ListedResourceMap(String path) {
-			super();
+
+            super();
 			this.path = path;
+
+            return;
 		}
+
 
 		@Override
 		public boolean isCompressed() {
-			return path.endsWith(MapLoader.MAP_EXTENSION_COMPRESSED);
+			return this.path.endsWith(MapLoader.MAP_EXTENSION_COMPRESSED);
 		}
+
 
 		@Override
 		public InputStream getInputStream() throws IOException {
-			InputStream stream = getClass().getResourceAsStream(path);
-			if (stream == null) {
-				throw new IOException("Map not found in " + path);
+
+			InputStream stream = getClass().getResourceAsStream(this.path);
+
+            if (stream == null) {
+				throw new IOException("Map not found in " + this.path);
 			}
+
 			return stream;
 		}
 
+
 		@Override
 		public String getFileName() {
-			return path.replaceFirst(".*/", "");
+			return this.path.replaceFirst(".*/", "");
 		}
+
 
 		@Override
 		public File getFile() {
 			throw new UnsupportedOperationException();
 		}
 
+
 		@Override
 		public void delete() {
 			throw new UnsupportedOperationException();
 		}
 	}
-
 }

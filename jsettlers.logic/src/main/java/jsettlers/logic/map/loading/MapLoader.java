@@ -42,76 +42,109 @@ public abstract class MapLoader implements IGameCreator, Comparable<MapLoader>, 
 	public static final String MAP_EXTENSION_ORIGINAL = ".map";
 	public static final String MAP_EXTENSION_ORIGINAL_MAP_EDITOR = ".edm";
 
+
 	public abstract MapFileHeader getFileHeader();
+    public abstract IListedMap getListedMap();
+
+    /**
+     * Gets the map data for this loader, if the data is available.
+     */
+    public abstract IMapData getMapData() throws MapLoadException;
+
 
 	public static MapLoader getLoaderForListedMap(IListedMap listedMap) throws MapLoadException {
-		if ((checkExtension(listedMap.getFileName(), MapLoader.MAP_EXTENSION_ORIGINAL))
-				|| (checkExtension(listedMap.getFileName(), MapLoader.MAP_EXTENSION_ORIGINAL_MAP_EDITOR))) {
+
+		if ((MapLoader.checkExtension(listedMap.getFileName(), MapLoader.MAP_EXTENSION_ORIGINAL)) ||
+            (MapLoader.checkExtension(listedMap.getFileName(), MapLoader.MAP_EXTENSION_ORIGINAL_MAP_EDITOR))) {
+
 			// - original Siedler 3 Map
 			return new OriginalMapLoader(listedMap);
-		} else {
+		}
+
+        else {
+
 			// - Siedler 3 Remake Savegame or Map
 			MapFileHeader header = RemakeMapLoader.loadHeader(listedMap);
 
 			switch (header.getType()) {
+
 			case NORMAL:
 				return new FreshMapLoader(listedMap, header);
+
 			case SAVED_SINGLE:
 				return new SavegameLoader(listedMap, header);
+
 			default:
-				throw new MapLoadException("Unkown EMapType: " + header.getType());
+				throw new MapLoadException("Unknown EMapType: " + header.getType());
 			}
 		}
 	}
 
-	public static boolean checkExtension(String filename, String Extention) {
-		if (filename == null)
+
+	public static boolean checkExtension(String filename, String Extension) {
+
+		if (filename == null) {
 			return false;
-		return filename.toLowerCase(Locale.ENGLISH).endsWith(Extention.toLowerCase(Locale.ENGLISH));
+        }
+
+		return filename.toLowerCase(Locale.ENGLISH).endsWith(Extension.toLowerCase(Locale.ENGLISH));
 	}
 
+
 	public static boolean isExtensionKnown(String filename) {
-		if (checkExtension(filename, MAP_EXTENSION_ORIGINAL))
+
+		if (MapLoader.checkExtension(filename, MapLoader.MAP_EXTENSION_ORIGINAL)) {
 			return true;
-		if (checkExtension(filename, MAP_EXTENSION))
+        }
+
+		if (MapLoader.checkExtension(filename, MapLoader.MAP_EXTENSION)) {
 			return true;
-		if (checkExtension(filename, MAP_EXTENSION_COMPRESSED))
+        }
+
+		if (MapLoader.checkExtension(filename, MapLoader.MAP_EXTENSION_COMPRESSED)) {
 			return true;
-		return checkExtension(filename, MAP_EXTENSION_ORIGINAL_MAP_EDITOR);
+        }
+
+		return MapLoader.checkExtension(filename, MapLoader.MAP_EXTENSION_ORIGINAL_MAP_EDITOR);
 	}
+
 
 	// - Interface: Comparable<MapLoader>
 	@Override
 	public int compareTo(MapLoader other) {
+
 		MapFileHeader myHeader = this.getFileHeader();
 		MapFileHeader otherHeader = other.getFileHeader();
+
 		if (myHeader.getType() == otherHeader.getType() && myHeader.getType() == MapType.SAVED_SINGLE) {
-			return -this.getCreationDate().compareTo(other.getCreationDate()); // order by date descending
-		} else {
-			return this.getMapName().compareToIgnoreCase(other.getMapName()); // order by name ascending
+            int orderDescending = -this.getCreationDate().compareTo(other.getCreationDate()); // order by date descending
+			return orderDescending;
+		}
+
+        else {
+            int orderAscending = this.getMapName().compareToIgnoreCase(other.getMapName()); // order by name ascending
+			return orderAscending;
 		}
 	}
 
-	protected PlayerSetting[] setupStartConditions(PlayerSetting[] playerSettings, EMapStartResources startResources, IMutableMapData mapData) {
-		byte numberOfPlayers = (byte) getMaxPlayers();
+
+	protected PlayerSetting[] setupStartConditions(
+        PlayerSetting[] playerSettings,
+        EMapStartResources startResources,
+        IMutableMapData mapData) {
+
+		byte numberOfPlayers = (byte) this.getMaxPlayers();
+
 		if (playerSettings == null || CommonConstants.ACTIVATE_ALL_PLAYERS) {
+
 			playerSettings = new PlayerSetting[numberOfPlayers];
-			for (int i = 0; i < numberOfPlayers; i++) {
-				playerSettings[i] = new PlayerSetting((byte) i);
+
+            for (int index = 0; index < numberOfPlayers; index++) {
+				playerSettings[index] = new PlayerSetting((byte) index);
 			}
 		}
 
 		startResources.addStartTowerMaterialsAndSettlers(playerSettings, mapData);
 		return playerSettings;
 	}
-
-	public abstract IListedMap getListedMap();
-
-	/**
-	 * Gets the map data for this loader, if the data is available.
-	 *
-	 * @return
-	 */
-	public abstract IMapData getMapData() throws MapLoadException;
-
 }

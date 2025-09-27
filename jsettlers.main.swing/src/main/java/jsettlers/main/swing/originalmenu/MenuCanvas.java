@@ -97,24 +97,6 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
     }
 
 
-    /*
-    note:
-
-    internal panel should handle all swing component logic without having to handle events
-    this should be done in the menu event listener class
-    */
-    public void openDialog() {
-        System.out.printf("opening dialog window\n");
-        return;
-    }
-
-
-    public void openDropDownList() {
-        System.out.printf("opening dropdown list\n");
-        return;
-    }
-
-
     /**
      * this method takes the current position of the cursor and returns a {@link Point} with the equivalent
      * coordinates on an 800 x 600 screen. this is used for positioning the cursor inside the
@@ -182,7 +164,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
         Dimension parentSize = this.getParent().getSize();
         double currentAspectRatio = (double) parentSize.width / (double) parentSize.height;
 
-        // height becomes deciding
+        // calculate width based on height
         if (currentAspectRatio >= this.idealAspectRatio) {
 
             int newViewportWidth = (int) (this.idealAspectRatio * parentSize.height);
@@ -193,7 +175,7 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
             return newSize;
         }
 
-        // width becomes deciding
+        // calculate height based on width
         else {
 
             int newViewportWidth = parentSize.width;

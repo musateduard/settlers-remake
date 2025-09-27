@@ -1,9 +1,9 @@
 package jsettlers.main.swing.originalmenu;
 
-import java.awt.Component;
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Component;
 import java.awt.GridBagLayout;
 import java.awt.FontFormatException;
 import java.awt.event.ActionListener;
@@ -11,12 +11,14 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
-import javax.swing.ButtonGroup;
 import javax.swing.JFormattedTextField;
+import javax.swing.ButtonGroup;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.List;
 
@@ -28,14 +30,14 @@ import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.map.loading.list.MapList;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
+import jsettlers.main.swing.originalmenu.components.LabelProps;
 import jsettlers.main.swing.originalmenu.components.ButtonProps;
 import jsettlers.main.swing.originalmenu.components.DropdownProps;
-import jsettlers.main.swing.originalmenu.components.LabelProps;
+import jsettlers.main.swing.originalmenu.components.OriginalLabel;
 import jsettlers.main.swing.originalmenu.components.OriginalButton;
-import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
 import jsettlers.main.swing.originalmenu.components.OriginalDialog;
 import jsettlers.main.swing.originalmenu.components.OriginalOverlay;
-import jsettlers.main.swing.originalmenu.components.OriginalLabel;
+import jsettlers.main.swing.originalmenu.components.OriginalDropdown;
 import jsettlers.main.swing.originalmenu.components.OriginalToggleButton;
 import jsettlers.main.swing.JSettlersFrame;
 
@@ -65,21 +67,42 @@ public class OriginalScenarioMenu extends JPanel {
         // todo: add initial map dialog
         // todo: implement start game method using MapContent
 
-        List<MapLoader> mapList = MapList.getDefaultList().getFreshMaps().getItems();
-
-        System.out.printf("total maps %d\n", mapList.size());
-
-        // for (MapLoader item : mapList) {
-        //     System.out.printf("%s\n", item.getMapName());
-        // }
-
         this.mainFrame = mainFrame;
-        // this.gameMap = new MapContent();
+        this.selectedMap = null;
 
         this.setOpaque(true);
         this.setBackground(Color.BLACK);
         this.setLayout(new GridBagLayout());
         this.setMinimumSize(new Dimension(800, 600));
+
+        // load all maps
+        List<MapLoader> mapList = MapList.getDefaultList().getFreshMaps().getItems();
+        ArrayList<MapLoader> singleMapList = new ArrayList<>();
+        ArrayList<MapLoader> multiMapList = new ArrayList<>();
+        ArrayList<MapLoader> userMapList = new ArrayList<>();
+
+        // note: MapLoader is a base class for OriginalMapLoader and FreshMapLoader
+
+        for (MapLoader item : mapList) {
+
+            Path mapFile = item.getListedMap().getFile().toPath();
+
+            if (mapFile.getParent().toString().endsWith("TUTORIAL")) {
+                // do nothing
+            }
+
+            else if (mapFile.getParent().toString().endsWith("MULTI")) {
+                multiMapList.add(item);
+            }
+
+            else if (mapFile.getParent().toString().endsWith("SINGLE")) {
+                singleMapList.add(item);
+            }
+
+            else {
+                userMapList.add(item);
+            }
+        }
 
         // load all images
         ImageProvider imageProvider = ImageProvider.getInstance();
@@ -363,7 +386,7 @@ public class OriginalScenarioMenu extends JPanel {
         this.menuCanvas = new MenuCanvas(menuImage.convertToBufferedImage(), buttonList, labelList, inputList, dropdownList);
         this.add(this.menuCanvas);
 
-        // declare maps dialog
+        // declare maps dialog buttons
         final ButtonProps buttonWideProps = new ButtonProps(
             buttonImage120.convertToBufferedImage(),
             buttonImage120Hovered,
@@ -371,7 +394,13 @@ public class OriginalScenarioMenu extends JPanel {
             dialogFont, labelColor, true
         );
 
-        // note: maps button should only show the dialog but not construct it
+        /*
+        note:
+
+        maps button should only show the dialog but not construct it
+        when maps dialog is shown it should be set to the currently selected map regardless where it was closed last time
+        if no map was selected previously it should display the random map menu regardless of previous state
+        */
 
         OriginalButton dialogCancel = new OriginalButton("Cancel", 360, 356, buttonProps);
         OriginalButton dialogOk = new OriginalButton("OK", 480, 356, buttonProps);
@@ -380,9 +409,9 @@ public class OriginalScenarioMenu extends JPanel {
 
             if (dialogEvent.getSource() == dialogCancel) {
 
-                // if (this.mapsDialog.initialDisplay == true) {
-                //     this.returnToMainMenu();
-                // }
+                if (this.mapsDialog.initialDisplay == true) {
+                    this.returnToMainMenu();
+                }
 
                 OriginalOverlay overlay = (OriginalOverlay) this.mapsDialog.getParent();
 
@@ -407,6 +436,10 @@ public class OriginalScenarioMenu extends JPanel {
                 OriginalOverlay overlay = (OriginalOverlay) dialog.getParent();
 
                 this.menuCanvas.internalPanel.remove(overlay);
+
+                if (this.mapsDialog.initialDisplay == true) {
+                    this.mapsDialog.initialDisplay = false;
+                }
             }
 
             else {
@@ -424,6 +457,7 @@ public class OriginalScenarioMenu extends JPanel {
             dialogOk
         };
 
+        // declare maps dialog filter buttons
         OriginalToggleButton dialogRandom = new OriginalToggleButton("Random", 20, 20, buttonWideProps);
         OriginalToggleButton dialogSinglePlayer = new OriginalToggleButton("Single Player Map", 20, 44, buttonWideProps);
         OriginalToggleButton dialogMultiPlayer = new OriginalToggleButton("Multi-player Map", 20, 68, buttonWideProps);
@@ -436,7 +470,7 @@ public class OriginalScenarioMenu extends JPanel {
         mapFilterGroup.add(dialogMultiPlayer);
         mapFilterGroup.add(dialogUser);
 
-        // todo: add map filter event listeners
+        // todo: finish map filter event listeners
 
         ItemListener mapsFilterListener = (itemEvent) -> {
 
@@ -447,11 +481,14 @@ public class OriginalScenarioMenu extends JPanel {
                 /*
                 note:
 
-                if map filter is selected from OriginalDialog constructor it won't have access to parent
-                reason is because OriginalDialog is in unknown state
-                map filter buttons need access to parent dialog but they can't be selected from dialog constructor
-                if filter is selected from constructor then it won't have access to parent
+                if map filter is set from OriginalDialog constructor then itemEvent won't have access to OriginalDialog parent
+                reason is because OriginalDialog has not been constructed yet
+                because map filter buttons need access to parent dialog this means that the filter buttons can
+                only be set after OriginalDialog has been constructed
                 */
+
+                // todo: make each button set the map list for all other buttons on ItemEvent.SELECTED
+                // todo: implement map list element for maps dialog
 
                 OriginalToggleButton button = (OriginalToggleButton) itemEvent.getItem();
                 OriginalDialog parent = (OriginalDialog) button.getParent();
@@ -500,6 +537,7 @@ public class OriginalScenarioMenu extends JPanel {
             dialogUser
         };
 
+        // declare maps dialog labels
         OriginalLabel worldSizeLabel = new OriginalLabel("World size:", 182, 46, labelProps);
         OriginalLabel mirroredMapLabel = new OriginalLabel("Mirrored Map:", 182, 86, labelProps);
 
@@ -508,6 +546,7 @@ public class OriginalScenarioMenu extends JPanel {
             mirroredMapLabel
         };
 
+        // declare maps dialog dropdown elements
         DropdownProps dialogDropdownProps = new DropdownProps(
             168, 22, dialogFont, labelColor,
             downArrow.convertToBufferedImage(), downArrowHovered
@@ -524,7 +563,8 @@ public class OriginalScenarioMenu extends JPanel {
         this.mapsDialog = new OriginalDialog(
             dialogRandomMapImage.convertToBufferedImage(),
             dialogMapPreviewImage.convertToBufferedImage(),
-            dialogButtonList, dialogToggleList, dialogLabelList, dialogDropdownList
+            dialogButtonList, dialogToggleList, dialogLabelList, dialogDropdownList,
+            singleMapList, multiMapList, userMapList
         );
 
         // show maps dialog

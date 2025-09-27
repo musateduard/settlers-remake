@@ -5,9 +5,11 @@ import java.awt.Component;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import javax.swing.JPanel;
 import java.util.ArrayList;
 import java.util.Objects;
-import javax.swing.JPanel;
+
+import jsettlers.logic.map.loading.MapLoader;
 
 
 public class OriginalDialog extends JPanel implements MouseListener {
@@ -17,6 +19,9 @@ public class OriginalDialog extends JPanel implements MouseListener {
     public final BufferedImage mapPreviewImage;
     public OriginalToggleButton randomMapButton;
     public final ArrayList<Component> randomMapComponentList;
+    public final ArrayList<MapLoader> singleMapList;
+    public final ArrayList<MapLoader> multiMapList;
+    public final ArrayList<MapLoader> userMapList;
 
 
     public OriginalDialog(
@@ -25,7 +30,10 @@ public class OriginalDialog extends JPanel implements MouseListener {
         OriginalButton[] buttonList,
         OriginalToggleButton[] toggleButtonList,
         OriginalLabel[] labelList,
-        OriginalDropdown[] dropdownList) {
+        OriginalDropdown[] dropdownList,
+        ArrayList<MapLoader> singleMapList,
+        ArrayList<MapLoader> multiMapList,
+        ArrayList<MapLoader> userMapList) {
 
         super();
 
@@ -33,6 +41,9 @@ public class OriginalDialog extends JPanel implements MouseListener {
         this.mapPreviewImage = mapPreviewImage;
         this.initialDisplay = true;
         this.randomMapComponentList = new ArrayList<>();
+        this.singleMapList = singleMapList;
+        this.multiMapList = multiMapList;
+        this.userMapList = userMapList;
 
         this.setLayout(null);
         this.setBounds(100, 100, 600, 400);

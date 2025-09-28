@@ -152,7 +152,6 @@ public class JSettlersFrame extends JFrame {
     public void showOriginalMainMenu() {
 
         OriginalMainMenu mainMenu = new OriginalMainMenu(this);
-
         this.setNewContentPane(mainMenu);
 
         return;

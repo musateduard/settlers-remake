@@ -68,14 +68,14 @@ public abstract class MapLoader implements IGameCreator, Comparable<MapLoader>, 
 
 			switch (header.getType()) {
 
-			case NORMAL:
-				return new FreshMapLoader(listedMap, header);
+                case NORMAL:
+                return new FreshMapLoader(listedMap, header);
 
-			case SAVED_SINGLE:
-				return new SavegameLoader(listedMap, header);
+                case SAVED_SINGLE:
+                return new SavegameLoader(listedMap, header);
 
-			default:
-				throw new MapLoadException("Unknown EMapType: " + header.getType());
+                default:
+                throw new MapLoadException("Unknown EMapType: " + header.getType());
 			}
 		}
 	}

@@ -28,44 +28,62 @@ import java.awt.Graphics;
 import go.graphics.swing.ContextContainer;
 import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
 
+
 public abstract class JAWTContextCreator extends ContextCreator {
 
 	protected JAWT jawt = JAWT.create();
 	protected JAWTDrawingSurface surface;
-	protected JAWTDrawingSurfaceInfo surfaceinfo;
+	protected JAWTDrawingSurfaceInfo surfaceInfo;
 	protected long windowConnection;
 	protected long windowDrawable;
 	protected Platform currentPlatform = Platform.get();
 
+
 	public JAWTContextCreator(ContextContainer container, boolean debug) {
+
 		super(container, debug);
 
-		jawt.version(JAWTFunctions.JAWT_VERSION_1_4);
-		JAWTFunctions.JAWT_GetAWT(jawt);
+		this.jawt.version(JAWTFunctions.JAWT_VERSION_1_4);
+		JAWTFunctions.JAWT_GetAWT(this.jawt);
 
+        return;
 	}
+
 
 	@Override
 	public abstract void stop();
 
+
 	private void regenerateWindowInfo() throws ContextException {
 
-		long oldWindowConnection = windowConnection;
-		long oldWindowDrawable = windowDrawable;
-		if(currentPlatform == Platform.LINUX) {
-			JAWTX11DrawingSurfaceInfo dsi = JAWTX11DrawingSurfaceInfo.create(surfaceinfo.platformInfo());
-			windowConnection = dsi.display();
-			windowDrawable = dsi.drawable();
-		} else if(currentPlatform == Platform.WINDOWS){
-			JAWTWin32DrawingSurfaceInfo dsi = JAWTWin32DrawingSurfaceInfo.create(surfaceinfo.platformInfo());
-			windowConnection = dsi.hwnd();
-			windowDrawable = dsi.hdc();
-		} else {
-			windowConnection = surfaceinfo.platformInfo();
+		long oldWindowConnection = this.windowConnection;
+		long oldWindowDrawable = this.windowDrawable;
+
+        if (this.currentPlatform == Platform.LINUX) {
+			JAWTX11DrawingSurfaceInfo dsi = JAWTX11DrawingSurfaceInfo.create(this.surfaceInfo.platformInfo());
+			this.windowConnection = dsi.display();
+			this.windowDrawable = dsi.drawable();
 		}
 
-		if(windowDrawable != oldWindowDrawable) onNewDrawable();
-		if(windowConnection != oldWindowConnection) onNewConnection();
+        else if (this.currentPlatform == Platform.WINDOWS) {
+			JAWTWin32DrawingSurfaceInfo dsi = JAWTWin32DrawingSurfaceInfo.create(this.surfaceInfo.platformInfo());
+			this.windowConnection = dsi.hwnd();
+			this.windowDrawable = dsi.hdc();
+		}
+
+        else {
+			this.windowConnection = this.surfaceInfo.platformInfo();
+		}
+
+		if (this.windowDrawable != oldWindowDrawable) {
+            this.onNewDrawable();
+        }
+
+		if (this.windowConnection != oldWindowConnection) {
+            this.onNewConnection();
+        }
+
+        return;
 	}
 
 	protected void onNewConnection() throws ContextException {}
@@ -73,31 +91,44 @@ public abstract class JAWTContextCreator extends ContextCreator {
 
 	protected void onInit() throws ContextException {}
 
+
 	@Override
 	public void initSpecific() {
-		canvas = new Canvas() {
+
+		this.canvas = new Canvas() {
+
 			@Override
 			public void update(Graphics graphics) {
-				if (isShowing()) paint(graphics);
+
+                if (this.isShowing()) {
+                    this.paint(graphics);
+                }
+
+                return;
 			}
 
 			public void paint(Graphics graphics) {
+
 				surface = JAWTFunctions.JAWT_GetDrawingSurface(canvas, jawt.GetDrawingSurface());
 				JAWTFunctions.JAWT_Lock(jawt.Lock());
 				JAWTFunctions.JAWT_DrawingSurface_Lock(surface, surface.Lock());
-				surfaceinfo = JAWTFunctions.JAWT_DrawingSurface_GetDrawingSurfaceInfo(surface, surface.GetDrawingSurfaceInfo());
-				try {
+				surfaceInfo = JAWTFunctions.JAWT_DrawingSurface_GetDrawingSurfaceInfo(surface, surface.GetDrawingSurfaceInfo());
+
+                try {
 					regenerateWindowInfo();
 
 					if (first_draw) {
+
 						first_draw = false;
 						new GOSwingEventConverter(this, parent);
 
 						onInit();
 					}
+
 					makeCurrent(true);
 
 					synchronized (wnd_lock) {
+
 						if (change_res) {
 							width = new_width;
 							height = new_height;
@@ -110,26 +141,40 @@ public abstract class JAWTContextCreator extends ContextCreator {
 					try {
 						parent.draw();
 						parent.finishFrame();
-					} finally {
+					}
+
+                    finally {
+
 						try {
 							swapBuffers();
-						} finally {
+						}
+
+                        finally {
 							makeCurrent(false);
 						}
 					}
-				} catch(ContextException ignored) {
-				} catch (Throwable thrown) {
+				}
+
+                catch (ContextException ignored) {}
+
+                catch (Throwable thrown) {
 					thrown.printStackTrace();
 				}
 
-				if (fpsLimit == 0) repaint();
+				if (fpsLimit == 0) {
+                    this.repaint();
+                }
 
-				JAWTFunctions.JAWT_DrawingSurface_FreeDrawingSurfaceInfo(surfaceinfo, surface.FreeDrawingSurfaceInfo());
+				JAWTFunctions.JAWT_DrawingSurface_FreeDrawingSurfaceInfo(surfaceInfo, surface.FreeDrawingSurfaceInfo());
 				JAWTFunctions.JAWT_DrawingSurface_Unlock(surface, surface.Unlock());
 				JAWTFunctions.JAWT_Unlock(jawt.Unlock());
 				JAWTFunctions.JAWT_FreeDrawingSurface(surface, jawt.FreeDrawingSurface());
+
+                return;
 			}
 		};
+
+        return;
 	}
 
 	protected abstract void swapBuffers() throws ContextException;

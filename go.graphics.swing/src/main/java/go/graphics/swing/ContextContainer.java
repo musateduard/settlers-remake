@@ -36,17 +36,17 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 	public ContextContainer(EBackendType backend, LayoutManager layout, boolean debug) {
 
-        setLayout(layout);
+        this.setLayout(layout);
 		this.debug = debug;
 
 		try {
-			cc = BackendSelector.createBackend(this, backend, debug);
-			cc.init();
+			this.cc = BackendSelector.createBackend(this, backend, debug);
+			this.cc.init();
 		}
 
-        catch (Exception ex) {
-			ex.printStackTrace();
-			fatal("Could not create opengl context through " + backend.cc_name);
+        catch (Exception exception) {
+			exception.printStackTrace();
+			this.fatal("Could not create opengl context through " + backend.cc_name);
 		}
 
         return;
@@ -54,118 +54,209 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 
 	public void fatal(String message) {
-		SwingUtilities.invokeLater(() -> {
-			JOptionPane.showMessageDialog(null, message+ "\nPress ok to exit", "Error", JOptionPane.ERROR_MESSAGE);
-			System.exit(1);
-		});
+
+		SwingUtilities.invokeLater(
+            () -> {
+                JOptionPane.showMessageDialog(null, message + "\nPress ok to exit", "Error", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+        );
+
 		System.err.println(message);
+        return;
 	}
+
 
 	public void resizeContext(int width, int height) throws ContextException {
-		if(context == null) throw new ContextException();
-		context.resize(width, height);
+
+		if (this.context == null) {
+            throw new ContextException();
+        }
+
+		this.context.resize(width, height);
+        return;
 	}
 
+
 	public void finishFrame() {
-		context.finishFrame();
+		this.context.finishFrame();
+        return;
 	}
 
 
 	public void wrapNewVkContext(VkInstance instance, AbstractVulkanOutput vkOutput) {
-		if(context != null) context.invalidate();
+
+        if (this.context != null) {
+            this.context.invalidate();
+        }
+
 		this.vkOutput = vkOutput;
 
 		try {
-			context = new VulkanDrawContext(instance, vkOutput, guiScale);
-		} catch(Throwable thrown) {
+			this.context = new VulkanDrawContext(instance, vkOutput, this.guiScale);
+		}
+
+        catch (Throwable thrown) {
 			thrown.printStackTrace();
 			fatal(thrown.getLocalizedMessage());
 		}
+
+        return;
 	}
 
+
 	public void wrapNewGLContext() {
-		if(cc instanceof JAWTContextCreator) ((JAWTContextCreator)cc).makeCurrent(true);
-		if(context != null) context.invalidate();
-		vkOutput = null;
+
+        if (this.cc instanceof JAWTContextCreator) {
+            ((JAWTContextCreator) this.cc).makeCurrent(true);
+        }
+
+		if (this.context != null) {
+            this.context.invalidate();
+        }
+
+		this.vkOutput = null;
 
 		GLCapabilities caps = GL.createCapabilities();
 
 		try {
-			if(caps.OpenGL20) {
-				context = new LWJGLDrawContext(caps, debug, guiScale);
-			} else {
-				errorGLVersion();
+
+			if (caps.OpenGL20) {
+				this.context = new LWJGLDrawContext(caps, this.debug, this.guiScale);
 			}
-		} catch(Throwable thrown) {
-			thrown.printStackTrace();
-			fatal(thrown.getLocalizedMessage());
+
+            else {
+				this.errorGLVersion();
+			}
 		}
+
+        catch (Throwable thrown) {
+			thrown.printStackTrace();
+			this.fatal(thrown.getLocalizedMessage());
+		}
+
+        return;
 	}
 
+
 	private void errorGLVersion() {
-		fatal("JSettlers needs at least OpenGL 2.0");
+		this.fatal("JSettlers needs at least OpenGL 2.0");
+        return;
 	}
+
 
 	/**
 	 * Disposes all textures / buffers that were allocated by this context.
 	 */
 	public void disposeAll() {
-		if (context != null) context.invalidate();
-		context = null;
 
-		if(cc != null) cc.stop();
-		cc = null;
+		if (this.context != null) {
+            this.context.invalidate();
+        }
+
+		this.context = null;
+
+		if (this.cc != null) {
+            this.cc.stop();
+        }
+
+		this.cc = null;
+        return;
 	}
+
 
 	public void draw() throws ContextException {
-		if(context == null) throw new ContextException();
-		context.startFrame();
+
+        if (this.context == null) {
+            throw new ContextException();
+        }
+
+		this.context.startFrame();
+        return;
 	}
 
+
 	public void requestRedraw() {
-		if(cc != null) cc.repaint();
+
+        if (this.cc != null) {
+            this.cc.repaint();
+        }
+
+        return;
 	}
+
 
 	/**
 	 * Forward the focus call to the Input canvas
 	 */
 	@Override
 	public void requestFocus() {
-		cc.requestFocus();
+		this.cc.requestFocus();
+        return;
 	}
+
 
 	public void addCanvas(Component canvas) {
-		add(canvas);
+		this.add(canvas);
+        return;
 	}
+
 
 	public void updateFPSLimit(int fpsLimit) {
-		if(cc != null) cc.updateFPSLimit(fpsLimit);
+
+		if (this.cc != null) {
+            this.cc.updateFPSLimit(fpsLimit);
+        }
+
+        return;
 	}
+
 
 	public void swapBuffersVk() throws ContextException {
-		if(context == null) throw new ContextException();
-		((VulkanDrawContext)context).endFrame();
+
+		if (this.context == null) {
+            throw new ContextException();
+        }
+
+		((VulkanDrawContext) this.context).endFrame();
+        return;
 	}
+
 
 	public void readFramebuffer(IntBuffer pixels, int width, int height) {
-		if(context instanceof VulkanDrawContext) {
-			((VulkanDrawContext)context).readFramebuffer(pixels, width, height);
-		} else {
-			((LWJGLDrawContext)context).readFramebuffer(pixels, width, height);
+
+		if (this.context instanceof VulkanDrawContext) {
+			((VulkanDrawContext) this.context).readFramebuffer(pixels, width, height);
 		}
+
+        else {
+			((LWJGLDrawContext) this.context).readFramebuffer(pixels, width, height);
+		}
+
+        return;
 	}
+
 
 	public void clearFramebuffer() {
-		if(context instanceof VulkanDrawContext) {
-			((VulkanDrawContext)context).clearFramebuffer();
-		} else {
-			((LWJGLDrawContext)context).clearFramebuffer();
+
+		if (this.context instanceof VulkanDrawContext) {
+			((VulkanDrawContext) this.context).clearFramebuffer();
 		}
+
+        else {
+			((LWJGLDrawContext) this.context).clearFramebuffer();
+		}
+
+        return;
 	}
 
+
 	public void removeSurface() {
-		if(vkOutput instanceof VulkanSurfaceOutput) {
-			((VulkanSurfaceOutput)vkOutput).removeSurface();
+
+        if (this.vkOutput instanceof VulkanSurfaceOutput) {
+			((VulkanSurfaceOutput) this.vkOutput).removeSurface();
 		}
+
+        return;
 	}
 }

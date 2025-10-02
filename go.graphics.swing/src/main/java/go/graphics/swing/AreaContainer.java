@@ -43,28 +43,37 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
 	 */
 	public AreaContainer(Area area) {
 		this(area, EBackendType.DEFAULT, false, 0);
+        return;
 	}
 
+
 	public AreaContainer(Area area, EBackendType backend, boolean debug, float guiScale) {
+
 		super(backend, new BorderLayout(), debug);
-		this.area = area;
+
+        this.area = area;
 		this.guiScale = guiScale;
 
-		if(cc instanceof DrawmodeListener) {
-			area.setDrawmodeListener((DrawmodeListener) cc);
+		if (this.cc instanceof DrawmodeListener) {
+			area.setDrawmodeListener((DrawmodeListener) this.cc);
 		}
 
-		setBackground(Color.BLACK);
+		this.setBackground(Color.BLACK);
 
 		area.addRedrawListener(this);
 
+        return;
 	}
 
-	public void resizeContext(int width, int height) throws ContextException {
-		super.resizeContext(width, height);
-		area.setWidth(width);
-		area.setHeight(height);
 
+	public void resizeContext(int width, int height) throws ContextException {
+
+		super.resizeContext(width, height);
+
+        this.area.setWidth(width);
+		this.area.setHeight(height);
+
+        return;
 	}
 
 
@@ -80,10 +89,13 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
 
 	@Override
 	public void handleEvent(GOEvent event) {
-		area.handleEvent(event);
+		this.area.handleEvent(event);
+        return;
 	}
 
+
 	public void notifyResize() {
-		cc.componentResized(null);
+		this.cc.componentResized(null);
+        return;
 	}
 }

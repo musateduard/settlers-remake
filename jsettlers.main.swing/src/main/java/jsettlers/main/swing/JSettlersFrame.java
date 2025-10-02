@@ -81,18 +81,18 @@ public class JSettlersFrame extends JFrame {
 		this.mainPanel = new MainMenuPanel(this);
 
         // jsettlers look and feel menu
-		// showMainMenu();
-        // setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		// setPreferredSize(new Dimension(1200, 800));
-        // pack();
-		// setLocationRelativeTo(null);
+		showMainMenu();
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		setPreferredSize(new Dimension(1200, 800));
+        pack();
+		setLocationRelativeTo(null);
 
         // settlers 3 original menu
-        this.showOriginalMainMenu();
-        this.pack();
-        this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
+        // this.showOriginalMainMenu();
+        // this.pack();
+        // this.setMinimumSize(this.getPreferredSize());  // note: setMinimumSize() needs to be called after pack()
+        // this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // this.setLocationRelativeTo(null);
 
         SettingsManager settingsManager = SettingsManager.getInstance();
 
@@ -262,6 +262,8 @@ public class JSettlersFrame extends JFrame {
                 this.repaint();
 		    }
         );
+
+        return;
 	}
 
 
@@ -288,7 +290,7 @@ public class JSettlersFrame extends JFrame {
      */
 	public void showEndgameStatistics(IStartedGame game) {
 
-        if(this.areaContainer != null) {
+        if (this.areaContainer != null) {
 
 			this.areaContainer.disposeAll();
 			this.areaContainer = null;

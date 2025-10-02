@@ -1,47 +1,49 @@
-apply plugin: 'java'
+plugins {
+    id "java"
+}
 
 import jsettlers.shaders.compile.ShaderCompilationTask
 
 String[] variants = new String[] {
-		"natives-linux",
-		"natives-linux-arm32",
-		"natives-linux-arm64",
-		"natives-macos",
-		"natives-macos-arm64",
-		"natives-windows",
-		"natives-windows-x86",
-		"natives-windows-arm64",
+    "natives-linux",
+    "natives-linux-arm32",
+    "natives-linux-arm64",
+    "natives-macos",
+    "natives-macos-arm64",
+    "natives-windows",
+    "natives-windows-x86",
+    "natives-windows-arm64",
 };
 
 String[] modules = new String[] {
-		"lwjgl",
-		"lwjgl-opengl",
-		"lwjgl-openal",
-		"lwjgl-glfw",
-		"lwjgl-vma",
+    "lwjgl",
+    "lwjgl-opengl",
+    "lwjgl-openal",
+    "lwjgl-glfw",
+    "lwjgl-vma",
 }
 
 dependencies {
+
 	implementation project(':go.graphics')
 
 	def lwjglVersion = rootProject.ext.lwjglVersion
 
-	for(String module : modules) {
-		implementation "org.lwjgl:" + module + ":" + lwjglVersion
+	for (String module : modules) {
+		implementation "org.lwjgl:${module}:${lwjglVersion}"
 
-		for(String variant : variants) {
-			runtimeOnly "org.lwjgl:" + module + ":" + lwjglVersion + ":" + variant
+		for (String variant : variants) {
+			runtimeOnly "org.lwjgl:${module}:${lwjglVersion}:${variant}"
 		}
 	}
 
-	implementation "org.lwjgl:lwjgl-vulkan:" + lwjglVersion + ":natives-macos"
-	implementation "org.lwjgl:lwjgl-vulkan:" + lwjglVersion
-	implementation "org.lwjgl:lwjgl-egl:" + lwjglVersion
-	implementation "org.lwjgl:lwjgl-jawt:" + lwjglVersion
+	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}:natives-macos"
+	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
+	implementation "org.lwjgl:lwjgl-egl:${lwjglVersion}"
+	implementation "org.lwjgl:lwjgl-jawt:${lwjglVersion}"
 
 	implementation "org.joml:joml:1.9.17"
 	implementation "org.lwjglx:lwjgl3-awt:0.1.8"
-
 
 	// macos support
 	implementation "org.jogamp.gluegen:gluegen-rt:2.3.2"

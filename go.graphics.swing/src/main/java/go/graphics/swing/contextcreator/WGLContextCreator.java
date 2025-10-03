@@ -14,114 +14,145 @@
  *******************************************************************************/
 package go.graphics.swing.contextcreator;
 
-import javax.swing.SwingUtilities;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.WGL;
+import org.lwjgl.opengl.WGLCapabilities;
 import org.lwjgl.opengl.WGLARBCreateContext;
 import org.lwjgl.opengl.WGLARBCreateContextProfile;
-import org.lwjgl.opengl.WGLCapabilities;
-import org.lwjgl.system.windows.GDI32;
 import org.lwjgl.system.windows.PIXELFORMATDESCRIPTOR;
+import org.lwjgl.system.windows.GDI32;
 
 import go.graphics.swing.ContextContainer;
-import org.lwjgl.system.windows.RECT;
-import org.lwjgl.system.windows.User32;
+
 
 public class WGLContextCreator extends JAWTContextCreator {
-	private long context = 0;
 
-	public WGLContextCreator(ContextContainer container, boolean debug) {
-		super(container, debug);
-		// do we have gdi and wgl support ?
-		GDI32.getLibrary().getName();
-	}
+    private long context = 0;
 
-
-	private static final int[][][] ctx_attrs = new int[][][]{
+	private static final int[][][] contextAttributeList = new int[][][] {
 		{
-			{ // GL3.2+ with debugging
-					WGLARBCreateContext.WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-					WGLARBCreateContext.WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-					WGLARBCreateContextProfile.WGL_CONTEXT_PROFILE_MASK_ARB, WGLARBCreateContextProfile.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-					WGLARBCreateContext.WGL_CONTEXT_FLAGS_ARB, WGLARBCreateContext.WGL_CONTEXT_DEBUG_BIT_ARB,
-					0
+
+            // GL3.2+ with debugging
+			{
+                WGLARBCreateContext.WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+                WGLARBCreateContext.WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+                WGLARBCreateContextProfile.WGL_CONTEXT_PROFILE_MASK_ARB, WGLARBCreateContextProfile.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                WGLARBCreateContext.WGL_CONTEXT_FLAGS_ARB, WGLARBCreateContext.WGL_CONTEXT_DEBUG_BIT_ARB,
+                0
 			},
-			{ // GL3.2+
-					WGLARBCreateContext.WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-					WGLARBCreateContext.WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-					WGLARBCreateContextProfile.WGL_CONTEXT_PROFILE_MASK_ARB, WGLARBCreateContextProfile.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-					0
+
+            // GL3.2+
+			{
+                WGLARBCreateContext.WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+                WGLARBCreateContext.WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+                WGLARBCreateContextProfile.WGL_CONTEXT_PROFILE_MASK_ARB, WGLARBCreateContextProfile.WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                0
 			}
 		},
-
 		{
-			{// GL1.1+ with debugging
+
+            // GL1.1+ with debugging
+			{
 				WGLARBCreateContext.WGL_CONTEXT_FLAGS_ARB, WGLARBCreateContext.WGL_CONTEXT_DEBUG_BIT_ARB,
 				0
 			},
-			{// GL1.1+
+
+            // GL1.1+
+			{
 				0
 			}
 		},
 	};
 
+
+	public WGLContextCreator(ContextContainer container, boolean debug) {
+
+		super(container, debug);
+		GDI32.getLibrary().getName();  // do we have gdi and wgl support ?
+
+        return;
+	}
+
+
 	@Override
 	public void stop() {
-		WGL.wglDeleteContext(context);
+		WGL.wglDeleteContext(this.context);
+        return;
 	}
+
 
 	@Override
 	protected void swapBuffers() {
-		GDI32.SwapBuffers(windowDrawable);
+		GDI32.SwapBuffers(this.windowDrawable);
+        return;
 	}
+
 
 	@Override
 	public void makeCurrent(boolean draw) {
-		if(draw) {
-			WGL.wglMakeCurrent(windowDrawable, context);
-		} else {
+
+        if (draw) {
+			WGL.wglMakeCurrent(this.windowDrawable, this.context);
+		}
+
+        else {
 			WGL.wglMakeCurrent(0, 0);
 		}
+
+        return;
 	}
+
 
 	@Override
 	protected void onNewConnection() throws ContextException {
+
 		PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc();
 		pfd.dwFlags(GDI32.PFD_DRAW_TO_WINDOW | GDI32.PFD_SUPPORT_OPENGL | GDI32.PFD_DOUBLEBUFFER);
 		pfd.iPixelType(GDI32.PFD_TYPE_RGBA);
 		pfd.cColorBits((byte) 32);
 		pfd.cStencilBits((byte) 1);
-
 		pfd.cDepthBits((byte) 24);
 
-		int pixel_format = GDI32.ChoosePixelFormat(windowDrawable, pfd);
-		if(pixel_format == 0) error("Could not find pixel format!");
-		GDI32.SetPixelFormat(windowDrawable, pixel_format, pfd);
+		int pixel_format = GDI32.ChoosePixelFormat(this.windowDrawable, pfd);
+
+        if (pixel_format == 0) {
+            this.error("Could not find pixel format!");
+        }
+
+		GDI32.SetPixelFormat(this.windowDrawable, pixel_format, pfd);
 
 		pfd.free();
 
-		if(context != 0) {
-			WGL.wglDeleteContext(context);
+		if (this.context != 0) {
+			WGL.wglDeleteContext(this.context);
 		}
 
-		context = WGL.wglCreateContext(windowDrawable);
-		WGL.wglMakeCurrent(windowDrawable, context);
+		this.context = WGL.wglCreateContext(this.windowDrawable);
+		WGL.wglMakeCurrent(this.windowDrawable, this.context);
 		WGLCapabilities caps = GL.createCapabilitiesWGL();
-		if(caps.WGL_ARB_create_context && caps.WGL_ARB_create_context_profile) {
-			WGL.wglDeleteContext(context);
-			context = 0;
 
-			int i = 0;
-			while(context == 0 && ctx_attrs.length > i) {
-				context = WGLARBCreateContext.wglCreateContextAttribsARB(windowDrawable, 0, ctx_attrs[i++][debug?0:1]);
+        if (caps.WGL_ARB_create_context && caps.WGL_ARB_create_context_profile) {
+
+			WGL.wglDeleteContext(this.context);
+            this.context = 0;
+
+			int index = 0;
+			while (this.context == 0 && WGLContextCreator.contextAttributeList.length > index) {
+                this.context = WGLARBCreateContext.wglCreateContextAttribsARB(this.windowDrawable, 0, WGLContextCreator.contextAttributeList[index++][this.debug ? 0 : 1]);
 			}
-		} else if(debug) {
-			WGL.wglDeleteContext(context);
-			error("WGL could not create a debug context!");
 		}
 
-		if(context == 0) error("Could not create WGL context!");
-		parent.wrapNewGLContext();
-	}
+        else if (this.debug) {
+			WGL.wglDeleteContext(this.context);
+            this.error("WGL could not create a debug context!");
+		}
 
+		if (this.context == 0) {
+            this.error("Could not create WGL context!");
+        }
+
+        this.parent.wrapNewGLContext();
+
+        return;
+	}
 }

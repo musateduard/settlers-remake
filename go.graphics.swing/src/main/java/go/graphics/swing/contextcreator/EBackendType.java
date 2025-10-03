@@ -14,11 +14,10 @@
  *******************************************************************************/
 package go.graphics.swing.contextcreator;
 
+import org.lwjgl.vulkan.VK;
 import org.lwjgl.system.Platform;
 import org.lwjgl.system.linux.X11;
 import org.lwjgl.system.windows.GDI32;
-import org.lwjgl.vulkan.VK;
-
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -28,22 +27,30 @@ import go.graphics.swing.ContextContainer;
 public enum EBackendType implements Comparable<EBackendType> {
 
 	DEFAULT(null, "default", null, null, null),
-
 	GLX(GLXContextCreator::new, "glx", null, Platform.LINUX, X11::getLibrary),
 	EGL(EGLContextCreator::new, "egl", null, null, org.lwjgl.egl.EGL::getFunctionProvider),
 	WGL(WGLContextCreator::new, "wgl", null, Platform.WINDOWS, GDI32::getLibrary),
 	JOGL(JOGLContextCreator::new, "jogl", Platform.MACOSX, null, null),
 	VULKAN(VulkanContextCreator::new, "vulkan", null, null, VK::getFunctionProvider),
-
 	GLFW(GLFWContextCreator::new, "glfw", null, null, org.lwjgl.glfw.GLFW::getLibrary),
 	GLFW_VULKAN(GLFWVulkanContextCreator::new, "glfw-vulkan", null, null, VK::getFunctionProvider),
 	LWJGLX_GL(LWJGLXContextCreator::new, "lwjglx-gl", null, Platform.MACOSX, null),
 	LWJGLX_VK(VkLWJGLXContextCreator::new, "lwjglx-vk", null, null, VK::getFunctionProvider),
+	VULKAN_OFFSCREEN(OffscreenVulkanContextCreator::new, "vulkan-offscreen", null, null, VK::getFunctionProvider);
 
-	VULKAN_OFFSCREEN(OffscreenVulkanContextCreator::new, "vulkan-offscreen", null, null, VK::getFunctionProvider),
-	;
+	public final BiFunction<ContextContainer, Boolean, ContextCreator<?>> creator;
+	public final Platform platform, default_for;
+	public final String cc_name;
+	private final Supplier<?> probe_function;
 
-	EBackendType(BiFunction<ContextContainer, Boolean, ContextCreator<?>> creator, String cc_name, Platform platform, Platform default_for, Supplier<?> probe_function) {
+
+    EBackendType(
+        BiFunction<ContextContainer, Boolean, ContextCreator<?>> creator,
+        String cc_name,
+        Platform platform,
+        Platform default_for,
+        Supplier<?> probe_function) {
+
 		this.creator = creator;
 		this.cc_name = cc_name;
 		this.platform = platform;
@@ -51,31 +58,36 @@ public enum EBackendType implements Comparable<EBackendType> {
 		this.probe_function = probe_function;
 	}
 
-	public final BiFunction<ContextContainer, Boolean, ContextCreator<?>> creator;
-	public final Platform platform, default_for;
-	public final String cc_name;
-	private final Supplier<?> probe_function;
 
 	@Override
 	public String toString() {
-		return cc_name;
+		return this.cc_name;
 	}
 
+
 	public boolean available(Platform platform) {
-		if(probe_function != null) {
+
+		if (this.probe_function != null) {
+
 			try {
-				probe_function.get();
-			} catch (Throwable thrown) {
+                this.probe_function.get();
+			}
+
+            catch (Throwable thrown) {
 				return false;
 			}
-		} else if(this.platform != null){
+		}
+
+        else if (this.platform != null) {
 			return this.platform == platform;
 		}
 
 		return true;
 	}
 
+
 	public ContextCreator<?> createContext(ContextContainer container, boolean debug) {
-		return creator.apply(container, debug);
+        ContextCreator<?> context = this.creator.apply(container, debug);
+        return context;
 	}
 }

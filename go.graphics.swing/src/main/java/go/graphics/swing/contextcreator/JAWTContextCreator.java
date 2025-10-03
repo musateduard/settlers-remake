@@ -14,16 +14,15 @@
  *******************************************************************************/
 package go.graphics.swing.contextcreator;
 
-import org.lwjgl.system.Platform;
-import org.lwjgl.system.jawt.JAWT;
-import org.lwjgl.system.jawt.JAWTDrawingSurface;
-import org.lwjgl.system.jawt.JAWTDrawingSurfaceInfo;
-import org.lwjgl.system.jawt.JAWTFunctions;
-import org.lwjgl.system.jawt.JAWTWin32DrawingSurfaceInfo;
-import org.lwjgl.system.jawt.JAWTX11DrawingSurfaceInfo;
-
 import java.awt.Canvas;
 import java.awt.Graphics;
+import org.lwjgl.system.Platform;
+import org.lwjgl.system.jawt.JAWT;
+import org.lwjgl.system.jawt.JAWTFunctions;
+import org.lwjgl.system.jawt.JAWTDrawingSurface;
+import org.lwjgl.system.jawt.JAWTDrawingSurfaceInfo;
+import org.lwjgl.system.jawt.JAWTWin32DrawingSurfaceInfo;
+import org.lwjgl.system.jawt.JAWTX11DrawingSurfaceInfo;
 
 import go.graphics.swing.ContextContainer;
 import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
@@ -38,6 +37,12 @@ public abstract class JAWTContextCreator extends ContextCreator {
 	protected long windowDrawable;
 	protected Platform currentPlatform = Platform.get();
 
+    protected abstract void swapBuffers() throws ContextException;
+    public abstract void makeCurrent(boolean draw);
+
+    @Override
+    public abstract void stop();
+
 
 	public JAWTContextCreator(ContextContainer container, boolean debug) {
 
@@ -48,10 +53,6 @@ public abstract class JAWTContextCreator extends ContextCreator {
 
         return;
 	}
-
-
-	@Override
-	public abstract void stop();
 
 
 	private void regenerateWindowInfo() throws ContextException {
@@ -85,11 +86,6 @@ public abstract class JAWTContextCreator extends ContextCreator {
 
         return;
 	}
-
-	protected void onNewConnection() throws ContextException {}
-	protected void onNewDrawable() throws ContextException {}
-
-	protected void onInit() throws ContextException {}
 
 
 	@Override
@@ -177,7 +173,18 @@ public abstract class JAWTContextCreator extends ContextCreator {
         return;
 	}
 
-	protected abstract void swapBuffers() throws ContextException;
 
-	public abstract void makeCurrent(boolean draw);
+    protected void onNewConnection() throws ContextException {
+        return;
+    }
+
+
+    protected void onNewDrawable() throws ContextException {
+        return;
+    }
+
+
+    protected void onInit() throws ContextException {
+        return;
+    }
 }

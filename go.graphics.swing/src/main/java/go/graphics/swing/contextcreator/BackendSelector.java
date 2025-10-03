@@ -14,69 +14,86 @@
  *******************************************************************************/
 package go.graphics.swing.contextcreator;
 
-import org.lwjgl.system.Platform;
-
-import java.awt.event.ActionEvent;
 import java.util.Arrays;
 import java.util.stream.Stream;
-
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
+import java.awt.event.ActionEvent;
+import org.lwjgl.system.Platform;
 
 import go.graphics.swing.ContextContainer;
+
 
 public class BackendSelector extends JComboBox<EBackendType> {
 
 	private EBackendType current_item = null;
-
 	public static final EBackendType FALLBACK_BACKEND = EBackendType.GLFW;
+
+
+    public BackendSelector() {
+
+        super(availableBackends().toArray(EBackendType[]::new));
+
+        this.setEditable(false);
+        this.addActionListener(this);
+
+        return;
+    }
+
 
 	@Override
 	public void actionPerformed(ActionEvent actionEvent) {
+
 		super.actionPerformed(actionEvent);
 
-		if(actionEvent.getActionCommand().equals("comboBoxChanged")) {
-			Object item = getSelectedItem();
-			if(item == null || item instanceof String) {
-				setSelectedItem(current_item);
+		if (actionEvent.getActionCommand().equals("comboBoxChanged")) {
+
+			Object item = this.getSelectedItem();
+
+            if (item == null || item instanceof String) {
+				this.setSelectedItem(this.current_item);
 				return;
 			}
-			EBackendType bi = (EBackendType) item;
-			if (bi.platform != null && bi.platform != Platform.get()) {
-				setSelectedItem(current_item);
+
+			EBackendType backendItem = (EBackendType) item;
+
+			if (backendItem.platform != null && backendItem.platform != Platform.get()) {
+                this.setSelectedItem(this.current_item);
 				BackendSelector.this.hidePopup();
-				JOptionPane.showMessageDialog(BackendSelector.this.getParent(), bi.cc_name + " is only available on " + bi.platform);
-			} else {
-				current_item = bi;
+				JOptionPane.showMessageDialog(BackendSelector.this.getParent(), backendItem.cc_name + " is only available on " + backendItem.platform);
 			}
 
+            else {
+                this.current_item = backendItem;
+			}
 		}
+
+        return;
 	}
 
-	public BackendSelector() {
-		super(availableBackends().toArray(EBackendType[]::new));
-		setEditable(false);
-
-		addActionListener(this);
-	}
 
 	private static Stream<EBackendType> availableBackends() {
-		return Arrays.stream(EBackendType.values()).filter(backend -> backend.available(Platform.get()));
+        Stream<EBackendType> backendList = Arrays.stream(EBackendType.values()).filter((item) -> item.available(Platform.get()));
+		return backendList;
 	}
+
 
 	public static EBackendType getBackendByName(String name) {
-		return availableBackends().filter(backend -> backend.cc_name.equalsIgnoreCase(name)).findFirst().orElse(EBackendType.DEFAULT);
+        EBackendType backend = BackendSelector.availableBackends().filter((item) -> item.cc_name.equalsIgnoreCase(name)).findFirst().orElse(EBackendType.DEFAULT);
+        return backend;
 	}
 
-	public static ContextCreator<?> createBackend(ContextContainer container, EBackendType backend, boolean debug) throws Exception {
-		EBackendType real_backend = backend;
 
-		if(backend == null || backend == EBackendType.DEFAULT) {
+	public static ContextCreator<?> createBackend(ContextContainer container, EBackendType backend, boolean debug) {
+
+		EBackendType realBackend = backend;
+
+		if (backend == null || backend == EBackendType.DEFAULT) {
 			// first of all usable and suitable backends sorted for being default
-			real_backend = availableBackends().filter(current_backend -> current_backend.default_for == Platform.get()).sorted().findFirst().orElse(FALLBACK_BACKEND);
+			realBackend = BackendSelector.availableBackends().filter((item) -> item.default_for == Platform.get()).sorted().findFirst().orElse(FALLBACK_BACKEND);
 		}
 
-		return real_backend.createContext(container, debug);
+        ContextCreator<?> context = realBackend.createContext(container, debug);
+		return context;
 	}
-
 }

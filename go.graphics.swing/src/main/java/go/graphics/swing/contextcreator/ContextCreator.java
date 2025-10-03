@@ -15,90 +15,126 @@
 package go.graphics.swing.contextcreator;
 
 import java.awt.Component;
-import java.awt.GraphicsConfiguration;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.geom.AffineTransform;
-
 import javax.swing.SwingUtilities;
 
 import go.graphics.swing.ContextContainer;
 
-public abstract class ContextCreator<T extends Component> implements ComponentListener{
 
-	public ContextCreator(ContextContainer ac, boolean debug) {
-		parent = ac;
-		this.debug = debug;
-	}
+public abstract class ContextCreator<Type extends Component> implements ComponentListener {
 
-	protected int width = 1, height = 1;
-	protected int new_width = 1, new_height = 1;
+	protected int width = 1;
+	protected int height = 1;
+	protected int new_width = 1;
+	protected int new_height = 1;
 	protected boolean change_res = true;
 	protected final Object wnd_lock = new Object();
 	protected boolean first_draw = true;
 	protected int fpsLimit = 0;
-	protected T canvas;
+	protected Type canvas;
 	protected ContextContainer parent;
 	protected boolean debug;
 
+    public abstract void stop();
+    public abstract void initSpecific();
 
-	public abstract void stop();
-	public abstract void initSpecific();
 
-	public void repaint() {
-		canvas.repaint();
+	public ContextCreator(ContextContainer ac, boolean debug) {
+
+		this.parent = ac;
+		this.debug = debug;
+
+        return;
 	}
 
+
+	public void repaint() {
+		this.canvas.repaint();
+        return;
+	}
+
+
 	public void requestFocus() {
-		canvas.requestFocus();
+        this.canvas.requestFocus();
+        return;
 	}
 
 
 	protected void error(String message) throws ContextException {
-		parent.fatal(message);
+        this.parent.fatal(message);
 		throw new ContextException();
 	}
 
+
 	public void init() {
-		initSpecific();
 
-		parent.addCanvas(canvas);
+        this.initSpecific();
+        this.parent.addCanvas(this.canvas);
+		this.canvas.addComponentListener(this);
 
-		canvas.addComponentListener(this);
+        return;
 	}
+
+
+    public void updateFPSLimit(int fpsLimit) {
+        this.fpsLimit = fpsLimit;
+        return;
+    }
+
 
 	@Override
 	public void componentResized(ComponentEvent componentEvent) {
-		if(!SwingUtilities.windowForComponent(canvas).isFocused()) return;
 
-		synchronized (wnd_lock) {
-			AffineTransform scaleInfo = canvas.getGraphicsConfiguration().getDefaultTransform();
+        System.out.printf("canvas resized\n");
+
+		if (!SwingUtilities.windowForComponent(this.canvas).isFocused()) {
+            return;
+        }
+
+		synchronized (this.wnd_lock) {
+
+			AffineTransform scaleInfo = this.canvas.getGraphicsConfiguration().getDefaultTransform();
 
 			double scaleX = 1;
 			double scaleY = 1;
-			if(scaleInfo != null) {
+			if (scaleInfo != null) {
 				scaleX = scaleInfo.getScaleX();
 				scaleY = scaleInfo.getScaleX();
 			}
-			new_width = (int) (canvas.getWidth()*scaleX);
-			new_height = (int) (canvas.getHeight()*scaleY);
-			change_res = true;
 
-			if(new_width == 0) new_width = 1;
-			if(new_height == 0) new_height = 1;
+			this.new_width = (int) (this.canvas.getWidth() * scaleX);
+			this.new_height = (int) (this.canvas.getHeight() * scaleY);
+			this.change_res = true;
+
+			if (this.new_width == 0) {
+                this.new_width = 1;
+            }
+
+			if (this.new_height == 0) {
+                this.new_height = 1;
+            }
 		}
+
+        return;
 	}
 
-	@Override
-	public void componentHidden(ComponentEvent componentEvent) {}
 
 	@Override
-	public void componentMoved(ComponentEvent componentEvent) {}
+	public void componentHidden(ComponentEvent componentEvent) {
+        return;
+    }
+
 
 	@Override
-	public void componentShown(ComponentEvent componentEvent) {}
+	public void componentMoved(ComponentEvent componentEvent) {
+        return;
+    }
 
-	public void updateFPSLimit(int fpsLimit) {
-		this.fpsLimit = fpsLimit;
-	}
+
+	@Override
+	public void componentShown(ComponentEvent componentEvent) {
+        return;
+    }
 }

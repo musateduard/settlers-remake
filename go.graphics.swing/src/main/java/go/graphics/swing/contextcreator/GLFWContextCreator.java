@@ -176,7 +176,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 	}
 
 
-	public void async_swapbuffers() {
+	public void async_swap_buffers() {
 		GLFW.glfwSwapBuffers(this.glfw_wnd);
         return;
 	}

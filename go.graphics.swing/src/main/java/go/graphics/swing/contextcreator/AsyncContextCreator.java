@@ -14,145 +14,182 @@
  *******************************************************************************/
 package go.graphics.swing.contextcreator;
 
-import org.lwjgl.BufferUtils;
-
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import java.nio.IntBuffer;
-
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-
+import java.awt.image.BufferedImage;
+import java.awt.Graphics;
+import java.nio.IntBuffer;
+import org.lwjgl.BufferUtils;
 import go.graphics.DrawModeListener;
 import go.graphics.FramerateComputer;
 import go.graphics.swing.ContextContainer;
 import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
 
-public abstract class AsyncContextCreator extends ContextCreator implements Runnable, DrawModeListener {
+
+public abstract class AsyncContextCreator extends ContextCreator<JPanel> implements Runnable, DrawModeListener {
 
 	protected boolean offscreen = true;
 	protected boolean async_resized = false;
 	protected boolean clear_offscreen = true;
 	private boolean continue_run = true;
-
-	private BufferedImage bi = null;
+	private BufferedImage image = null;
 	private IntBuffer pixels;
+	private final Thread render_thread = new Thread(this, "AsyncRenderer");
 
-	private Thread render_thread = new Thread(this, "AsyncRenderer");
+    public abstract void async_init();
+    public abstract void async_set_size(int width, int height);
+    public abstract void async_refresh();
+    public abstract void async_swap_buffers();
+    public abstract void async_stop();
+
 
 	public AsyncContextCreator(ContextContainer container, boolean debug)  {
 		super(container, debug);
+        return;
 	}
+
 
 	@Override
 	public void stop() {
-		continue_run = false;
+		this.continue_run = false;
+        return;
 	}
+
 
 	@Override
 	public void initSpecific() {
-		canvas = new JPanel() {
+
+		this.canvas = new JPanel() {
+
+            @Override
 			public void paintComponent(Graphics graphics) {
+
 				super.paintComponent(graphics);
 
-				if(first_draw) {
+				if (first_draw) {
 					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(parent, parent));
 					first_draw = false;
 				}
 
-				if(offscreen) {
+				if (offscreen) {
 					synchronized (wnd_lock) {
-						graphics.drawImage(bi, 0, 0, null);
+						graphics.drawImage(image, 0, 0, null);
 						graphics.dispose();
 					}
-				} else {
-					graphics.drawString("Press m to enable offscreen transfer", width/3, height/2);
 				}
 
-				if(fpsLimit == 0) repaint();
+                else {
+					graphics.drawString("Press m to enable offscreen transfer", width / 3, height / 2);
+				}
+
+				if (fpsLimit == 0) {
+                    this.repaint();
+                }
+
+                return;
 			}
 		};
 
-		render_thread.start();
+		this.render_thread.start();
+        return;
 	}
 
-	public abstract void async_init();
-
-	public abstract void async_set_size(int width, int height);
-
-	public abstract void async_refresh();
-
-	public abstract void async_swapbuffers();
-
-	public abstract void async_stop();
 
 	@Override
 	public void run() {
-		synchronized (wnd_lock) {
-			width = new_width;
-			height = new_height;
+
+		synchronized (this.wnd_lock) {
+			this.width = this.new_width;
+			this.height = this.new_height;
 		}
-		async_init();
+
+        this.async_init();
 
 		FramerateComputer fpsComputer = new FramerateComputer();
 
-		while(continue_run) {
-			try {
-				if (change_res) {
-					synchronized (wnd_lock) {
-						width = new_width;
-						height = new_height;
+		while (this.continue_run) {
 
-						if (async_resized) {
-							async_resized = false;
-						} else {
-							async_set_size(width, height);
+			try {
+
+				if (this.change_res) {
+
+					synchronized (this.wnd_lock) {
+
+						this.width = this.new_width;
+						this.height = this.new_height;
+
+						if (this.async_resized) {
+                            this.async_resized = false;
+						}
+
+                        else {
+                            this.async_set_size(this.width, this.height);
 						}
 
 						Thread.sleep(20); // we must wait a bit because X is async and our window must not be resized in time otherwise
-						parent.resizeContext(width, height);
+                        this.parent.resizeContext(this.width, this.height);
 
-						bi = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
-						pixels = BufferUtils.createIntBuffer(width * height);
+                        this.image = new BufferedImage(this.width, this.height, BufferedImage.TYPE_3BYTE_BGR);
+                        this.pixels = BufferUtils.createIntBuffer(this.width * this.height);
 					}
-					change_res = false;
+
+                    this.change_res = false;
 				}
-				async_refresh();
 
-				parent.draw();
-				parent.finishFrame();
+                this.async_refresh();
 
-				if (offscreen) {
-					synchronized (wnd_lock) {
-						parent.readFramebuffer(pixels, width, height);
-						for (int x = 0; x != width; x++) {
-							for (int y = 0; y != height; y++) {
-								bi.setRGB(x, height - y - 1, pixels.get(y * width + x));
+				this.parent.draw();
+				this.parent.finishFrame();
+
+				if (this.offscreen) {
+
+					synchronized (this.wnd_lock) {
+
+                        this.parent.readFramebuffer(this.pixels, this.width, this.height);
+
+						for (int offsetX = 0; offsetX != this.width; offsetX++) {
+							for (int offsetY = 0; offsetY != this.height; offsetY++) {
+                                this.image.setRGB(offsetX, this.height - offsetY - 1, this.pixels.get(offsetY * this.width + offsetX));
 							}
 						}
 					}
 				}
 
-				if (!offscreen || clear_offscreen) {
-					if (clear_offscreen && !offscreen) {
-						parent.clearFramebuffer();
-						clear_offscreen = false;
+				if (!this.offscreen || this.clear_offscreen) {
+					if (this.clear_offscreen && !this.offscreen) {
+                        this.parent.clearFramebuffer();
+                        this.clear_offscreen = false;
 					}
-					async_swapbuffers();
-					if (fpsLimit != 0) fpsComputer.nextFrame(fpsLimit);
+
+                    this.async_swap_buffers();
+
+                    if (this.fpsLimit != 0) {
+                        fpsComputer.nextFrame(this.fpsLimit);
+                    }
 				}
-			} catch(ContextException ignored) {
-			} catch(Throwable thrown) {
+
+			}
+
+            catch (ContextException ignored) {
+                // do nothing
+			}
+
+            catch (Throwable thrown) {
 				thrown.printStackTrace();
 			}
 		}
 
-		async_stop();
+        this.async_stop();
+        return;
 	}
+
 
 	@Override
 	public void changeDrawMode() {
-		offscreen = !offscreen;
-		clear_offscreen = true;
+
+		this.offscreen = !this.offscreen;
+        this.clear_offscreen = true;
+
+        return;
 	}
 }

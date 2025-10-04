@@ -43,6 +43,6 @@ public class GLFWVulkanContextCreator extends GLFWContextCreator {
 	}
 
 	@Override
-	public void async_swapbuffers() {}
+	public void async_swap_buffers() {}
 
 }

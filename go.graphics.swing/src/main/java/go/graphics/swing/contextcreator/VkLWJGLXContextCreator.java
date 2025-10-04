@@ -26,7 +26,7 @@ public class VkLWJGLXContextCreator extends ContextCreator<AWTVKCanvas> {
 	public VkLWJGLXContextCreator(ContextContainer ac, boolean debug) {
 		super(ac, debug);
 
-		JOptionPane.showMessageDialog(parent, "Vulkan via LWJGLX is experimental!", "Warning", JOptionPane.ERROR_MESSAGE);
+		JOptionPane.showMessageDialog(parentContainer, "Vulkan via LWJGLX is experimental!", "Warning", JOptionPane.ERROR_MESSAGE);
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public class VkLWJGLXContextCreator extends ContextCreator<AWTVKCanvas> {
 
 			@Override
 			public void initVK() {
-				parent.wrapNewVkContext(instance, new VulkanSurfaceOutput(canvas.surface));
+				parentContainer.wrapNewVkContext(instance, new VulkanSurfaceOutput(canvas.surface));
 			}
 
 			@Override
@@ -70,19 +70,19 @@ public class VkLWJGLXContextCreator extends ContextCreator<AWTVKCanvas> {
 							width = new_width;
 							height = new_height;
 
-							parent.resizeContext(width, height);
+							parentContainer.resizeContext(width, height);
 							change_res = false;
 						}
 					}
-					parent.draw();
-					parent.finishFrame();
-					parent.swapBuffersVk();
+					parentContainer.draw();
+					parentContainer.finishFrame();
+					parentContainer.swapBuffersVk();
 				} catch (ContextException e) {
 					e.printStackTrace();
 				}
 			}
 		};
 
-		new GOSwingEventConverter(canvas, parent);
+		new GOSwingEventConverter(canvas, parentContainer);
 	}
 }

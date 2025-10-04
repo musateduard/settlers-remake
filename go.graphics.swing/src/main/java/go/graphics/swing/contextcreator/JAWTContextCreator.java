@@ -115,7 +115,7 @@ public abstract class JAWTContextCreator extends ContextCreator<Canvas> {
 					if (first_draw) {
 
 						first_draw = false;
-						new GOSwingEventConverter(this, parent);
+						new GOSwingEventConverter(this, parentContainer);
 
 						onInit();
 					}
@@ -128,14 +128,14 @@ public abstract class JAWTContextCreator extends ContextCreator<Canvas> {
 							width = new_width;
 							height = new_height;
 
-							parent.resizeContext(width, height);
+							parentContainer.resizeContext(width, height);
 							change_res = false;
 						}
 					}
 
 					try {
-						parent.draw();
-						parent.finishFrame();
+						parentContainer.draw();
+						parentContainer.finishFrame();
 					}
 
                     finally {

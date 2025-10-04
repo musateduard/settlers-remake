@@ -40,7 +40,7 @@ import go.graphics.swing.ContextContainer;
 public class GLFWContextCreator extends AsyncContextCreator {
 
 	private final GLFWEventConverter eventConverter;
-    protected long glfw_wnd;
+    protected long glfwWindowId;
     private long glfw_resize_time = -1;
     private int glfw_width;
     private int glfw_height;
@@ -108,11 +108,11 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		synchronized (this.wnd_lock) {
 
-            this.glfw_wnd = GLFW.glfwCreateWindow(this.width, this.height, "lwjgl-offscreen", 0, 0);
+            this.glfwWindowId = GLFW.glfwCreateWindow(this.width, this.height, "lwjgl-offscreen", 0, 0);
             this.setupContext();
 
             try {
-                this.parent.resizeContext(this.width, this.height);
+                this.parentContainer.resizeContext(this.width, this.height);
 			}
 
             catch (ContextException exception) {
@@ -136,16 +136,16 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 	protected void setupContext() {
 
-		GLFW.glfwMakeContextCurrent(this.glfw_wnd);
+		GLFW.glfwMakeContextCurrent(this.glfwWindowId);
 		GLFW.glfwSwapInterval(0);
-        this.parent.wrapNewGLContext();
+        this.parentContainer.wrapNewGLContext();
 
         return;
 	}
 
 
 	public void async_set_size(int width, int height) {
-		GLFW.glfwSetWindowSize(this.glfw_wnd, width, height);
+		GLFW.glfwSetWindowSize(this.glfwWindowId, width, height);
         return;
 	}
 
@@ -177,7 +177,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 
 	public void async_swap_buffers() {
-		GLFW.glfwSwapBuffers(this.glfw_wnd);
+		GLFW.glfwSwapBuffers(this.glfwWindowId);
         return;
 	}
 
@@ -328,7 +328,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		private GLFWEventConverter() {
 
-			super(parent);
+			super(parentContainer);
 
 			addReplaceRule(new EventReplacementRule(ReplacableEvent.DRAW, Replacement.COMMAND_SELECT, 5, 10));
 			addReplaceRule(new EventReplacementRule(ReplacableEvent.PAN, Replacement.COMMAND_ACTION, 5, 10));
@@ -348,13 +348,13 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		private void registerCallbacks() {
 
-			GLFW.glfwSetKeyCallback(glfw_wnd, key_callback);
-			GLFW.glfwSetMouseButtonCallback(glfw_wnd, mouse_callback);
-			GLFW.glfwSetScrollCallback(glfw_wnd, scroll_callback);
-			GLFW.glfwSetCursorEnterCallback(glfw_wnd, cursorenter_callback);
-			GLFW.glfwSetCursorPosCallback(glfw_wnd, cursorpos_callback);
-			GLFW.glfwSetWindowSizeCallback(glfw_wnd, size_callback);
-			GLFW.glfwSetWindowCloseCallback(glfw_wnd, close_callback);
+			GLFW.glfwSetKeyCallback(glfwWindowId, key_callback);
+			GLFW.glfwSetMouseButtonCallback(glfwWindowId, mouse_callback);
+			GLFW.glfwSetScrollCallback(glfwWindowId, scroll_callback);
+			GLFW.glfwSetCursorEnterCallback(glfwWindowId, cursorenter_callback);
+			GLFW.glfwSetCursorPosCallback(glfwWindowId, cursorpos_callback);
+			GLFW.glfwSetWindowSizeCallback(glfwWindowId, size_callback);
+			GLFW.glfwSetWindowCloseCallback(glfwWindowId, close_callback);
 
             return;
 		}

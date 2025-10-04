@@ -34,7 +34,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 	protected boolean first_draw = true;
 	protected int fpsLimit = 0;
 	protected Type canvas;
-	protected ContextContainer parent;
+	protected ContextContainer parentContainer;
 	protected boolean debug;
 
     public abstract void stop();
@@ -43,7 +43,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 	public ContextCreator(ContextContainer areaContainer, boolean debug) {
 
-		this.parent = areaContainer;
+		this.parentContainer = areaContainer;
 		this.debug = debug;
 
         return;
@@ -63,7 +63,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 
 	protected void error(String message) throws ContextException {
-        this.parent.fatal(message);
+        this.parentContainer.fatal(message);
 		throw new ContextException();
 	}
 
@@ -71,7 +71,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 	public void init() {
 
         this.initSpecific();
-        this.parent.addCanvas(this.canvas);
+        this.parentContainer.addCanvas(this.canvas);
 		this.canvas.addComponentListener(this);
 
         return;

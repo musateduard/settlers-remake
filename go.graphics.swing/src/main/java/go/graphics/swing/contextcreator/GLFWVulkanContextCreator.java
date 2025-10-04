@@ -36,9 +36,9 @@ public class GLFWVulkanContextCreator extends GLFWContextCreator {
 			if(debug) VulkanUtils.setupDebugging(instance);
 
 			LongBuffer surfaceBfr = stack.callocLong(1);
-			GLFWVulkan.glfwCreateWindowSurface(instance, glfw_wnd, null, surfaceBfr);
+			GLFWVulkan.glfwCreateWindowSurface(instance, glfwWindowId, null, surfaceBfr);
 
-			parent.wrapNewVkContext(instance, new VulkanSurfaceOutput(surfaceBfr.get(0)));
+			parentContainer.wrapNewVkContext(instance, new VulkanSurfaceOutput(surfaceBfr.get(0)));
 		}
 	}
 

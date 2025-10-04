@@ -27,7 +27,7 @@ public class LWJGLXContextCreator extends ContextCreator<AWTGLCanvas> {
 		canvas = new AWTGLCanvas(data) {
 			@Override
 			public void initGL() {
-				parent.wrapNewGLContext();
+				parentContainer.wrapNewGLContext();
 			}
 
 			@Override
@@ -39,13 +39,13 @@ public class LWJGLXContextCreator extends ContextCreator<AWTGLCanvas> {
 							width = new_width;
 							height = new_height;
 
-							parent.resizeContext(width, height);
+							parentContainer.resizeContext(width, height);
 							change_res = false;
 						}
 					}
 
-					parent.draw();
-					parent.finishFrame();
+					parentContainer.draw();
+					parentContainer.finishFrame();
 					swapBuffers();
 				} catch (ContextException e) {}
 			}
@@ -58,6 +58,6 @@ public class LWJGLXContextCreator extends ContextCreator<AWTGLCanvas> {
 			}
 		};
 
-		new GOSwingEventConverter(canvas, parent);
+		new GOSwingEventConverter(canvas, parentContainer);
 	}
 }

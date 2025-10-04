@@ -67,7 +67,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 				super.paintComponent(graphics);
 
 				if (first_draw) {
-					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(parent, parent));
+					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(parentContainer, parentContainer));
 					first_draw = false;
 				}
 
@@ -127,7 +127,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 						}
 
 						Thread.sleep(20); // we must wait a bit because X is async and our window must not be resized in time otherwise
-                        this.parent.resizeContext(this.width, this.height);
+                        this.parentContainer.resizeContext(this.width, this.height);
 
                         this.image = new BufferedImage(this.width, this.height, BufferedImage.TYPE_3BYTE_BGR);
                         this.pixels = BufferUtils.createIntBuffer(this.width * this.height);
@@ -138,14 +138,14 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
                 this.async_refresh();
 
-				this.parent.draw();
-				this.parent.finishFrame();
+				this.parentContainer.draw();
+				this.parentContainer.finishFrame();
 
 				if (this.offscreen) {
 
 					synchronized (this.wnd_lock) {
 
-                        this.parent.readFramebuffer(this.pixels, this.width, this.height);
+                        this.parentContainer.readFramebuffer(this.pixels, this.width, this.height);
 
 						for (int offsetX = 0; offsetX != this.width; offsetX++) {
 							for (int offsetY = 0; offsetY != this.height; offsetY++) {
@@ -157,7 +157,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
 				if (!this.offscreen || this.clear_offscreen) {
 					if (this.clear_offscreen && !this.offscreen) {
-                        this.parent.clearFramebuffer();
+                        this.parentContainer.clearFramebuffer();
                         this.clear_offscreen = false;
 					}
 

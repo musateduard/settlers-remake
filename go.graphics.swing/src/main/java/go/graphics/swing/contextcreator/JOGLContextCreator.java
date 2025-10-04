@@ -44,25 +44,25 @@ public class JOGLContextCreator extends ContextCreator<GLJPanel> implements GLEv
 		if(debug) canvas.setContextCreationFlags(GLContext.CTX_OPTION_DEBUG);
 		canvas.addGLEventListener(this);
 
-		new GOSwingEventConverter(canvas, parent);
+		new GOSwingEventConverter(canvas, parentContainer);
 	}
 
 	@Override
 	public void init(GLAutoDrawable drawable) {
 		drawable.getGL().setSwapInterval(0);
-		parent.wrapNewGLContext();
+		parentContainer.wrapNewGLContext();
 	}
 
 	@Override
 	public void dispose(GLAutoDrawable drawable) {
-		parent.disposeAll();
+		parentContainer.disposeAll();
 	}
 
 	@Override
 	public void display(GLAutoDrawable drawable) {
 		try {
-			parent.draw();
-			parent.finishFrame();
+			parentContainer.draw();
+			parentContainer.finishFrame();
 			if(fpsLimit == 0) repaint();
 		} catch(ContextException ignored) {}
 	}
@@ -70,7 +70,7 @@ public class JOGLContextCreator extends ContextCreator<GLJPanel> implements GLEv
 	@Override
 	public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
 		try {
-			parent.resizeContext(width, height);
+			parentContainer.resizeContext(width, height);
 		} catch(ContextException ignored) {}
 	}
 }

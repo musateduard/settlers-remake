@@ -31,8 +31,6 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.IntBuffer;
 
-import javax.swing.SwingUtilities;
-
 import go.graphics.swing.ContextContainer;
 
 public class EGLContextCreator extends JAWTContextCreator {
@@ -161,7 +159,7 @@ public class EGLContextCreator extends JAWTContextCreator {
 		}
 		if(egl_context == 0) error("could not create context");
 
-		parent.wrapNewGLContext();
+		parentContainer.wrapNewGLContext();
 	}
 
 	@Override

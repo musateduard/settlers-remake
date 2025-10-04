@@ -41,9 +41,9 @@ public abstract class ContextCreator<Type extends Component> implements Componen
     public abstract void initSpecific();
 
 
-	public ContextCreator(ContextContainer ac, boolean debug) {
+	public ContextCreator(ContextContainer areaContainer, boolean debug) {
 
-		this.parent = ac;
+		this.parent = areaContainer;
 		this.debug = debug;
 
         return;
@@ -85,9 +85,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 
 	@Override
-	public void componentResized(ComponentEvent componentEvent) {
-
-        System.out.printf("canvas resized\n");
+	public void componentResized(ComponentEvent event) {
 
 		if (!SwingUtilities.windowForComponent(this.canvas).isFocused()) {
             return;
@@ -121,20 +119,20 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 	}
 
 
-	@Override
-	public void componentHidden(ComponentEvent componentEvent) {
+    @Override
+    public void componentShown(ComponentEvent event) {
         return;
     }
 
 
 	@Override
-	public void componentMoved(ComponentEvent componentEvent) {
+	public void componentHidden(ComponentEvent event) {
         return;
     }
 
 
 	@Override
-	public void componentShown(ComponentEvent componentEvent) {
+	public void componentMoved(ComponentEvent event) {
         return;
     }
 }

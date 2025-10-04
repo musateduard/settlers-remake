@@ -14,15 +14,14 @@
  *******************************************************************************/
 package go.graphics.swing;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-
-import go.graphics.DrawmodeListener;
-import go.graphics.RedrawListener;
+import java.awt.BorderLayout;
 import go.graphics.area.Area;
-import go.graphics.event.GOEvent;
+import go.graphics.RedrawListener;
+import go.graphics.DrawModeListener;
 import go.graphics.swing.contextcreator.EBackendType;
 import go.graphics.swing.contextcreator.ContextException;
+import go.graphics.event.GOEvent;
 
 
 /**
@@ -36,16 +35,6 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
 	private static final long serialVersionUID = 8204496712425576430L;
 	protected final Area area;
 
-	/**
-	 * creates a new area container
-	 *
-	 * @param area The area to display
-	 */
-	public AreaContainer(Area area) {
-		this(area, EBackendType.DEFAULT, false, 0);
-        return;
-	}
-
 
 	public AreaContainer(Area area, EBackendType backend, boolean debug, float guiScale) {
 
@@ -54,18 +43,35 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
         this.area = area;
 		this.guiScale = guiScale;
 
-		if (this.cc instanceof DrawmodeListener) {
-			area.setDrawmodeListener((DrawmodeListener) this.cc);
+		if (this.contextCreator instanceof DrawModeListener) {
+			this.area.setDrawModeListener((DrawModeListener) this.contextCreator);
 		}
 
 		this.setBackground(Color.BLACK);
-
-		area.addRedrawListener(this);
+        this.area.addRedrawListener(this);
 
         return;
 	}
 
 
+    /**
+     * creates a new area container
+     *
+     * @param area The area to display
+     */
+    public AreaContainer(Area area) {
+        this(area, EBackendType.DEFAULT, false, 0);
+        return;
+    }
+
+
+    public void notifyResize() {
+        this.contextCreator.componentResized(null);
+        return;
+    }
+
+
+    @Override
 	public void resizeContext(int width, int height) throws ContextException {
 
 		super.resizeContext(width, height);
@@ -87,15 +93,20 @@ public class AreaContainer extends ContextContainer implements RedrawListener {
 	}
 
 
-	@Override
-	public void handleEvent(GOEvent event) {
-		this.area.handleEvent(event);
+    @Override
+    public void handleEvent(GOEvent event) {
+        this.area.handleEvent(event);
         return;
-	}
+    }
 
 
-	public void notifyResize() {
-		this.cc.componentResized(null);
+    @Override
+    public void requestRedraw() {
+
+        if (this.contextCreator != null) {
+            this.contextCreator.repaint();
+        }
+
         return;
-	}
+    }
 }

@@ -23,12 +23,12 @@ import java.nio.IntBuffer;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
-import go.graphics.DrawmodeListener;
+import go.graphics.DrawModeListener;
 import go.graphics.FramerateComputer;
 import go.graphics.swing.ContextContainer;
 import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
 
-public abstract class AsyncContextCreator extends ContextCreator implements Runnable,DrawmodeListener {
+public abstract class AsyncContextCreator extends ContextCreator implements Runnable, DrawModeListener {
 
 	protected boolean offscreen = true;
 	protected boolean async_resized = false;

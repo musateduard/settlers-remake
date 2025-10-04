@@ -15,6 +15,6 @@
 
 package go.graphics;
 
-public interface DrawmodeListener {
+public interface DrawModeListener {
 	public void changeDrawMode();
 }

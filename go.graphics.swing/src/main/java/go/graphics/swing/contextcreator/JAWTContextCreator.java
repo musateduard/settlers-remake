@@ -21,14 +21,13 @@ import org.lwjgl.system.jawt.JAWT;
 import org.lwjgl.system.jawt.JAWTFunctions;
 import org.lwjgl.system.jawt.JAWTDrawingSurface;
 import org.lwjgl.system.jawt.JAWTDrawingSurfaceInfo;
-import org.lwjgl.system.jawt.JAWTWin32DrawingSurfaceInfo;
 import org.lwjgl.system.jawt.JAWTX11DrawingSurfaceInfo;
-
-import go.graphics.swing.ContextContainer;
+import org.lwjgl.system.jawt.JAWTWin32DrawingSurfaceInfo;
 import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
+import go.graphics.swing.ContextContainer;
 
 
-public abstract class JAWTContextCreator extends ContextCreator {
+public abstract class JAWTContextCreator extends ContextCreator<Canvas> {
 
 	protected JAWT jawt = JAWT.create();
 	protected JAWTDrawingSurface surface;
@@ -37,11 +36,10 @@ public abstract class JAWTContextCreator extends ContextCreator {
 	protected long windowDrawable;
 	protected Platform currentPlatform = Platform.get();
 
-    protected abstract void swapBuffers() throws ContextException;
-    public abstract void makeCurrent(boolean draw);
-
     @Override
     public abstract void stop();
+    protected abstract void swapBuffers() throws ContextException;
+    public abstract void makeCurrent(boolean draw);
 
 
 	public JAWTContextCreator(ContextContainer container, boolean debug) {
@@ -103,6 +101,7 @@ public abstract class JAWTContextCreator extends ContextCreator {
                 return;
 			}
 
+            @Override
 			public void paint(Graphics graphics) {
 
 				surface = JAWTFunctions.JAWT_GetDrawingSurface(canvas, jawt.GetDrawingSurface());

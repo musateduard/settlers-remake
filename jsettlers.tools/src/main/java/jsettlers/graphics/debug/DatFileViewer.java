@@ -379,7 +379,7 @@ public class DatFileViewer extends JFrame implements ListSelectionListener {
 		@Override
 		public void invalidate() {
 			super.invalidate();
-			cc.repaint();
+			contextCreator.repaint();
 		}
 
 		@Override

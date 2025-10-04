@@ -16,7 +16,7 @@ package go.graphics.area;
 
 import java.util.LinkedList;
 
-import go.graphics.DrawmodeListener;
+import go.graphics.DrawModeListener;
 import go.graphics.GLDrawContext;
 import go.graphics.RedrawListener;
 import go.graphics.UIPoint;
@@ -40,24 +40,24 @@ import go.graphics.region.Region;
  */
 public class Area implements RedrawListener, GOEventHandlerProvider {
 
-	// How wide is a border of this area?
-	public static final int BORDER_SIZE = 1;
-
+	public static final int BORDER_SIZE = 1;  // How wide is a border of this area?
 	private int width;
 	private int height;
-
 	private Region region;
+	private DrawModeListener drawmodeListener;
+	private final LinkedList<RedrawListener> redrawListeners;
 
-	private final LinkedList<RedrawListener> redrawListeners = new LinkedList<>();
-
-	private DrawmodeListener drawmodeListener;
 
 	/**
 	 * Creates a new area.
 	 */
 	public Area() {
 
+        this.redrawListeners = new LinkedList<>();
+
+        return;
 	}
+
 
 	/**
 	 * Sets the width of the area.
@@ -67,19 +67,26 @@ public class Area implements RedrawListener, GOEventHandlerProvider {
 	 */
 	public void setWidth(int width) {
 		this.width = width;
+        return;
 	}
+
 
 	public void setHeight(int height) {
 		this.height = height;
+        return;
 	}
+
 
 	public void set(Region region) {
 		this.region = region;
-		region.addRedrawListener(this);
+		this.region.addRedrawListener(this);
+        return;
 	}
 
-	public void setDrawmodeListener(DrawmodeListener drawmodeListener) {
-		this.drawmodeListener = drawmodeListener;
+
+	public void setDrawModeListener(DrawModeListener listener) {
+		this.drawmodeListener = listener;
+        return;
 	}
 
 
@@ -103,100 +110,128 @@ public class Area implements RedrawListener, GOEventHandlerProvider {
 
 
 	// /**
-	// * Draws a border for a region.
-	// *
-	// * @param gl2
-	// * The context to draw on.
-	// * @param position
-	// * The position oft the region to draw the border for.
-	// */
+	//  * Draws a border for a region.
+	//  *
+	//  * @param gl2 The context to draw on.
+	//  * @param position The position of the region to draw the border for.
+	//  */
 	// private void drawBorder(GLDrawContext gl2, Rectangle position) {
-	// gl2.color(.5f, .5f, .5f, 1);
-	//
-	// gl2.fillQuad(position.x, position.y, position.x + position.width,
-	// position.y + position.height);
+    //     gl2.color(.5f, .5f, .5f, 1);
+    //
+    //     gl2.fillQuad(position.x, position.y, position.x + position.width,
+    //     position.y + position.height);
 	// }
+
 
 	/**
 	 * Handles a mouse event somewhere in the area and passes it on to the region.
 	 *
-	 * @param event
-	 *            The event.
+	 * @param event The event.
 	 */
 	private void handleMouseEvent(GODrawEvent event) {
 		GODrawEventProxy displacedEvent = new GODrawEventProxy(event, new UIPoint(0, 0));
-		region.handleEvent(displacedEvent);
-	}
-
-	private void handleHoverEvent(GOHoverEvent e) {
-		region.handleEvent(e);
+        this.region.handleEvent(displacedEvent);
+        return;
 	}
 
 
-	private class SimpleHoverEvent extends AbstractMouseEvent implements
-			GOHoverEvent {
+	private void handleHoverEvent(GOHoverEvent event) {
+		this.region.handleEvent(event);
+        return;
+	}
+
+
+	private class SimpleHoverEvent extends AbstractMouseEvent implements GOHoverEvent {
+
 		public void finish() {
 			this.setPhase(PHASE_FINISHED);
+            return;
 		}
+
 
 		@Override
 		public UIPoint getHoverPosition() {
 			return this.position;
 		}
 
+
 		@Override
 		protected void setMousePosition(UIPoint position) {
 			super.setMousePosition(position);
+            return;
 		}
 	}
+
 
 	public void handleCommandEvent(GOCommandEvent event) {
-		region.handleEvent(event);
+        this.region.handleEvent(event);
+        return;
 	}
 
-	/**
-	 * Handles any known type of event.
-	 *
-	 * @param event
-	 *            The event to handle.
-	 */
-	@Override
-	public void handleEvent(GOEvent event) {
-
-		if(event instanceof GOKeyEvent) {
-			if ("m".equalsIgnoreCase(((GOKeyEvent) event).getKeyCode())) {
-				if(drawmodeListener != null) drawmodeListener.changeDrawMode();
-			}
-		}
-
-		if (event instanceof GOCommandEvent) {
-			handleCommandEvent((GOCommandEvent) event);
-		} else if (event instanceof GOPanEvent) {
-			handlePanEvent((GOPanEvent) event);
-		} else if (event instanceof GODrawEvent) {
-			handleMouseEvent((GODrawEvent) event);
-		} else if (event instanceof GOHoverEvent) {
-			handleHoverEvent((GOHoverEvent) event);
-		} else if (event instanceof GOKeyEvent) {
-			region.handleEvent(event);
-		} else if (event instanceof GOZoomEvent) {
-			region.handleEvent(event);
-		}
-	}
 
 	private void handlePanEvent(GOPanEvent event) {
-		region.handleEvent(event);
+        this.region.handleEvent(event);
+        return;
 	}
+
+
+    /**
+     * Handles any known type of event.
+     *
+     * @param event The event to handle.
+     */
+    @Override
+    public void handleEvent(GOEvent event) {
+
+        if (event instanceof GOKeyEvent) {
+            if ("m".equalsIgnoreCase(((GOKeyEvent) event).getKeyCode())) {
+                if (this.drawmodeListener != null) {
+                    this.drawmodeListener.changeDrawMode();
+                }
+            }
+        }
+
+        if (event instanceof GOCommandEvent) {
+            this.handleCommandEvent((GOCommandEvent) event);
+        }
+
+        else if (event instanceof GOPanEvent) {
+            this.handlePanEvent((GOPanEvent) event);
+        }
+
+        else if (event instanceof GODrawEvent) {
+            this.handleMouseEvent((GODrawEvent) event);
+        }
+
+        else if (event instanceof GOHoverEvent) {
+            this.handleHoverEvent((GOHoverEvent) event);
+        }
+
+        else if (event instanceof GOKeyEvent) {
+            this.region.handleEvent(event);
+        }
+
+        else if (event instanceof GOZoomEvent) {
+            this.region.handleEvent(event);
+        }
+
+        return;
+    }
+
+
+    public void addRedrawListener(RedrawListener listener) {
+        this.redrawListeners.add(listener);
+        return;
+    }
+
 
 	@Override
 	public void requestRedraw() {
-		for (RedrawListener l : redrawListeners) {
-			l.requestRedraw();
+
+		for (RedrawListener listener : this.redrawListeners) {
+			listener.requestRedraw();
 		}
-	}
 
-	public void addRedrawListener(RedrawListener l) {
-		redrawListeners.add(l);
+        return;
 	}
-
 }

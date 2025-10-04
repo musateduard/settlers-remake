@@ -27,21 +27,22 @@ import go.graphics.swing.vulkan.VulkanDrawContext;
 
 public abstract class ContextContainer extends JPanel implements GOEventHandlerProvider {
 
-	protected ContextCreator<?> cc;
+	protected ContextCreator<?> contextCreator;
 	protected GLDrawContext context;
-	private AbstractVulkanOutput vkOutput;
+	private AbstractVulkanOutput vulkanOutput;
 	private final boolean debug;
-	protected float guiScale = 0;
+	protected float guiScale;
 
 
 	public ContextContainer(EBackendType backend, LayoutManager layout, boolean debug) {
 
         this.setLayout(layout);
 		this.debug = debug;
+        this.guiScale = 0.00f;
 
 		try {
-			this.cc = BackendSelector.createBackend(this, backend, debug);
-			this.cc.init();
+			this.contextCreator = BackendSelector.createBackend(this, backend, debug);
+			this.contextCreator.init();
 		}
 
         catch (Exception exception) {
@@ -90,7 +91,7 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
             this.context.invalidate();
         }
 
-		this.vkOutput = vkOutput;
+		this.vulkanOutput = vkOutput;
 
 		try {
 			this.context = new VulkanDrawContext(instance, vkOutput, this.guiScale);
@@ -98,7 +99,7 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
         catch (Throwable thrown) {
 			thrown.printStackTrace();
-			fatal(thrown.getLocalizedMessage());
+			this.fatal(thrown.getLocalizedMessage());
 		}
 
         return;
@@ -107,15 +108,15 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 	public void wrapNewGLContext() {
 
-        if (this.cc instanceof JAWTContextCreator) {
-            ((JAWTContextCreator) this.cc).makeCurrent(true);
+        if (this.contextCreator instanceof JAWTContextCreator) {
+            ((JAWTContextCreator) this.contextCreator).makeCurrent(true);
         }
 
 		if (this.context != null) {
             this.context.invalidate();
         }
 
-		this.vkOutput = null;
+		this.vulkanOutput = null;
 
 		GLCapabilities caps = GL.createCapabilities();
 
@@ -156,11 +157,11 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 		this.context = null;
 
-		if (this.cc != null) {
-            this.cc.stop();
+		if (this.contextCreator != null) {
+            this.contextCreator.stop();
         }
 
-		this.cc = null;
+		this.contextCreator = null;
         return;
 	}
 
@@ -176,22 +177,12 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	}
 
 
-	public void requestRedraw() {
-
-        if (this.cc != null) {
-            this.cc.repaint();
-        }
-
-        return;
-	}
-
-
 	/**
 	 * Forward the focus call to the Input canvas
 	 */
 	@Override
 	public void requestFocus() {
-		this.cc.requestFocus();
+		this.contextCreator.requestFocus();
         return;
 	}
 
@@ -204,8 +195,8 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 	public void updateFPSLimit(int fpsLimit) {
 
-		if (this.cc != null) {
-            this.cc.updateFPSLimit(fpsLimit);
+		if (this.contextCreator != null) {
+            this.contextCreator.updateFPSLimit(fpsLimit);
         }
 
         return;
@@ -253,8 +244,8 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 
 	public void removeSurface() {
 
-        if (this.vkOutput instanceof VulkanSurfaceOutput) {
-			((VulkanSurfaceOutput) this.vkOutput).removeSurface();
+        if (this.vulkanOutput instanceof VulkanSurfaceOutput) {
+			((VulkanSurfaceOutput) this.vulkanOutput).removeSurface();
 		}
 
         return;

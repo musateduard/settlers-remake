@@ -81,11 +81,11 @@ public class JSettlersFrame extends JFrame {
 		this.mainPanel = new MainMenuPanel(this);
 
         // jsettlers look and feel menu
-		showMainMenu();
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		setPreferredSize(new Dimension(1200, 800));
-        pack();
-		setLocationRelativeTo(null);
+		this.showMainMenu();
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		this.setPreferredSize(new Dimension(1200, 800));
+        this.pack();
+		this.setLocationRelativeTo(null);
 
         // settlers 3 original menu
         // this.showOriginalMainMenu();
@@ -115,37 +115,57 @@ public class JSettlersFrame extends JFrame {
         return;
 	}
 
+
 	private void toggleFullScreenMode() {
-		fullScreen = !fullScreen;
-		SettingsManager.getInstance().setFullScreenMode(fullScreen);
-		updateFullScreenMode();
+
+		this.fullScreen = !this.fullScreen;
+		SettingsManager.getInstance().setFullScreenMode(this.fullScreen);
+		this.updateFullScreenMode();
+
+        return;
 	}
 
+
 	private void updateFullScreenMode() {
-		if(areaContainer != null) areaContainer.removeSurface();
-		dispose();
 
-		setResizable(!fullScreen);
-		setUndecorated(fullScreen);
+		if (this.areaContainer != null) {
+            this.areaContainer.removeSurface();
+        }
 
-		pack();
-		setVisible(true);
+		this.dispose();
+
+		this.setResizable(!this.fullScreen);
+		this.setUndecorated(this.fullScreen);
+
+		this.pack();
+		this.setVisible(true);
 
 		GraphicsEnvironment graphicsEnvironment = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		GraphicsDevice graphicsDevice = graphicsEnvironment.getDefaultScreenDevice();
-		graphicsDevice.setFullScreenWindow(fullScreen ? this : null);
-		if(areaContainer != null) areaContainer.notifyResize();
+		graphicsDevice.setFullScreenWindow(this.fullScreen ? this : null);
+
+        if (this.areaContainer != null) {
+            this.areaContainer.notifyResize();
+        }
+
+        return;
 	}
+
 
 	private void abortRedrawTimerIfPresent() {
-		if (redrawTimer != null) {
-			redrawTimer.stop();
-			redrawTimer = null;
+
+		if (this.redrawTimer != null) {
+			this.redrawTimer.stop();
+			this.redrawTimer = null;
 		}
+
+        return;
 	}
 
+
 	public void showMainMenu() {
-		setNewContentPane(mainPanel);
+        this.setNewContentPane(this.mainPanel);
+        return;
 	}
 
 
@@ -207,13 +227,17 @@ public class JSettlersFrame extends JFrame {
 
 
 	public void exit() {
-		soundPlayer.close();
-		abortRedrawTimerIfPresent();
-		System.exit(0);
+
+        this.soundPlayer.close();
+        this.abortRedrawTimerIfPresent();
+
+        System.exit(0);
+        return;
 	}
 
+
 	public SoundPlayer getSoundPlayer() {
-		return soundPlayer;
+		return this.soundPlayer;
 	}
 
 
@@ -233,6 +257,8 @@ public class JSettlersFrame extends JFrame {
      * @param content {@link MapContent} object used for creating new AreaContainer instance that is added to the {@link JSettlersFrame}
      */
 	public void setContent(MapContent content) {
+
+        // todo: use setContent for rendering both main menu and game map
 
         Area area = new Area();
 		Region region = new Region(500, 500);
@@ -268,18 +294,29 @@ public class JSettlersFrame extends JFrame {
 
 
 	public void showNewSinglePlayerGameMenu(MapLoader mapLoader) {
-		joinGamePanel.setSinglePlayerMap(mapLoader);
-		setNewContentPane(joinGamePanel);
+
+        this.joinGamePanel.setSinglePlayerMap(mapLoader);
+        this.setNewContentPane(this.joinGamePanel);
+
+        return;
 	}
+
 
 	public void showNewMultiPlayerGameMenu(MapLoader mapLoader, IMultiplayerConnector connector) {
-		joinGamePanel.setNewMultiPlayerMap(mapLoader, connector);
-		setNewContentPane(joinGamePanel);
+
+		this.joinGamePanel.setNewMultiPlayerMap(mapLoader, connector);
+		this.setNewContentPane(this.joinGamePanel);
+
+        return;
 	}
 
+
 	public void showJoinMultiplayerMenu(IJoinPhaseMultiplayerGameConnector joinPhaseMultiplayerGameConnector, MapLoader mapLoader, String playerUUID) {
-		joinGamePanel.setJoinMultiPlayerMap(joinPhaseMultiplayerGameConnector, mapLoader, playerUUID);
-		setNewContentPane(joinGamePanel);
+
+		this.joinGamePanel.setJoinMultiPlayerMap(joinPhaseMultiplayerGameConnector, mapLoader, playerUUID);
+		this.setNewContentPane(this.joinGamePanel);
+
+        return;
 	}
 
 
@@ -314,7 +351,7 @@ public class JSettlersFrame extends JFrame {
      */
 	public IMapInterfaceConnector showStartedGame(IStartedGame startedGame) {
 
-		MapContent content = new MapContent(startedGame, soundPlayer, ETextDrawPosition.DESKTOP);
+		MapContent content = new MapContent(startedGame, this.soundPlayer, ETextDrawPosition.DESKTOP);
 
 		SwingUtilities.invokeLater(() -> this.setContent(content));
 		startedGame.setGameExitListener((exitGame) -> SwingUtilities.invokeLater(() -> this.showEndgameStatistics(exitGame)));

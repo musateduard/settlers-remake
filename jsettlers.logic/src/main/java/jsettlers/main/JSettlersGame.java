@@ -67,6 +67,7 @@ import jsettlers.network.client.interfaces.INetworkConnector;
  * @author Andreas Eberle
  */
 public class JSettlersGame {
+
 	private static final SimpleDateFormat LOG_DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US);
 	private final Object stopMutex = new Object();
 
@@ -85,20 +86,26 @@ public class JSettlersGame {
 	private PrintStream systemErrorStream;
 	private PrintStream systemOutStream;
 
-	private JSettlersGame(IGameCreator mapCreator, INetworkConnector networkConnector, InitialGameState initialGameState,
-			boolean controlAll, boolean multiplayer, DataInputStream replayFileInputStream) {
-		configureLogging(mapCreator);
+
+	private JSettlersGame(
+        IGameCreator mapCreator,
+        INetworkConnector networkConnector,
+        InitialGameState initialGameState,
+        boolean controlAll,
+        boolean multiplayer,
+        DataInputStream replayFileInputStream) {
+
+		this.configureLogging(mapCreator);
 
 		this.initialGameState = initialGameState;
 
-		System.out.println("OS version: " + System.getProperty("os.name") + " " + System.getProperty("os.arch") + " "
-				+ System.getProperty("os.version"));
-		System.out.println("Java version: " + System.getProperty("java.vendor") + " " + System.getProperty("java.version"));
-		System.out.println("JSettlers version: " + CommitInfo.COMMIT_HASH_SHORT + " " + CommitInfo.BUILD_TIME);
-		System.out.println("JSettlersGame(): initialGameState: " + initialGameState + " multiplayer: " + multiplayer + " mapCreator: " + mapCreator);
+        System.out.printf("OS version: %s %s %s\n", System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version"));
+        System.out.printf("Java version: %s %s\n", System.getProperty("java.vendor"), System.getProperty("java.version"));
+        System.out.printf("JSettlers version: %s %s\n", CommitInfo.COMMIT_HASH_SHORT, CommitInfo.BUILD_TIME);
+        System.out.printf("JSettlersGame(): initialGameState: %s multiplayer: %s mapCreator: %s\n", initialGameState, multiplayer, mapCreator);
 
 		if (mapCreator == null) {
-			throw new IllegalArgumentException("No mapCreator provided (mapCreator==null).");
+			throw new IllegalArgumentException("No mapCreator provided (mapCreator == null).");
 		}
 
 		this.mapCreator = mapCreator;
@@ -112,7 +119,9 @@ public class JSettlersGame {
 		MatchConstants.ENABLE_DEBUG_COLORS = controlAll;
 
 		this.gameRunner = new GameRunner();
+        return;
 	}
+
 
 	/**
 	 * @param mapCreator
@@ -120,7 +129,9 @@ public class JSettlersGame {
 	 */
 	public JSettlersGame(IGameCreator mapCreator, INetworkConnector networkConnector, InitialGameState initialGameState) {
 		this(mapCreator, networkConnector, initialGameState, CommonConstants.CONTROL_ALL, true, null);
+        return;
 	}
+
 
 	/**
 	 * Creates a new {@link JSettlersGame} object with an {@link OfflineNetworkConnector}.
@@ -129,18 +140,25 @@ public class JSettlersGame {
 	 */
 	public JSettlersGame(IGameCreator mapCreator, InitialGameState initialGameState) {
 		this(mapCreator, new OfflineNetworkConnector(), initialGameState, CommonConstants.CONTROL_ALL, false, null);
+        return;
 	}
 
-	public static JSettlersGame loadFromReplayFile(ReplayUtils.IReplayStreamProvider loadableReplayFile, INetworkConnector networkConnector, ReplayStartInformation replayStartInformation)
-			throws MapLoadException {
+
+	public static JSettlersGame loadFromReplayFile(
+        ReplayUtils.IReplayStreamProvider loadableReplayFile,
+        INetworkConnector networkConnector,
+        ReplayStartInformation replayStartInformation) throws MapLoadException {
+
 		try {
 			DataInputStream replayFileInputStream = new DataInputStream(loadableReplayFile.openStream());
 			replayStartInformation.deserialize(replayFileInputStream);
 
 			MapLoader mapCreator = loadableReplayFile.getMap(replayStartInformation);
 			return new JSettlersGame(mapCreator, networkConnector, replayStartInformation.getReplayableGameState(), true, false, replayFileInputStream);
-		} catch (IOException e) {
-			throw new MapLoadException("Could not deserialize " + loadableReplayFile, e);
+		}
+
+        catch (IOException exception) {
+			throw new MapLoadException("Could not deserialize " + loadableReplayFile, exception);
 		}
 	}
 
@@ -162,18 +180,24 @@ public class JSettlersGame {
 
 
 	public void stop() {
-		synchronized (stopMutex) {
-			stopped = true;
-			stopMutex.notifyAll();
+
+		synchronized (this.stopMutex) {
+			this.stopped = true;
+			this.stopMutex.notifyAll();
 		}
+
+        return;
 	}
 
+
 	protected OutputStream createReplayWriteStream() throws IOException {
-		final String replayFilename = getLogFile(mapCreator, "_replay.log");
+		final String replayFilename = getLogFile(this.mapCreator, "_replay.log");
 		return ResourceManager.writeUserFile(replayFilename);
 	}
 
+
 	public class GameRunner implements Runnable, IStartingGame, IStartedGame, IGameStoppable {
+
 		private IStartingGameListener startingGameListener;
 		private MainGrid mainGrid;
 		private GameTimeProvider gameTimeProvider;
@@ -183,101 +207,129 @@ public class JSettlersGame {
 		private boolean gameRunning;
 		private AiExecutor aiExecutor;
 
+
 		@Override
 		public void run() {
-			try {
-				if (startingGameListener != null) {
-					startingGameListener.startingLoadingGame();
-				}
-				updateProgressListener(EProgressState.LOADING, 0.1f);
 
-				clearState();
+			try {
+				if (this.startingGameListener != null) {
+					this.startingGameListener.startingLoadingGame();
+				}
+
+				this.updateProgressListener(EProgressState.LOADING, 0.1f);
+
+                JSettlersGame.clearState();
 				MatchConstants.init(networkConnector.getGameClock(), initialGameState.getRandomSeed());
+
 				try {
 					MatchConstants.clock().setReplayLogStream(createReplayFileStream());
-				} catch (IOException e) {
+				}
+
+                catch (IOException exception) {
 					// TODO: log that we do not have write access to resources.
 					System.out.println("Cannot write jsettlers.integration.replay file.");
 				}
 
-				updateProgressListener(EProgressState.LOADING_MAP, 0.3f);
+				this.updateProgressListener(EProgressState.LOADING_MAP, 0.3f);
 
 				MainGridWithUiSettings gridWithUiState = mapCreator.loadMainGrid(initialGameState.getPlayerSettings(), initialGameState.getStartResources());
-				mainGrid = gridWithUiState.getMainGrid();
 				PlayerState playerState = gridWithUiState.getPlayerState(initialGameState.getPlayerId());
+				this.mainGrid = gridWithUiState.getMainGrid();
 
 				RescheduleTimer.schedule(MatchConstants.clock()); // schedule timer
 
-				updateProgressListener(EProgressState.LOADING_IMAGES, 0.7f);
-				gameTimeProvider = new GameTimeProvider(MatchConstants.clock());
+				this.updateProgressListener(EProgressState.LOADING_IMAGES, 0.7f);
+				this.gameTimeProvider = new GameTimeProvider(MatchConstants.clock());
 
-				mainGrid.initForPlayer(initialGameState.getPlayerId(), playerState.getFogOfWar());
-				mainGrid.startThreads();
+				this.mainGrid.initForPlayer(initialGameState.getPlayerId(), playerState.getFogOfWar());
+				this.mainGrid.startThreads();
 
-				waitForStartingGameListener();
-				startingGameListener.waitForPreloading();
+                this.waitForStartingGameListener();
+                this.startingGameListener.waitForPreloading();
 
-				updateProgressListener(EProgressState.WAITING_FOR_OTHER_PLAYERS, 0.98f);
+                this.updateProgressListener(EProgressState.WAITING_FOR_OTHER_PLAYERS, 0.98f);
 
 				if (replayFileInputStream != null) {
 					MatchConstants.clock().loadReplayLogFromStream(replayFileInputStream);
 				}
 
 				networkConnector.setStartFinished(true);
-				waitForAllPlayersStartFinished(networkConnector);
+				this.waitForAllPlayersStartFinished(networkConnector);
 
 				final IMapInterfaceConnector connector = startingGameListener.preLoadFinished(this);
-				GuiInterface guiInterface = new GuiInterface(connector, MatchConstants.clock(), networkConnector.getTaskScheduler(),
-						mainGrid.getGuiInputGrid(), this, initialGameState.getPlayerId(), multiplayer);
+
+                GuiInterface guiInterface = new GuiInterface(
+                    connector, MatchConstants.clock(),
+                    networkConnector.getTaskScheduler(),
+                    this.mainGrid.getGuiInputGrid(), this,
+                    initialGameState.getPlayerId(), multiplayer
+                );
+
 				connector.loadUIState(playerState.getUiState()); // This is required after the GuiInterface instantiation so that
 				// ConstructionMarksThread has it's mapArea variable initialized via the EActionType.SCREEN_CHANGE event.
 
-				aiExecutor = new AiExecutor(initialGameState.getPlayerSettings(), mainGrid, networkConnector.getTaskScheduler());
-				networkConnector.getGameClock().schedule(aiExecutor, (short) 1000);
+				this.aiExecutor = new AiExecutor(initialGameState.getPlayerSettings(), this.mainGrid, networkConnector.getTaskScheduler());
+				networkConnector.getGameClock().schedule(this.aiExecutor, (short) 1000);
 
 				MatchConstants.clock().startExecution(); // WARNING: GAME CLOCK IS STARTED!
 				// NO CONFIGURATION AFTER THIS POINT! =================================
-				gameRunning = true;
 
-				startingGameListener.startFinished();
+                this.gameRunning = true;
+                this.startingGameListener.startFinished();
 
 				synchronized (stopMutex) {
+
 					while (!stopped) {
+
 						try {
 							stopMutex.wait();
-						} catch (InterruptedException e) {
+						}
+
+                        catch (InterruptedException exception) {
+                            // do nothing
 						}
 					}
 				}
 
 				networkConnector.shutdown();
-				mainGrid.stopThreads();
+                this.mainGrid.stopThreads();
 				connector.shutdown();
 				guiInterface.stop();
-				clearState();
+				JSettlersGame.clearState();
 
 				System.setErr(systemErrorStream);
 				System.setOut(systemOutStream);
 
-			} catch (MapLoadException e) {
-				e.printStackTrace();
-				reportFail(EGameError.MAPLOADING_ERROR, e);
-			} catch (Exception e) {
-				e.printStackTrace();
-				reportFail(EGameError.UNKNOWN_ERROR, e);
-			} finally {
+			}
+
+            catch (MapLoadException exception) {
+				exception.printStackTrace();
+				reportFail(EGameError.MAPLOADING_ERROR, exception);
+			}
+
+            catch (Exception exception) {
+				exception.printStackTrace();
+				reportFail(EGameError.UNKNOWN_ERROR, exception);
+			}
+
+            finally {
 				shutdownFinished = true;
-				if (exitListener != null) {
-					exitListener.accept(this);
+				if (this.exitListener != null) {
+					this.exitListener.accept(this);
 				}
 			}
+
+            return;
 		}
+
 
 		public AiExecutor getAiExecutor() {
-			return aiExecutor;
+			return this.aiExecutor;
 		}
 
+
 		private DataOutputStream createReplayFileStream() throws IOException {
+
 			DataOutputStream replayFileStream = new DataOutputStream(createReplayWriteStream());
 
 			ReplayStartInformation replayInfo = new ReplayStartInformation(mapCreator.getMapName(), mapCreator.getMapId(), initialGameState);
@@ -287,139 +339,198 @@ public class JSettlersGame {
 			return replayFileStream;
 		}
 
+
 		/**
 		 * Waits until the {@link #startingGameListener} has been set.
 		 */
 		private void waitForStartingGameListener() {
-			while (startingGameListener == null) {
+
+			while (this.startingGameListener == null) {
+
 				try {
 					Thread.sleep(5L);
-				} catch (InterruptedException e) {
+				}
+
+                catch (InterruptedException exception) {
+                    // do nothing
 				}
 			}
+
+            return;
 		}
+
 
 		private void waitForAllPlayersStartFinished(INetworkConnector networkConnector) {
+
 			while (!networkConnector.haveAllPlayersStartFinished()) {
+
 				try {
 					Thread.sleep(5L);
-				} catch (InterruptedException e) {
+				}
+
+                catch (InterruptedException exception) {
+                    // do nothing
 				}
 			}
+
+            return;
 		}
 
+
 		private void updateProgressListener(EProgressState progressState, float progress) {
+
 			this.progressState = progressState;
 			this.progress = progress;
 
-			if (startingGameListener != null) {
-				startingGameListener.startProgressChanged(progressState, progress);
+			if (this.startingGameListener != null) {
+				this.startingGameListener.startProgressChanged(progressState, progress);
 			}
+
+            return;
 		}
 
-		private void reportFail(EGameError gameError, Exception e) {
-			if (startingGameListener != null)
-				startingGameListener.startFailed(gameError, e);
+
+		private void reportFail(EGameError gameError, Exception exception) {
+
+			if (this.startingGameListener != null) {
+                this.startingGameListener.startFailed(gameError, exception);
+            }
+
+            return;
 		}
+
 
 		// METHODS of IStartingGame
 		// ====================================================
 		@Override
 		public void setListener(IStartingGameListener startingGameListener) {
+
 			this.startingGameListener = startingGameListener;
-			if (startingGameListener != null)
-				startingGameListener.startProgressChanged(progressState, progress);
+			if (startingGameListener != null) {
+                startingGameListener.startProgressChanged(progressState, progress);
+            }
+
+            return;
 		}
+
 
 		// METHODS of IStartedGame
 		// ======================================================
 		@Override
 		public IGraphicsGrid getMap() {
-			return mainGrid.getGraphicsGrid();
+			return this.mainGrid.getGraphicsGrid();
 		}
+
 
 		@Override
 		public IGameTimeProvider getGameTimeProvider() {
-			return gameTimeProvider;
+			return this.gameTimeProvider;
 		}
+
 
 		@Override
 		public IInGamePlayer getInGamePlayer() {
-			return mainGrid.getPartitionsGrid().getPlayer(initialGameState.getPlayerId());
+			return this.mainGrid.getPartitionsGrid().getPlayer(initialGameState.getPlayerId());
 		}
+
 
 		@Override
 		public IInGamePlayer[] getAllInGamePlayers() {
-			return mainGrid.getPartitionsGrid().getPlayers();
+			return this.mainGrid.getPartitionsGrid().getPlayers();
 		}
+
 
 		@Override
 		public boolean isShutdownFinished() {
 			return shutdownFinished;
 		}
 
+
 		@Override
 		public boolean isMultiplayerGame() {
 			return multiplayer;
 		}
 
+
 		@Override
 		public void stopGame() {
 			stop();
+            return;
 		}
+
 
 		@Override
 		public void setGameExitListener(Consumer<IStartedGame> exitListener) {
 			this.exitListener = exitListener;
+            return;
 		}
+
 
 		@Override
 		public boolean isStartupFinished() {
-			return gameRunning;
+			return this.gameRunning;
 		}
 
+
 		public MainGrid getMainGrid() {
-			return mainGrid;
+			return this.mainGrid;
 		}
 	}
 
+
 	private void configureLogging(final IGameCreator mapcreator) {
+
 		try {
-			systemErrorStream = System.err;
-			systemOutStream = System.out;
+			this.systemErrorStream = System.err;
+			this.systemOutStream = System.out;
 
 			OutputStream logStream;
 			OutputStream errStream;
 			OutputStream logFileStream = ResourceManager.writeUserFile(getLogFile(mapcreator, "_out.log"));
-			if(CommonConstants.ENABLE_CONSOLE_LOGGING) {
+
+			if (CommonConstants.ENABLE_CONSOLE_LOGGING) {
 				logStream = new MultiplexingOutputStream(System.out, logFileStream);
 				errStream = new MultiplexingOutputStream(System.err, logFileStream);
-			} else {
+			}
+
+            else {
 				logStream = logFileStream;
 				errStream = logFileStream;
 			}
+
 			System.setOut(new PrintStream(logStream));
 			System.setErr(new PrintStream(errStream));
-		} catch (IOException ex) {
+		}
+
+        catch (IOException ex) {
 			throw new RuntimeException("Error setting up logging.", ex);
 		}
+
+        return;
 	}
 
+
 	private static String getLogFile(IGameCreator mapcreator, String suffix) {
+
 		final String dateAndMap = getLogDateFormatter().format(new Date()) + "_" + mapcreator.getMapName().replace(" ", "_");
 		final String logFolder = "logs/" + dateAndMap + "/";
 
 		return logFolder + dateAndMap + suffix;
 	}
 
+
 	private static DateFormat getLogDateFormatter() {
-		return LOG_DATE_FORMATTER;
+		return JSettlersGame.LOG_DATE_FORMATTER;
 	}
 
+
 	public static void clearState() {
+
 		RescheduleTimer.stopAndClear();
 		MovableManager.resetState();
 		Building.clearState();
 		MatchConstants.clearState();
+
+        return;
 	}
 }

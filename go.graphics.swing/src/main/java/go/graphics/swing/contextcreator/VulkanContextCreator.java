@@ -120,7 +120,7 @@ public class VulkanContextCreator extends JAWTContextCreator {
 			output = new VulkanSurfaceOutput(surface);
 
 			if(wrapCtx) {
-				parentContainer.wrapNewVkContext(instance, output);
+				parentContainer.createVulkanContext(instance, output);
 			} else {
 				output.setSurface(surface);
 			}

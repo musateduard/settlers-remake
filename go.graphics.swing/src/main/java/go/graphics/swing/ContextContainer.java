@@ -85,7 +85,7 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	}
 
 
-	public void wrapNewVkContext(VkInstance instance, AbstractVulkanOutput vkOutput) {
+	public void createVulkanContext(VkInstance instance, AbstractVulkanOutput vkOutput) {
 
         if (this.context != null) {
             this.context.invalidate();

@@ -59,7 +59,7 @@ public class VkLWJGLXContextCreator extends ContextCreator<AWTVKCanvas> {
 
 			@Override
 			public void initVK() {
-				parentContainer.wrapNewVkContext(instance, new VulkanSurfaceOutput(canvas.surface));
+				parentContainer.createVulkanContext(instance, new VulkanSurfaceOutput(canvas.surface));
 			}
 
 			@Override

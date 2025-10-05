@@ -258,8 +258,6 @@ public class JSettlersFrame extends JFrame {
      */
 	public void setContent(MapContent content) {
 
-        // todo: use setContent for rendering both main menu and game map
-
         Area area = new Area();
 		Region region = new Region(500, 500);
 

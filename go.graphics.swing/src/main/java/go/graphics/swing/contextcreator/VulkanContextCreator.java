@@ -120,7 +120,7 @@ public class VulkanContextCreator extends JAWTContextCreator {
 			output = new VulkanSurfaceOutput(surface);
 
 			if(wrapCtx) {
-				parentContainer.createVulkanContext(instance, output);
+				contextContainer.createVulkanContext(instance, output);
 			} else {
 				output.setSurface(surface);
 			}
@@ -141,7 +141,7 @@ public class VulkanContextCreator extends JAWTContextCreator {
 
 	@Override
 	protected void swapBuffers() throws ContextException {
-		parentContainer.swapBuffersVk();
+		contextContainer.swapBuffersVk();
 	}
 
 	@Override

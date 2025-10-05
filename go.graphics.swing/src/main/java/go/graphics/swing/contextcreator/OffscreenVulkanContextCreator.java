@@ -39,7 +39,7 @@ public class OffscreenVulkanContextCreator extends ContextCreator<Canvas> {
 			debugCallback = debug ? VulkanUtils.setupDebugging(instance) : 0;
 
 			output = new CustomVulkanOutput();
-			parentContainer.createVulkanContext(instance, output);
+			contextContainer.createVulkanContext(instance, output);
 		}
 	}
 
@@ -64,11 +64,11 @@ public class OffscreenVulkanContextCreator extends ContextCreator<Canvas> {
 							width = newWidth;
 							height = newHeight;
 
-							parentContainer.resizeContext(width, height);
+							contextContainer.resizeContext(width, height);
 							resolutionChanged = false;
 						}
 					}
-					parentContainer.draw();
+					contextContainer.draw();
 
 					int width = output.getFramebufferSize().width;
 					int height = output.getFramebufferSize().height;
@@ -80,7 +80,7 @@ public class OffscreenVulkanContextCreator extends ContextCreator<Canvas> {
 						fbReadback = BufferUtils.createIntBuffer(width * height);
 					}
 
-					parentContainer.readFramebuffer(fbReadback, width, height);
+					contextContainer.readFramebuffer(fbReadback, width, height);
 
 					for (int y = 0; y != height; y++) {
 						for (int x = 0; x != width; x++) {
@@ -95,6 +95,6 @@ public class OffscreenVulkanContextCreator extends ContextCreator<Canvas> {
 			}
 		};
 
-		new GOSwingEventConverter(canvas, parentContainer);
+		new GOSwingEventConverter(canvas, contextContainer);
 	}
 }

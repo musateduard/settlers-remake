@@ -151,7 +151,7 @@ public class WGLContextCreator extends JAWTContextCreator {
             this.error("Could not create WGL context!");
         }
 
-        this.parentContainer.createGLContext();
+        this.contextContainer.createGLContext();
 
         return;
 	}

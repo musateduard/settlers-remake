@@ -110,7 +110,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
             this.setupContext();
 
             try {
-                this.parentContainer.resizeContext(this.width, this.height);
+                this.contextContainer.resizeContext(this.width, this.height);
 			}
 
             catch (ContextException exception) {
@@ -136,7 +136,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		GLFW.glfwMakeContextCurrent(this.glfwWindowId);
 		GLFW.glfwSwapInterval(1);
-        this.parentContainer.createGLContext();
+        this.contextContainer.createGLContext();
 
         return;
 	}
@@ -326,7 +326,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		private GLFWEventConverter() {
 
-			super(parentContainer);
+			super(contextContainer);
 
 			addReplaceRule(new EventReplacementRule(ReplacableEvent.DRAW, Replacement.COMMAND_SELECT, 5, 10));
 			addReplaceRule(new EventReplacementRule(ReplacableEvent.PAN, Replacement.COMMAND_ACTION, 5, 10));

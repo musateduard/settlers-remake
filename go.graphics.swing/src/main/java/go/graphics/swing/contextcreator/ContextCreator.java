@@ -22,7 +22,7 @@ import javax.swing.SwingUtilities;
 import go.graphics.swing.ContextContainer;
 
 
-public abstract class ContextCreator<Type extends Component> implements ComponentListener {
+public abstract class ContextCreator<CanvasComponent extends Component> implements ComponentListener {
 
 	protected int width;
 	protected int height;
@@ -32,8 +32,8 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 	protected final Object windowLock;
 	protected boolean initialDraw;
 	protected int fpsLimit;
-	protected Type canvas;
-	protected ContextContainer parentContainer;
+	protected CanvasComponent canvas;
+	protected ContextContainer contextContainer;
 	protected boolean debug;
 
     public abstract void stop();
@@ -42,7 +42,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 	public ContextCreator(ContextContainer areaContainer, boolean debug) {
 
-		this.parentContainer = areaContainer;
+		this.contextContainer = areaContainer;
 		this.debug = debug;
 
         this.width = 1;
@@ -71,7 +71,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 
 	protected void error(String message) throws ContextException {
-        this.parentContainer.fatal(message);
+        this.contextContainer.fatal(message);
 		throw new ContextException();
 	}
 
@@ -79,7 +79,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 	public void init() {
 
         this.initSpecific();
-        this.parentContainer.addCanvas(this.canvas);
+        this.contextContainer.addCanvas(this.canvas);
 		this.canvas.addComponentListener(this);
 
         return;

@@ -76,7 +76,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 				super.paintComponent(graphics);
 
 				if (initialDraw) {
-					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(parentContainer, parentContainer));
+					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(contextContainer, contextContainer));
 					initialDraw = false;
 				}
 
@@ -136,7 +136,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 						}
 
 						Thread.sleep(20); // we must wait a bit because X is async and our window must not be resized in time otherwise
-                        this.parentContainer.resizeContext(this.width, this.height);
+                        this.contextContainer.resizeContext(this.width, this.height);
 
                         this.image = new BufferedImage(this.width, this.height, BufferedImage.TYPE_3BYTE_BGR);
                         this.pixels = BufferUtils.createIntBuffer(this.width * this.height);
@@ -147,14 +147,14 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
                 this.async_refresh();
 
-				this.parentContainer.draw();
-				this.parentContainer.finishFrame();
+				this.contextContainer.draw();
+				this.contextContainer.finishFrame();
 
 				if (this.offscreen) {
 
 					synchronized (this.windowLock) {
 
-                        this.parentContainer.readFramebuffer(this.pixels, this.width, this.height);
+                        this.contextContainer.readFramebuffer(this.pixels, this.width, this.height);
 
                         for (int offsetX = 0; offsetX != this.width; offsetX++) {
                             for (int offsetY = 0; offsetY != this.height; offsetY++) {
@@ -165,8 +165,9 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 				}
 
 				if (!this.offscreen || this.clear_offscreen) {
+
 					if (this.clear_offscreen && !this.offscreen) {
-                        this.parentContainer.clearFramebuffer();
+                        this.contextContainer.clearFramebuffer();
                         this.clear_offscreen = false;
 					}
 
@@ -176,7 +177,6 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
                         fpsComputer.nextFrame(this.fpsLimit);
                     }
 				}
-
 			}
 
             catch (ContextException ignored) {

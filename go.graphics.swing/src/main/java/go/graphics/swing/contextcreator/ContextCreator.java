@@ -19,20 +19,19 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.geom.AffineTransform;
 import javax.swing.SwingUtilities;
-
 import go.graphics.swing.ContextContainer;
 
 
 public abstract class ContextCreator<Type extends Component> implements ComponentListener {
 
-	protected int width = 1;
-	protected int height = 1;
-	protected int new_width = 1;
-	protected int new_height = 1;
-	protected boolean change_res = true;
-	protected final Object wnd_lock = new Object();
-	protected boolean first_draw = true;
-	protected int fpsLimit = 0;
+	protected int width;
+	protected int height;
+	protected int newWidth;
+	protected int newHeight;
+	protected boolean resolutionChanged;
+	protected final Object windowLock;
+	protected boolean initialDraw;
+	protected int fpsLimit;
 	protected Type canvas;
 	protected ContextContainer parentContainer;
 	protected boolean debug;
@@ -45,6 +44,15 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 
 		this.parentContainer = areaContainer;
 		this.debug = debug;
+
+        this.width = 1;
+        this.height = 1;
+        this.newWidth = 1;
+        this.newHeight = 1;
+        this.resolutionChanged = true;
+        this.windowLock = new Object();
+        this.initialDraw = true;
+        this.fpsLimit = 0;
 
         return;
 	}
@@ -91,7 +99,7 @@ public abstract class ContextCreator<Type extends Component> implements Componen
             return;
         }
 
-		synchronized (this.wnd_lock) {
+		synchronized (this.windowLock) {
 
 			AffineTransform scaleInfo = this.canvas.getGraphicsConfiguration().getDefaultTransform();
 
@@ -102,16 +110,16 @@ public abstract class ContextCreator<Type extends Component> implements Componen
 				scaleY = scaleInfo.getScaleX();
 			}
 
-			this.new_width = (int) (this.canvas.getWidth() * scaleX);
-			this.new_height = (int) (this.canvas.getHeight() * scaleY);
-			this.change_res = true;
+			this.newWidth = (int) (this.canvas.getWidth() * scaleX);
+			this.newHeight = (int) (this.canvas.getHeight() * scaleY);
+			this.resolutionChanged = true;
 
-			if (this.new_width == 0) {
-                this.new_width = 1;
+			if (this.newWidth == 0) {
+                this.newWidth = 1;
             }
 
-			if (this.new_height == 0) {
-                this.new_height = 1;
+			if (this.newHeight == 0) {
+                this.newHeight = 1;
             }
 		}
 

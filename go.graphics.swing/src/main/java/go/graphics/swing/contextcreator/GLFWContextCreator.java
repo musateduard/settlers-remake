@@ -39,55 +39,53 @@ import go.graphics.swing.ContextContainer;
 
 public class GLFWContextCreator extends AsyncContextCreator {
 
-	private final GLFWEventConverter eventConverter;
-    protected long glfwWindowId;
-    private long glfw_resize_time = -1;
     private int glfw_width;
     private int glfw_height;
+    protected long glfwWindowId;
+    private long glfw_resize_time;
+	private final GLFWEventConverter eventConverter;
 
     private static final HashMap<Integer, String> keys = new HashMap<>();
     private static final HashMap<Integer, EModifier> mods = new HashMap<>();
 
     static {
-        keys.put(GLFW.GLFW_KEY_LEFT, "LEFT");
-        keys.put(GLFW.GLFW_KEY_RIGHT, "RIGHT");
-        keys.put(GLFW.GLFW_KEY_UP, "UP");
-        keys.put(GLFW.GLFW_KEY_DOWN, "DOWN");
-        keys.put(GLFW.GLFW_KEY_PAUSE, "PAUSE");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_LEFT, "LEFT");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_RIGHT, "RIGHT");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_UP, "UP");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_DOWN, "DOWN");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_PAUSE, "PAUSE");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F1, "F1");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F2, "F2");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F3, "F3");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F4, "F4");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F5, "F5");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F6, "F6");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F7, "F7");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F8, "F8");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F9, "F9");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F10, "F10");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F11, "F11");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_F12, "F12");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_DELETE, "DELETE");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_ESCAPE, "ESCAPE");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_BACKSPACE, "BACK_SPACE");
+        GLFWContextCreator.keys.put(GLFW.GLFW_KEY_SPACE, " ");
 
-        keys.put(GLFW.GLFW_KEY_F1, "F1");
-        keys.put(GLFW.GLFW_KEY_F2, "F2");
-        keys.put(GLFW.GLFW_KEY_F3, "F3");
-        keys.put(GLFW.GLFW_KEY_F4, "F4");
-        keys.put(GLFW.GLFW_KEY_F5, "F5");
-        keys.put(GLFW.GLFW_KEY_F6, "F6");
-        keys.put(GLFW.GLFW_KEY_F7, "F7");
-        keys.put(GLFW.GLFW_KEY_F8, "F8");
-        keys.put(GLFW.GLFW_KEY_F9, "F9");
-        keys.put(GLFW.GLFW_KEY_F10, "F10");
-        keys.put(GLFW.GLFW_KEY_F11, "F11");
-        keys.put(GLFW.GLFW_KEY_F12, "F12");
-
-        keys.put(GLFW.GLFW_KEY_DELETE, "DELETE");
-        keys.put(GLFW.GLFW_KEY_ESCAPE, "ESCAPE");
-        keys.put(GLFW.GLFW_KEY_BACKSPACE, "BACK_SPACE");
-        keys.put(GLFW.GLFW_KEY_SPACE, " ");
-
-        mods.put(GLFW.GLFW_KEY_LEFT_SHIFT, EModifier.SHIFT);
-        mods.put(GLFW.GLFW_KEY_RIGHT_SHIFT, EModifier.SHIFT);
-
-        mods.put(GLFW.GLFW_KEY_LEFT_ALT, EModifier.ALT);
-        mods.put(GLFW.GLFW_KEY_RIGHT_ALT, EModifier.ALT);
-
-        mods.put(GLFW.GLFW_KEY_LEFT_CONTROL, EModifier.CTRL);
-        mods.put(GLFW.GLFW_KEY_RIGHT_CONTROL, EModifier.CTRL);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_LEFT_SHIFT, EModifier.SHIFT);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_RIGHT_SHIFT, EModifier.SHIFT);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_LEFT_ALT, EModifier.ALT);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_RIGHT_ALT, EModifier.ALT);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_LEFT_CONTROL, EModifier.CTRL);
+        GLFWContextCreator.mods.put(GLFW.GLFW_KEY_RIGHT_CONTROL, EModifier.CTRL);
     }
 
 
 	public GLFWContextCreator(ContextContainer container, boolean debug) {
 
 		super(container, debug);
+
 		this.eventConverter = new GLFWEventConverter();
+        this.glfw_resize_time = -1;
 
         return;
 	}
@@ -100,13 +98,13 @@ public class GLFWContextCreator extends AsyncContextCreator {
 			GLFW.glfwSetErrorCallback(ec);
 		}
 
-		if (!GLFW.glfwInit()) {
+		if (GLFW.glfwInit() == false) {
             throw new Error("glfwInit() failed!");
         }
 
         this.configureWindow();
 
-		synchronized (this.wnd_lock) {
+		synchronized (this.windowLock) {
 
             this.glfwWindowId = GLFW.glfwCreateWindow(this.width, this.height, "lwjgl-offscreen", 0, 0);
             this.setupContext();
@@ -137,7 +135,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 	protected void setupContext() {
 
 		GLFW.glfwMakeContextCurrent(this.glfwWindowId);
-		GLFW.glfwSwapInterval(0);
+		GLFW.glfwSwapInterval(1);
         this.parentContainer.wrapNewGLContext();
 
         return;
@@ -164,10 +162,10 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
                 this.glfw_resize_time = -1;
 
-				this.change_res = true;
+				this.resolutionChanged = true;
 				this.async_resized = true;
-				this.new_width = this.glfw_width + dw;
-				this.new_height = this.glfw_height + dh;
+				this.newWidth = this.glfw_width + dw;
+				this.newHeight = this.glfw_height + dh;
 			}
 		}
 
@@ -222,7 +220,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 				startKeyEvent(name);
 			}
 
-            else if(action == GLFW.GLFW_RELEASE){
+            else if (action == GLFW.GLFW_RELEASE) {
 				endKeyEvent(name);
 			}
 		};
@@ -307,7 +305,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
                     return;
                 }
 
-				synchronized (wnd_lock) {
+				synchronized (windowLock) {
 
 					if (GLFWContextCreator.this.width == width && GLFWContextCreator.this.height == height) {
 						glfw_resize_time = -1;

@@ -112,9 +112,9 @@ public abstract class JAWTContextCreator extends ContextCreator<Canvas> {
                 try {
 					regenerateWindowInfo();
 
-					if (first_draw) {
+					if (initialDraw) {
 
-						first_draw = false;
+						initialDraw = false;
 						new GOSwingEventConverter(this, parentContainer);
 
 						onInit();
@@ -122,14 +122,14 @@ public abstract class JAWTContextCreator extends ContextCreator<Canvas> {
 
 					makeCurrent(true);
 
-					synchronized (wnd_lock) {
+					synchronized (windowLock) {
 
-						if (change_res) {
-							width = new_width;
-							height = new_height;
+						if (resolutionChanged) {
+							width = newWidth;
+							height = newHeight;
 
 							parentContainer.resizeContext(width, height);
-							change_res = false;
+							resolutionChanged = false;
 						}
 					}
 

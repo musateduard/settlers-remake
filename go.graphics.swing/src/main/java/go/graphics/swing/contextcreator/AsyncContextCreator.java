@@ -28,13 +28,13 @@ import go.graphics.swing.event.swingInterpreter.GOSwingEventConverter;
 
 public abstract class AsyncContextCreator extends ContextCreator<JPanel> implements Runnable, DrawModeListener {
 
-	protected boolean offscreen = true;
-	protected boolean async_resized = false;
-	protected boolean clear_offscreen = true;
-	private boolean continue_run = true;
-	private BufferedImage image = null;
+	protected boolean offscreen;
+	protected boolean async_resized;
+	protected boolean clear_offscreen;
+	private boolean running;
+	private BufferedImage image;
 	private IntBuffer pixels;
-	private final Thread render_thread = new Thread(this, "AsyncRenderer");
+	private final Thread render_thread;
 
     public abstract void async_init();
     public abstract void async_set_size(int width, int height);
@@ -44,14 +44,23 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
 
 	public AsyncContextCreator(ContextContainer container, boolean debug)  {
+
 		super(container, debug);
+
+        this.offscreen = true;
+        this.async_resized = false;
+        this.clear_offscreen = true;
+        this.running = true;
+        this.image = null;
+        this.render_thread = new Thread(this, "AsyncRenderer");
+
         return;
 	}
 
 
 	@Override
 	public void stop() {
-		this.continue_run = false;
+		this.running = false;
         return;
 	}
 
@@ -66,15 +75,15 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
 				super.paintComponent(graphics);
 
-				if (first_draw) {
+				if (initialDraw) {
 					SwingUtilities.windowForComponent(this).addKeyListener(new GOSwingEventConverter(parentContainer, parentContainer));
-					first_draw = false;
+					initialDraw = false;
 				}
 
 				if (offscreen) {
-					synchronized (wnd_lock) {
-						graphics.drawImage(image, 0, 0, null);
-						graphics.dispose();
+					synchronized (windowLock) {
+                        graphics.drawImage(image, 0, 0, null);
+                        graphics.dispose();
 					}
 				}
 
@@ -98,25 +107,25 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 	@Override
 	public void run() {
 
-		synchronized (this.wnd_lock) {
-			this.width = this.new_width;
-			this.height = this.new_height;
+		synchronized (this.windowLock) {
+			this.width = this.newWidth;
+			this.height = this.newHeight;
 		}
 
         this.async_init();
 
 		FramerateComputer fpsComputer = new FramerateComputer();
 
-		while (this.continue_run) {
+		while (this.running) {
 
 			try {
 
-				if (this.change_res) {
+				if (this.resolutionChanged) {
 
-					synchronized (this.wnd_lock) {
+					synchronized (this.windowLock) {
 
-						this.width = this.new_width;
-						this.height = this.new_height;
+						this.width = this.newWidth;
+						this.height = this.newHeight;
 
 						if (this.async_resized) {
                             this.async_resized = false;
@@ -133,7 +142,7 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
                         this.pixels = BufferUtils.createIntBuffer(this.width * this.height);
 					}
 
-                    this.change_res = false;
+                    this.resolutionChanged = false;
 				}
 
                 this.async_refresh();
@@ -143,15 +152,15 @@ public abstract class AsyncContextCreator extends ContextCreator<JPanel> impleme
 
 				if (this.offscreen) {
 
-					synchronized (this.wnd_lock) {
+					synchronized (this.windowLock) {
 
                         this.parentContainer.readFramebuffer(this.pixels, this.width, this.height);
 
-						for (int offsetX = 0; offsetX != this.width; offsetX++) {
-							for (int offsetY = 0; offsetY != this.height; offsetY++) {
+                        for (int offsetX = 0; offsetX != this.width; offsetX++) {
+                            for (int offsetY = 0; offsetY != this.height; offsetY++) {
                                 this.image.setRGB(offsetX, this.height - offsetY - 1, this.pixels.get(offsetY * this.width + offsetX));
-							}
-						}
+                            }
+                        }
 					}
 				}
 

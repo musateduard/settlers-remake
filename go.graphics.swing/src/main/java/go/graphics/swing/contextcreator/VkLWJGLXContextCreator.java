@@ -65,13 +65,13 @@ public class VkLWJGLXContextCreator extends ContextCreator<AWTVKCanvas> {
 			@Override
 			public void paintVK() {
 				try {
-					synchronized (wnd_lock) {
-						if (change_res) {
-							width = new_width;
-							height = new_height;
+					synchronized (windowLock) {
+						if (resolutionChanged) {
+							width = newWidth;
+							height = newHeight;
 
 							parentContainer.resizeContext(width, height);
-							change_res = false;
+							resolutionChanged = false;
 						}
 					}
 					parentContainer.draw();

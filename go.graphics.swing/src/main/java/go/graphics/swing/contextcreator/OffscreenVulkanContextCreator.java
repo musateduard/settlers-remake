@@ -59,13 +59,13 @@ public class OffscreenVulkanContextCreator extends ContextCreator<Canvas> {
 
 			public void paint(Graphics graphics) {
 				try {
-					synchronized (wnd_lock) {
-						if (change_res) {
-							width = new_width;
-							height = new_height;
+					synchronized (windowLock) {
+						if (resolutionChanged) {
+							width = newWidth;
+							height = newHeight;
 
 							parentContainer.resizeContext(width, height);
-							change_res = false;
+							resolutionChanged = false;
 						}
 					}
 					parentContainer.draw();

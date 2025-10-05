@@ -79,10 +79,10 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	}
 
 
-	public void finishFrame() {
-		this.context.finishFrame();
+    public void finishFrame() {
+        this.context.finishFrame();
         return;
-	}
+    }
 
 
 	public void createVulkanContext(VkInstance instance, AbstractVulkanOutput vkOutput) {
@@ -166,15 +166,15 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	}
 
 
-	public void draw() throws ContextException {
+    public void draw() throws ContextException {
 
         if (this.context == null) {
             throw new ContextException();
         }
 
-		this.context.startFrame();
+        this.context.startFrame();
         return;
-	}
+    }
 
 
 	/**

@@ -240,7 +240,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private UIPoint currentSelectionAreaStart;
 	private IInGamePlayer localPlayer;
 
-	private final IntervalTimeRateCalculator gamespeedCalculator;
+	private final IntervalTimeRateCalculator gameSpeedCalculator;
 
 	private long getGameTimeNS() {
 		return gameTimeProvider.getGameTime()*1000L*1000L;
@@ -250,73 +250,84 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		this(game, soundPlayer, textDrawPosition,null);
 	}
 
+
 	/**
-	 *
 	 * Creates a new map content for the given map.
 	 *
-	 * @param game
-	 *            The map.
-	 * @param soundPlayer
-	 *            The player
-	 * @param controls
-	 * 			  The menus on the side (swing) or on the bottom (android)
+	 * @param game The map.
+	 * @param soundPlayer The player
+	 * @param controls The menus on the side (swing) or on the bottom (android)
 	 */
 	public MapContent(IStartedGame game, SoundPlayer soundPlayer, ETextDrawPosition textDrawPosition, IControls controls) {
+
 		this.map = game.getMap();
-		if(map instanceof IDirectGridProvider) {
-			IDirectGridProvider dgp = (IDirectGridProvider) map;
-			objectsGrid = dgp.getObjectArray();
-			movableGrid = dgp.getMovableArray();
-			borderGrid = dgp.getBorderArray();
-			heightGrid = dgp.getHeightArray();
-			visibleGrid = dgp.getVisibleStatusArray();
-			isVisibleGridAvailable = true;
-		} else {
-			objectsGrid = null;
-			movableGrid = null;
-			borderGrid = null;
-			heightGrid = null;
-			visibleGrid = null;
-			isVisibleGridAvailable = false;
+
+		if (this.map instanceof IDirectGridProvider) {
+
+			IDirectGridProvider dgp = (IDirectGridProvider) this.map;
+			this.objectsGrid = dgp.getObjectArray();
+			this.movableGrid = dgp.getMovableArray();
+			this.borderGrid = dgp.getBorderArray();
+			this.heightGrid = dgp.getHeightArray();
+			this.visibleGrid = dgp.getVisibleStatusArray();
+			this.isVisibleGridAvailable = true;
 		}
-		width = map.getWidth();
-		height = map.getHeight();
+
+        else {
+			this.objectsGrid = null;
+			this.movableGrid = null;
+			this.borderGrid = null;
+			this.heightGrid = null;
+			this.visibleGrid = null;
+			this.isVisibleGridAvailable = false;
+		}
+
+		this.width = this.map.getWidth();
+		this.height = this.map.getHeight();
 		this.localPlayer = game.getInGamePlayer();
 		this.gameTimeProvider = game.getGameTimeProvider();
-		this.gamespeedCalculator = new IntervalTimeRateCalculator(50*1000*1000L, 20, this::getGameTimeNS);
+		this.gameSpeedCalculator = new IntervalTimeRateCalculator(50 * 1000 * 1000L, 20, this::getGameTimeNS);
 		this.textDrawPosition = textDrawPosition;
 		this.messenger = new Messenger(this.gameTimeProvider);
 		this.textDrawer = new ReplaceableTextDrawer();
-		this.context = new MapDrawContext(map);
+		this.context = new MapDrawContext(this.map);
 		this.soundmanager = new SoundManager(soundPlayer);
-		this.musicManager = new MusicManager(soundPlayer, localPlayer.getCivilisation());
-		this.background = new Background(context);
+		this.musicManager = new MusicManager(soundPlayer, this.localPlayer.getCivilisation());
+		this.background = new Background(this.context);
 
-		objectDrawer = new MapObjectDrawer(context, soundmanager, localPlayer);
-		backgroundSound = new BackgroundSound(context, soundmanager);
-		backgroundSound.start();
-		musicManager.startMusic();
+		this.objectDrawer = new MapObjectDrawer(this.context, this.soundmanager, this.localPlayer);
+		this.backgroundSound = new BackgroundSound(this.context, this.soundmanager);
+		this.backgroundSound.start();
+		this.musicManager.startMusic();
 
 		if (controls == null) {
 			this.controls = new OriginalControls(this, game);
-		} else {
+		}
+
+        else {
 			this.controls = controls;
 		}
-		this.controls.setDrawContext(this, context);
 
+		this.controls.setDrawContext(this, this.context);
 		this.connector = new MapInterfaceConnector(this);
 		this.connector.addListener(this);
 	}
 
+
 	private void resizeTo(int newWindowWidth, int newWindowHeight) {
-		windowWidth = newWindowWidth;
-		windowHeight = newWindowHeight;
-		this.controls.resizeTo(windowWidth, windowHeight);
-		reapplyContentSizes();
+
+		this.windowWidth = newWindowWidth;
+		this.windowHeight = newWindowHeight;
+		this.controls.resizeTo(this.windowWidth, this.windowHeight);
+        this.reapplyContentSizes();
+
+        return;
 	}
 
+
 	private void reapplyContentSizes() {
-		this.context.setSize(windowWidth, windowHeight);
+		this.context.setSize(this.windowWidth, this.windowHeight);
+        return;
 	}
 
 
@@ -324,41 +335,41 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	public void drawContent(GLDrawContext glContext, int newWidth, int newHeight) {
 
 		try {
-			framerate.nextFrame();
-			gamespeedCalculator.tick();
+			this.framerate.nextFrame();
+			this.gameSpeedCalculator.tick();
 
 			// TODO: Do only check once.
-			if (textDrawer.getTextDrawer(glContext, EFontSize.NORMAL).getWidth("a") == 0) {
-				textDrawer.setTextDrawerFactory(new FontDrawerFactory());
+			if (this.textDrawer.getTextDrawer(glContext, EFontSize.NORMAL).getWidth("a") == 0) {
+				this.textDrawer.setTextDrawerFactory(new FontDrawerFactory());
 			}
 
-			if(isVisibleGridAvailable) {
-                objectDrawer.setVisibleGrid(((IDirectGridProvider)map).isFoWEnabled()?((IDirectGridProvider)map).getVisibleStatusArray():null);
+			if (this.isVisibleGridAvailable) {
+                this.objectDrawer.setVisibleGrid(((IDirectGridProvider) this.map).isFoWEnabled() ? ((IDirectGridProvider) this.map).getVisibleStatusArray() : null);
             }
 
-			if (newWidth != windowWidth || newHeight != windowHeight) {
-				resizeTo(newWidth, newHeight);
+			if (newWidth != this.windowWidth || newHeight != this.windowHeight) {
+                this.resizeTo(newWidth, newHeight);
 			}
 
-			adaptScreenSize();
+            this.adaptScreenSize();
 			this.objectDrawer.nextFrame();
 
 			this.context.begin(glContext);
 			long start = System.nanoTime();
 
 			FloatRectangle screen = this.context.getScreen().getPosition().bigger(SCREEN_PADDING);
-			drawBackground(screen);
+            this.drawBackground(screen);
 			long backgroundDuration = System.nanoTime() - start;
 
 			start = System.nanoTime();
-			drawMain(screen);
+            this.drawMain(screen);
 
-			if (scrollMarker != null) {
-				drawGotoMarker();
+			if (this.scrollMarker != null) {
+                this.drawGotoMarker();
 			}
 
-			if (moveToMarker != null) {
-				drawMoveToMarker();
+			if (this.moveToMarker != null) {
+                this.drawMoveToMarker();
 			}
 
 			this.context.end();
@@ -367,32 +378,32 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			start = System.nanoTime();
 			glContext.clearDepthBuffer();
 			glContext.setGlobalAttributes(0, 0, 0, 1, 1, 1);
-			drawSelectionHint(glContext);
-			controls.drawAt(glContext);
-			drawMessages(glContext);
-			drawWinStateMsg(glContext);
 
-			drawFramerateTimeAndHash(glContext);
+            this.drawSelectionHint(glContext);
+			this.controls.drawAt(glContext);
+			this.drawMessages(glContext);
+			this.drawWinStateMsg(glContext);
+            this.drawFramerateTimeAndHash(glContext);
 
-			if (actionThreadIsSlow) {
-				drawActionThreadSlow(glContext);
+			if (this.actionThreadIsSlow) {
+                this.drawActionThreadSlow(glContext);
 			}
 
-			drawTooltip(glContext);
+            this.drawTooltip(glContext);
 			long uiTime = System.nanoTime() - start;
 
 			if (CommonConstants.ENABLE_GRAPHICS_TIMES_DEBUG_OUTPUT) {
-				System.out.println("Background: " + backgroundDuration/1000 + "µs, Foreground: " + foregroundDuration/1000 + "µs, UI: " + uiTime/1000 + "µs");
+				System.out.println("Background: " + backgroundDuration / 1000 + "µs, Foreground: " + foregroundDuration / 1000 + "µs, UI: " + uiTime / 1000 + "µs");
 			}
 		}
 
-        catch (Throwable t) {
+        catch (Throwable exception) {
 
 			System.err.println("Main draw handler caught throwable:");
-			t.printStackTrace();
+			exception.printStackTrace();
 
 			try {
-				showError(glContext, t);
+				showError(glContext, exception);
 			}
 
             catch (Throwable t2) {
@@ -430,24 +441,39 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		gl.getTextDrawer(EFontSize.HEADLINE).drawString(posX, posY, Labels.getString("error-rendering", errorMessage));
 	}
 
+
 	private void drawGotoMarker() {
-		long timeDifference = System.currentTimeMillis() - scrollMarkerTime;
-		if (timeDifference > GOTO_MARK_TIME) {
-			scrollMarker = null;
-		} else {
-			ImageLink image = GOTO_ANIMATION.getImageLink(timeDifference < GOTO_MARK_TIME / 2 ? 0 : 1);
-			objectDrawer.drawGotoMarker(scrollMarker, ImageProvider.getInstance().getImage(image));
+
+		long timeDifference = System.currentTimeMillis() - this.scrollMarkerTime;
+
+		if (timeDifference > MapContent.GOTO_MARK_TIME) {
+			this.scrollMarker = null;
 		}
+
+        else {
+			ImageLink image = MapContent.GOTO_ANIMATION.getImageLink(timeDifference < MapContent.GOTO_MARK_TIME / 2 ? 0 : 1);
+			this.objectDrawer.drawGotoMarker(this.scrollMarker, ImageProvider.getInstance().getImage(image));
+		}
+
+        return;
 	}
 
+
 	private void drawMoveToMarker() {
-		long timeDifference = System.currentTimeMillis() - moveToMarkerTime;
-		if (timeDifference >= GOTO_MARK_TIME) {
-			moveToMarker = null;
-		} else {
-			objectDrawer.drawMoveToMarker(moveToMarker, timeDifference / GOTO_MARK_TIME);
+
+		long timeDifference = System.currentTimeMillis() - this.moveToMarkerTime;
+
+		if (timeDifference >= MapContent.GOTO_MARK_TIME) {
+			this.moveToMarker = null;
 		}
+
+        else {
+            this.objectDrawer.drawMoveToMarker(this.moveToMarker, (float) timeDifference / MapContent.GOTO_MARK_TIME);
+		}
+
+        return;
 	}
+
 
 	private float messageAlpha(IMessage m) {
 		int age = m.getAge();
@@ -543,7 +569,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			return;
 		}
 
-		String fps = Labels.getString("map-fps", framerate.getRate(), gamespeedCalculator.getRate());
+		String fps = Labels.getString("map-fps", framerate.getRate(), gameSpeedCalculator.getRate());
 		long gameTime = gameTimeProvider.getGameTime() / 1000;
 		String timeString = Labels.getString("map-time", gameTime / 60 / 60, (gameTime / 60) % 60, (gameTime) % 60);
 

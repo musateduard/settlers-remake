@@ -49,7 +49,7 @@ import jsettlers.graphics.map.geometry.MapCoordinateConverter;
  */
 public final class MapDrawContext implements IGLProvider {
 
-	private GLDrawContext gl = null;
+	private GLDrawContext glContext = null;
 
 	private final IGraphicsGrid map;
 
@@ -133,24 +133,29 @@ public final class MapDrawContext implements IGLProvider {
 		this.screen.setSize(windowWidth, windowHeight);
 	}
 
+
 	/**
 	 * Begin a new draw session (=> draw a new image). Sets up the gl screen assuming the current viewport is set to (0,0,width,height)
 	 *
-	 * @param gl2
-	 *            The gl context to use.
-	 * @see #end()
+	 * @param glContext The gl context to use.
+	 *
+     * @see #end()
 	 */
-	public void begin(GLDrawContext gl2) {
-		this.gl = gl2;
+	public void begin(GLDrawContext glContext) {
+
+        this.glContext = glContext;
 
 		// beginTime = System.nanoTime();
 
-		float zoom = screen.getZoom();
+		float zoom = this.screen.getZoom();
 
-		offsetX = (int) (-screen.getLeft()+.5f);
-		offsetY = (int) (-screen.getBottom()+.5f);
-		gl2.setGlobalAttributes(offsetX, offsetY, 0, zoom, zoom, 1);
+		this.offsetX = (int) (-this.screen.getLeft() + .5f);
+		this.offsetY = (int) (-this.screen.getBottom() + .5f);
+		this.glContext.setGlobalAttributes(this.offsetX, this.offsetY, 0, zoom, zoom, 1);
+
+        return;
 	}
+
 
 	private int offsetX, offsetY;
 
@@ -166,7 +171,7 @@ public final class MapDrawContext implements IGLProvider {
 	 * Ends a drawing session.
 	 */
 	public void end() {
-		this.gl = null;
+		this.glContext = null;
 	}
 
 	/**
@@ -176,7 +181,7 @@ public final class MapDrawContext implements IGLProvider {
 	 */
 	@Override
 	public GLDrawContext getGl() {
-		return this.gl;
+		return this.glContext;
 	}
 
 	/**

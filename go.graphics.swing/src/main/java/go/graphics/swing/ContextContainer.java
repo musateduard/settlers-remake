@@ -106,7 +106,7 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
 	}
 
 
-	public void wrapNewGLContext() {
+	public void createGLContext() {
 
         if (this.contextCreator instanceof JAWTContextCreator) {
             ((JAWTContextCreator) this.contextCreator).makeCurrent(true);

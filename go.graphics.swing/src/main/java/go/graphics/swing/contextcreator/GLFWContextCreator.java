@@ -136,7 +136,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 		GLFW.glfwMakeContextCurrent(this.glfwWindowId);
 		GLFW.glfwSwapInterval(1);
-        this.parentContainer.wrapNewGLContext();
+        this.parentContainer.createGLContext();
 
         return;
 	}

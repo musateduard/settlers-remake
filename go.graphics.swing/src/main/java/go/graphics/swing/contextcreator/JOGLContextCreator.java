@@ -50,7 +50,7 @@ public class JOGLContextCreator extends ContextCreator<GLJPanel> implements GLEv
 	@Override
 	public void init(GLAutoDrawable drawable) {
 		drawable.getGL().setSwapInterval(0);
-		parentContainer.wrapNewGLContext();
+		parentContainer.createGLContext();
 	}
 
 	@Override

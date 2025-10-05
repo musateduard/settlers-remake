@@ -91,7 +91,7 @@ public class GLXContextCreator extends JAWTContextCreator {
 			context = GLX.glXCreateContext(windowConnection, xvi, 0, true);
 		}
 		if (context == 0) error("Could not create GLX context!");
-		parentContainer.wrapNewGLContext();
+		parentContainer.createGLContext();
 	}
 
 	@Override

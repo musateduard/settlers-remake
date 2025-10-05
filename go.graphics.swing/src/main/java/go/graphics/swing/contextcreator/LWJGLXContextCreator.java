@@ -27,7 +27,7 @@ public class LWJGLXContextCreator extends ContextCreator<AWTGLCanvas> {
 		canvas = new AWTGLCanvas(data) {
 			@Override
 			public void initGL() {
-				parentContainer.wrapNewGLContext();
+				parentContainer.createGLContext();
 			}
 
 			@Override

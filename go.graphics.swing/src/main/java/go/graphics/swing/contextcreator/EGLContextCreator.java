@@ -159,7 +159,7 @@ public class EGLContextCreator extends JAWTContextCreator {
 		}
 		if(egl_context == 0) error("could not create context");
 
-		parentContainer.wrapNewGLContext();
+		parentContainer.createGLContext();
 	}
 
 	@Override

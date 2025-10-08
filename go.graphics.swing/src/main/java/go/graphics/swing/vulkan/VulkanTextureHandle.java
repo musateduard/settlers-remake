@@ -2,7 +2,6 @@ package go.graphics.swing.vulkan;
 
 import go.graphics.swing.vulkan.memory.VulkanImage;
 import go.graphics.swing.vulkan.memory.VulkanMemoryManager;
-import org.lwjgl.util.vma.Vma;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDescriptorImageInfo;
 import org.lwjgl.vulkan.VkWriteDescriptorSet;
@@ -77,9 +76,9 @@ public class VulkanTextureHandle extends TextureHandle {
 
 
 		install_texture_image.imageView(image.getImageView())
-				.sampler(((VulkanDrawContext) dc).samplers[getType().ordinal()]);
+				.sampler(((VulkanDrawContext) drawContext).samplers[getType().ordinal()]);
 
-		VK10.vkUpdateDescriptorSets(((VulkanDrawContext)dc).getDevice(), install_texture_write, null);
+		VK10.vkUpdateDescriptorSets(((VulkanDrawContext) drawContext).getDevice(), install_texture_write, null);
 	}
 
 	public void setDestroy() {

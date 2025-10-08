@@ -52,9 +52,9 @@ public class MultiDrawHandle extends GLResourceIndex {
 
 
 		try {
-			dc.updateBufferAt(drawCalls, 0, drawCallBuffer);
+			drawContext.updateBufferAt(drawCalls, 0, drawCallBuffer);
 		} catch (IllegalBufferException e) {}
-		dc.drawMulti(this);
+		drawContext.drawMulti(this);
 
 		drawCallBuffer.limit(MAX_CACHE_ENTRIES*12*4);
 		used = 0;

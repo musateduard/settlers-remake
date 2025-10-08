@@ -54,11 +54,11 @@ public class VulkanBufferHandle extends AbstractVulkanBuffer {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + " [dc=" + dc + ", allocation=" + allocation + ", bfr=" + bfr + "]";
+		return getClass().getSimpleName() + " [dc=" + drawContext + ", allocation=" + allocation + ", bfr=" + bfr + "]";
 	}
 
 	public void free() {
 		Vma.vmaDestroyBuffer(memoryManager.getAllocator(), bfr, allocation);
-		VK10.vkDestroyEvent(((VulkanDrawContext)dc).getDevice(), event, null);
+		VK10.vkDestroyEvent(((VulkanDrawContext) drawContext).getDevice(), event, null);
 	}
 }

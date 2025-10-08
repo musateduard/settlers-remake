@@ -19,7 +19,7 @@ public class LWJGLTextureHandle extends TextureHandle {
 	public void setType(ETextureType type) {
 		super.setType(type);
 
-		((LWJGLDrawContext)dc).bindTextures(this, this);
+		((LWJGLDrawContext) drawContext).bindTextures(this, this);
 		switch(getType()) {
 			case LINEAR_FILTER:
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

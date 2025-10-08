@@ -14,30 +14,39 @@
  *******************************************************************************/
 package go.graphics;
 
+
 /**
  * This class represents an abstract resource handle.
- * 
+ *
  * @author Michael Zangl
  */
 public abstract class GLResourceIndex {
-	protected GLDrawContext dc;
+
+    protected GLDrawContext drawContext;
 	protected int id;
 
-	public GLResourceIndex(GLDrawContext dc, int id) {
-		this.dc = dc;
+
+	public GLResourceIndex(GLDrawContext drawContext, int id) {
+
+        this.drawContext = drawContext;
 		this.id = id;
+
+        return;
 	}
+
+
 	/**
 	 * Checks if this resource is valid.
-	 * 
-	 * @return <code>true</code> if the resource is valid and can be used.
+	 *
+	 * @return {@code true} if the resource is valid and can be used.
 	 */
 	public boolean isValid() {
-		return dc.isValid();
+		return this.drawContext.isValid();
 	}
+
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[index=" + id + " ]";
+        return String.format("%s[index=%d]", this.getClass().getSimpleName(), this.id);
 	}
 }

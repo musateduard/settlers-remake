@@ -24,7 +24,7 @@ public class ManagedHandle {
 		this.quad_count = quad_count;
 		this.texture_size = texture_size;
 		remaining_pixels = new int[texture_size];
-		multiCache = bufferHolder.dc.createMultiDrawCall("managed" + instance_count, this);
+		multiCache = bufferHolder.drawContext.createMultiDrawCall("managed" + instance_count, this);
 
 		Arrays.fill(remaining_pixels, texture_size);
 		ManagedHandle.instance_count++;
@@ -82,9 +82,9 @@ public class ManagedHandle {
 
 		// ...and populate it
 		try {
-			bufferHolder.dc.updateTexture(bufferHolder.texture, start, texture_size-leastRemaining, texture);
+			bufferHolder.drawContext.updateTexture(bufferHolder.texture, start, texture_size-leastRemaining, texture);
 			// TODO properly fill tex2
-			bufferHolder.dc.updateTexture(bufferHolder.texture2, start, texture_size-leastRemaining, texture);
+			bufferHolder.drawContext.updateTexture(bufferHolder.texture2, start, texture_size-leastRemaining, texture);
 		} catch(IllegalBufferException e) {}
 		return new UIPoint(start/(float)texture_size, (texture_size-leastRemaining)/(float)texture_size);
 	}
@@ -93,7 +93,7 @@ public class ManagedHandle {
 	protected void addQuad(float[] data) {
 		dataBuffer.asFloatBuffer().put(data);
 		try {
-			bufferHolder.dc.updateBufferAt(bufferHolder.vertices, quad_index*4*4*4, dataBuffer);
+			bufferHolder.drawContext.updateBufferAt(bufferHolder.vertices, quad_index*4*4*4, dataBuffer);
 		} catch (IllegalBufferException e) {}
 	}
 }

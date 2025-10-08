@@ -49,7 +49,7 @@ public class VulkanMultiBufferHandle extends AbstractVulkanBuffer {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "[dc=" + dc + ", size=" + size + ", bufferCount=" + buffers.size() + "]";
+        return getClass().getSimpleName() + "[dc=" + drawContext + ", size=" + size + ", bufferCount=" + buffers.size() + "]";
     }
 
     @Override

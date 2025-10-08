@@ -46,7 +46,7 @@ public class SettingsManager implements ISoundSettingsProvider {
 
 	public static final String SETTING_BACKEND = "backend";
 	public static final String SETTING_FPS_LIMIT = "fpsLimit";
-  
+
 	private static final String SETTING_SETTLERS_FOLDER = "settlers-folder";
 	private static final String SETTING_SETTLERS_VERSION_ID = "settlers-folder-version-id";
 
@@ -118,7 +118,7 @@ public class SettingsManager implements ISoundSettingsProvider {
 			System.out.println("Argument: " + key + " -> " + e.getValue().toString());
 		}
 	}
-	
+
 	private void loadArguments(String[] args) {
 		Pattern parameterPattern = Pattern.compile("--(.*?)=(.*?)");
 		Pattern optionPattern = Pattern.compile("--(.*?)");

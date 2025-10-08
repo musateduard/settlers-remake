@@ -26,13 +26,12 @@ import jsettlers.network.synchronic.timer.NetworkTimer;
 
 /**
  * This is a {@link ITaskScheduler} implementation that supports offline gameplay. It directly schedules the tasks in the {@link NetworkTimer}.
- * 
+ *
  * @author Andreas Eberle
- * 
  */
 public class OfflineNetworkConnector implements ITaskScheduler, INetworkConnector {
 
-	private final NetworkTimer networkTimer = new NetworkTimer(true);
+	public final NetworkTimer networkTimer = new NetworkTimer(true);
 	private boolean startFinished;
 
 	@Override
@@ -42,7 +41,7 @@ public class OfflineNetworkConnector implements ITaskScheduler, INetworkConnecto
 
 	/**
 	 * Schedules the given task for execution in the given targetLockstep.
-	 * 
+	 *
 	 * @param targetLockstep
 	 *            Time the task should be scheduled in milliseconds.
 	 * @param task
@@ -76,5 +75,4 @@ public class OfflineNetworkConnector implements ITaskScheduler, INetworkConnecto
 	public boolean haveAllPlayersStartFinished() {
 		return startFinished;
 	}
-
 }

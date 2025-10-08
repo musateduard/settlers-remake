@@ -282,8 +282,8 @@ public class LWJGLDrawContext extends GLDrawContext {
 
         this.bindGeometry(vertexBuffer);
         this.setObjectLabel(KHRDebug.GL_BUFFER, vertexBuffer.getBufferId(), "background");
-		glBufferData(GL_ARRAY_BUFFER, (long) vertices * 6 * 4, GL_DYNAMIC_DRAW);
 
+		glBufferData(GL_ARRAY_BUFFER, (long) vertices * 6 * 4, GL_DYNAMIC_DRAW);
 
 		BackgroundDrawHandle handle = new BackgroundDrawHandle(this, vao, texture, vertexBuffer);
 

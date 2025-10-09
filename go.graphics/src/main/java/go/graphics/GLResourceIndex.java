@@ -47,6 +47,6 @@ public abstract class GLResourceIndex {
 
 	@Override
 	public String toString() {
-        return String.format("%s[index=%d]", this.getClass().getSimpleName(), this.id);
+        return "%s[index=%d]".formatted(this.getClass().getSimpleName(), this.id);
 	}
 }

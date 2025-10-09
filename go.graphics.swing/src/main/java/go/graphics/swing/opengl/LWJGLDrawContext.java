@@ -513,8 +513,8 @@ public class LWJGLDrawContext extends GLDrawContext {
 	@Override
 	public void drawUnified(
         UnifiedDrawHandle call,
-        int primitive, int count, int mode,
-        float x, float y, float z, float sx, float sy,
+        int primitive, int vertexCount, int mode,
+        float offsetX, float offsetY, float offsetZ, float sizeX, float sizeY,
         AbstractColor color, float intensity) {
 
 		if (call.texture != null) {
@@ -548,6 +548,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 			red = green = blue = alpha = 1;
 		}
 
+        // update uniform color
 		if (this.ulr != red ||
             this.ulg != green ||
             this.ulb != blue ||
@@ -560,16 +561,30 @@ public class LWJGLDrawContext extends GLDrawContext {
 			this.ula = alpha;
 			this.uli = intensity;
 
-			glUniform1fv(this.prog_unified.color, new float[] {red, green, blue, alpha, intensity});
+            float[] colorValue = {
+                red, green, blue,
+                alpha, intensity
+            };
+
+			glUniform1fv(this.prog_unified.color, colorValue);
 		}
 
+        // apply uniform mode
 		if (this.ulm != mode) {
             this.ulm = mode;
 			glUniform1i(this.prog_unified.mode, mode);
 		}
 
-		glUniform3fv(this.prog_unified.trans, new float[] {x, y, z, sx, sy, 0});
-		glDrawArrays(primitive, call.offset, count);
+        float[] spritePosition = {
+            offsetX, offsetY, offsetZ,
+            sizeX, sizeY, 0
+        };
+
+        // specify uniform position
+		glUniform3fv(this.prog_unified.trans, spritePosition);
+
+        // draw sprite
+		glDrawArrays(primitive, call.offset, vertexCount);
 
         return;
 	}

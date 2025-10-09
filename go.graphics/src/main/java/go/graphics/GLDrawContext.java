@@ -1,12 +1,11 @@
 package go.graphics;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
-
-import go.graphics.text.AbstractTextDrawer;
+import java.util.ArrayList;
+import java.nio.ByteBuffer;
 import go.graphics.text.EFontSize;
 import go.graphics.text.TextDrawer;
+import go.graphics.text.AbstractTextDrawer;
 
 
 public abstract class GLDrawContext {
@@ -23,8 +22,8 @@ public abstract class GLDrawContext {
     /**
      * Returns a texture id which is positive or 0. It returns a negative number on error.
      *
-     * @param image The data as array. It needs to have a length of width * height and each element is a color with: 4 bits red, 4 bits green, 4 bits
-     *              blue and 4 bits alpha.
+     * @param image The data as array. It needs to have a length of width * height and each element is a color with:
+     *              4 bits red, 4 bits green, 4 bits blue and 4 bits alpha.
      * @return The id of the generated texture.
      */
     public abstract TextureHandle generateTexture(ImageData image, String name);
@@ -73,8 +72,7 @@ public abstract class GLDrawContext {
 	/**
 	 * Gets a text drawer for the given text size.
 	 *
-	 * @param size
-	 *            The size for the drawer.
+	 * @param size The size for the drawer.
 	 * @return An instance of a drawer for that size.
 	 */
 	public TextDrawer getTextDrawer(EFontSize size) {
@@ -116,13 +114,13 @@ public abstract class GLDrawContext {
 
 	public ManagedUnifiedDrawHandle createManagedUnifiedDrawCall(ImageData texture, float offsetX, float offsetY, int width, int height) {
 
-		int texWidth = texture.getWidth();
-		int texHeight = texture.getHeight();
+		int textureWidth = texture.getWidth();
+		int textureHeight = texture.getHeight();
 
 		for (ManagedHandle handle : this.managedHandles) {
 
 			int position;
-			if (handle.quad_index != handle.quad_count && (position = handle.findTextureHole(texWidth, texHeight)) != -1) {
+			if (handle.quad_index != handle.quad_count && (position = handle.findTextureHole(textureWidth, textureHeight)) != -1) {
 
 				UIPoint corner;
 				if ((corner = handle.addTexture(texture, position)) == null) {
@@ -131,10 +129,10 @@ public abstract class GLDrawContext {
 
 				float lu = (float) corner.getX();
 				float lv = (float) corner.getY();
-				float hu = lu + texWidth/(float) handle.texture_size;
-				float hv = lv + texHeight/(float) handle.texture_size;
+				float hu = lu + textureWidth / (float) handle.texture_size;
+				float hv = lv + textureHeight / (float) handle.texture_size;
 
-				float[] data = GLDrawContext.createQuadGeometry(offsetX, -offsetY, offsetX+width, -offsetY-height, lu, lv, hu, hv);
+				float[] data = GLDrawContext.createQuadGeometry(offsetX, -offsetY, offsetX + width, -offsetY - height, lu, lv, hu, hv);
 
 				handle.addQuad(data);
 
@@ -222,6 +220,6 @@ public abstract class GLDrawContext {
 
 
 	protected String getManagedHandleDefine() {
-		return "#define MAX_GEOMETRY_DATA_QUAD_COUNT " + this.getMaxManagedQuads();
+		return "#define MAX_GEOMETRY_DATA_QUAD_COUNT %d".formatted(this.getMaxManagedQuads());
 	}
 }

@@ -479,7 +479,7 @@ public class VulkanDrawContext extends GLDrawContext implements VkDrawContext {
 	private final Matrix4f global = new Matrix4f();
 
 	@Override
-	public void setGlobalAttributes(float x, float y, float z, float sx, float sy, float sz) {
+	public void updateViewMatrix(float x, float y, float z, float sx, float sy, float sz) {
 		if(!commandBufferRecording) return;
 
 		if(globalAttrIndex == VulkanUtils.MAX_GLOBALTRANS_COUNT) throw new Error("Out of globalTrans slots: increase VulkanUtils.MAX_GLOBALTRANS_COUNT");
@@ -748,7 +748,7 @@ public class VulkanDrawContext extends GLDrawContext implements VkDrawContext {
 	private boolean resizeScheduled = false;
 
 	@Override
-	public void resize(int width, int height) {
+	public void updateProjectionMatrix(int width, int height) {
 		newWidth = width;
 		newHeight = height;
 		resize();

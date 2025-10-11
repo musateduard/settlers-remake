@@ -20,7 +20,7 @@ import jsettlers.common.Color;
 
 /**
  * This is an image that can be displayed on the GUI.
- * 
+ *
  * @author michael
  *
  */
@@ -28,22 +28,27 @@ public abstract class Image {
 
 	/**
 	 * Gets the (pixel) width of this image.
-	 * 
+	 *
 	 * @return The image width.
 	 */
 	public abstract int getWidth();
 
 	/**
 	 * Gets the (pixel) height of this image.
-	 * 
+	 *
 	 * @return The image height.
 	 */
 	public abstract int getHeight();
 
-	public void drawAt(GLDrawContext gl, float x, float y, float z, Color torsoColor, float fow) {
-		drawOnlyImageAt(gl, x, y, z, torsoColor, fow);
-		drawOnlyShadowAt(gl, x, y, z);
+
+	public void drawAt(GLDrawContext glContext, float modelX, float modelY, float modelZ, Color torsoColor, float fow) {
+
+		this.drawOnlyImageAt(glContext, modelX, modelY, modelZ, torsoColor, fow);
+		this.drawOnlyShadowAt(glContext, modelX, modelY, modelZ);
+
+        return;
 	}
+
 
 	public void drawOnlyImageAt(GLDrawContext gl, float x, float y, float z, Color torsoColor, float fow) {}
 	public void drawOnlyShadowAt(GLDrawContext gl, float x, float y, float z) {}
@@ -52,7 +57,7 @@ public abstract class Image {
 
 	/**
 	 * Draws the image at a given rectangle.
-	 * 
+	 *
 	 * @param gl
 	 *            The gl context to draw on.
 	 * @param x
@@ -69,7 +74,7 @@ public abstract class Image {
 
 	/**
 	 * Multiplies the color with an float.
-	 * 
+	 *
 	 * @param color
 	 *            The color
 	 * @param multiply
@@ -91,7 +96,7 @@ public abstract class Image {
 
 	/**
 	 * Creates a crash report. This should not happen if we check that the texture is valid every time.
-	 * 
+	 *
 	 * @param e
 	 *            The exception.
 	 */

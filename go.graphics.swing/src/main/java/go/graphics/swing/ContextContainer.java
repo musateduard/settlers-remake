@@ -74,7 +74,7 @@ public abstract class ContextContainer extends JPanel implements GOEventHandlerP
             throw new ContextException();
         }
 
-		this.context.resize(width, height);
+		this.context.updateProjectionMatrix(width, height);
         return;
 	}
 

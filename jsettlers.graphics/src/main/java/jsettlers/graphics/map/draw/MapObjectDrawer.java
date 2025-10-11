@@ -1309,75 +1309,116 @@ public class MapObjectDrawer {
 		return (float) fogStatus / CommonConstants.FOG_OF_WAR_VISIBLE;
 	}
 
+
 	/**
-	 * Draws a given buildng to the context.
+	 * Draws a given building to the context.
 	 *
-	 * @param x
-	 * 		The x coordinate of the building
-	 * @param y
-	 * 		The y coordinate of the building
-	 * @param building
-	 * 		The building to draw
-	 * @param color
-	 * 		Gray color shade
+	 * @param tileX The x coordinate of the building
+	 * @param tileY The y coordinate of the building
+	 * @param building The building to draw
+	 * @param fowValue Gray color shade
 	 */
-	private void drawBuilding(int x, int y, IBuilding building, float color) {
-		BuildingVariant variant = building.getBuildingVariant();
+	private void drawBuilding(int tileX, int tileY, IBuilding building, float fowValue) {
 
-		float state = building.getStateProgress();
+		BuildingVariant buildingVariant = building.getBuildingVariant();
+		float constructionProgress = building.getStateProgress();
 
-		if (state >= 0.99) {
-			if (variant.isVariantOf(EBuildingType.SLAUGHTERHOUSE) && building instanceof IBuilding.ISoundRequestable && ((IBuilding.ISoundRequestable) building).isSoundRequested()) {
-				playSound(building, SOUND_SLAUGHTERHOUSE, x, y);
+        // draw fully constructed building
+		if (constructionProgress >= 0.99) {
+
+            // play slaughterhouse sound
+			if (buildingVariant.isVariantOf(EBuildingType.SLAUGHTERHOUSE) && building instanceof IBuilding.ISoundRequestable && ((IBuilding.ISoundRequestable) building).isSoundRequested()) {
+                this.playSound(building, MapObjectDrawer.SOUND_SLAUGHTERHOUSE, tileX, tileY);
 			}
 
-			if (variant.isVariantOf(EBuildingType.MILL) && building instanceof IBuilding.IMill && ((IBuilding.IMill) building).isRotating()) {
-				Sequence<? extends Image> seq = this.imageProvider.getSettlerSequence(this.imageProvider.getGFXBuildingFileIndex(variant.getCivilisation()), this.imageProvider.getMillRotationIndex(variant.getCivilisation()));
+            // play spinning mill sound
+			if (buildingVariant.isVariantOf(EBuildingType.MILL) && building instanceof IBuilding.IMill && ((IBuilding.IMill) building).isRotating()) {
 
-				if (seq.length() > 0) {
-					int i = getAnimationStep(x, y);
-					int step = i % seq.length();
-					drawOnlyImage(seq.getImageSafe(step, () -> "mill-" + step), x, y, 0, MapDrawContext.getPlayerColor(building.getPlayer().getPlayerId()), color);
-					ImageLink[] images = variant.getImages();
-					if (images.length > 0) {
-						Image image = imageProvider.getImage(images[0]);
-						drawOnlyShadow(image, x, y);
+                int fileIndex = this.imageProvider.getGFXBuildingFileIndex(buildingVariant.getCivilisation());
+                int sequenceNumber = this.imageProvider.getMillRotationIndex(buildingVariant.getCivilisation());
+
+				Sequence<? extends Image> animationSequence = this.imageProvider.getSettlerSequence(fileIndex, sequenceNumber);
+
+				if (animationSequence.length() > 0) {
+
+					int animationFrame = this.getAnimationStep(tileX, tileY);
+					int step = animationFrame % animationSequence.length();
+                    Color playerColor = MapDrawContext.getPlayerColor(building.getPlayer().getPlayerId());
+
+					this.drawOnlyImage(animationSequence.getImageSafe(step, () -> "mill-" + step), tileX, tileY, 0, playerColor, fowValue);
+
+                    ImageLink[] images = buildingVariant.getImages();
+
+                    if (images.length > 0) {
+						Image image = this.imageProvider.getImage(images[0]);
+                        this.drawOnlyShadow(image, tileX, tileY);
 					}
 				}
-				playSound(building, SOUND_MILL, x, y);
 
-			} else if(variant.isVariantOf(EBuildingType.STOCK)) {
-				float[] zvalues = new float[] {-4*z_per_y, -2*z_per_y, 2*z_per_y, 3*z_per_y, 2*z_per_y, -2*z_per_y};
-				ImageLink[] images = variant.getImages();
-				for (int i = 0; i != 6; i++) {
-					draw(imageProvider.getImage(images[i]), x, y, zvalues[i], color);
-				}
-			} else {
-				ImageLink[] images = variant.getImages();
-				if (images.length > 0) {
-					Image image = imageProvider.getImage(images[0]);
-					draw(image, x, y, building.getBuildingVariant().isVariantOf(EBuildingType.MARKET_PLACE) ? BACKGROUND_Z : 0, null, color);
-				}
+                this.playSound(building, MapObjectDrawer.SOUND_MILL, tileX, tileY);
+			}
 
-				byte fow = visibleGrid != null ? visibleGrid[x][y] : CommonConstants.FOG_OF_WAR_VISIBLE;
+            // note: should these else statements be tied to the mill sound player?
 
-				if (building instanceof IOccupied && fow > CommonConstants.FOG_OF_WAR_EXPLORED) {
-					drawOccupiers(x, y, (IOccupied) building, color);
-				}
+            // draw stock buildings along with all the stockpiles
+            else if (buildingVariant.isVariantOf(EBuildingType.STOCK)) {
 
-				for (int i = 1; i < images.length; i++) {
-					Image image = imageProvider.getImage(images[i]);
-					draw(image, x, y, tower_front_offset, color);
+				float[] zValues = new float[] {
+                    -4 * this.z_per_y,
+                    -2 * this.z_per_y,
+                    2 * this.z_per_y,
+                    3 * this.z_per_y,
+                    2 * this.z_per_y,
+                    -2 * this.z_per_y
+                };
+
+				ImageLink[] images = buildingVariant.getImages();
+				for (int index = 0; index != 6; index++) {
+                    this.draw(this.imageProvider.getImage(images[index]), tileX, tileY, zValues[index], fowValue);
 				}
 			}
-		} else if (state >= .01f) {
-			drawBuildingConstruction(x, y, color, variant, state);
+
+            // draw the building itself
+            else {
+
+				ImageLink[] images = buildingVariant.getImages();
+
+                if (images.length > 0) {
+
+					Image image = this.imageProvider.getImage(images[0]);
+                    float tileZ = building.getBuildingVariant().isVariantOf(EBuildingType.MARKET_PLACE) ? MapObjectDrawer.BACKGROUND_Z : 0;
+
+                    this.draw(image, tileX, tileY, tileZ, null, fowValue);
+				}
+
+				byte fogOfWar = this.visibleGrid != null ? this.visibleGrid[tileX][tileY] : CommonConstants.FOG_OF_WAR_VISIBLE;
+
+				if (building instanceof IOccupied && fogOfWar > CommonConstants.FOG_OF_WAR_EXPLORED) {
+                    this.drawOccupiers(tileX, tileY, (IOccupied) building, fowValue);
+				}
+
+                // note: why does this index start at 1?
+
+				for (int index = 1; index < images.length; index++) {
+					Image image = this.imageProvider.getImage(images[index]);
+                    this.draw(image, tileX, tileY, this.tower_front_offset, fowValue);
+				}
+			}
 		}
 
-		if (building.isSelected()) {
-			drawBuildingSelectMarker(x, y);
+        // draw building under construction
+        else if (constructionProgress >= .01f) {
+			this.drawBuildingConstruction(tileX, tileY, fowValue, buildingVariant, constructionProgress);
 		}
+
+        // draw selection marker on top of building
+		if (building.isSelected()) {
+			this.drawBuildingSelectMarker(tileX, tileY);
+		}
+
+        return;
 	}
+
 
 	private void drawBuildingConstruction(int x, int y, float color, BuildingVariant variant, float state) {
 		boolean hasTwoConstructionPhases = variant.getBuildImages().length > 0;
@@ -1529,13 +1570,18 @@ public class MapObjectDrawer {
 		draw(image, x, y, z, color, 1);
 	}
 
-	private void draw(Image image, int x, int y, float z, Color color, float fowDim) {
-		int height = context.getHeight(x, y);
-		float viewX = context.getConverter().getViewX(x, y, height);
-		float viewY = context.getConverter().getViewY(x, y, height);
 
-		image.drawAt(context.getGl(), viewX, viewY, getZ(z, y), color, fowDim);
+	private void draw(Image image, int tileX, int tileY, float tileZ, Color color, float fowDim) {
+
+		int height = this.context.getHeight(tileX, tileY);
+		float viewX = this.context.getConverter().getViewX(tileX, tileY, height);
+		float viewY = this.context.getConverter().getViewY(tileX, tileY, height);
+
+		image.drawAt(this.context.getGl(), viewX, viewY, this.getZ(tileZ, tileY), color, fowDim);
+
+        return;
 	}
+
 
 	private void draw(Image image, int x, int y, float z, float fowDim) {
 		draw(image, x, y, z, null, fowDim);

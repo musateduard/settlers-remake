@@ -151,7 +151,7 @@ public final class MapDrawContext implements IGLProvider {
 
 		this.offsetX = (int) (-this.screen.getLeft() + .5f);
 		this.offsetY = (int) (-this.screen.getBottom() + .5f);
-		this.glContext.setGlobalAttributes(this.offsetX, this.offsetY, 0, zoom, zoom, 1);
+		this.glContext.updateViewMatrix(this.offsetX, this.offsetY, 0, zoom, zoom, 1);
 
         return;
 	}
@@ -175,7 +175,7 @@ public final class MapDrawContext implements IGLProvider {
 	}
 
 	/**
-	 * Gets the current gl context, of <code>null</code> if it is called outside a gl drawing session.
+	 * Gets the current gl context, of {@code null} if it is called outside a gl drawing session.
 	 *
 	 * @return The gl context that was given to {@link #begin(GLDrawContext)}
 	 */

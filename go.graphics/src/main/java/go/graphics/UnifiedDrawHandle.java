@@ -153,21 +153,21 @@ public class UnifiedDrawHandle extends GLResourceIndex {
 	}
 
 
-	public void drawComplexQuad(int mode, float x, float y, float z, float sx, float sy, AbstractColor color, float intensity) {
+	public void drawComplexQuad(int mode, float modelX, float modelY, float modelZ, float scaleX, float scaleY, AbstractColor color, float intensity) {
 
 		if (this.frameIndex != this.drawContext.frameIndex) {
             this.nextFrame();
         }
 
-		if (this.trans != null && sx == 1 && sy == 1) {
+		if (this.trans != null && scaleX == 1 && scaleY == 1) {
 
 			if (this.cache_index == UnifiedDrawHandle.MAX_CACHE_ENTRIES) {
                 this.flush();
             }
 
-			this.trans[this.cache_index * 4] = x;
-			this.trans[this.cache_index * 4 + 1] = y;
-			this.trans[this.cache_index * 4 + 2] = z;
+			this.trans[this.cache_index * 4] = modelX;
+			this.trans[this.cache_index * 4 + 1] = modelY;
+			this.trans[this.cache_index * 4 + 2] = modelZ;
 			this.trans[this.cache_index * 4 + 3] = (mode * 10) + intensity + 1;
 
 			this.colors[this.cache_index * 4] = color != null ? color.red : 1;
@@ -179,7 +179,7 @@ public class UnifiedDrawHandle extends GLResourceIndex {
 		}
 
         else {
-            this.drawContext.drawUnified(this, EPrimitiveType.Quad, 4, mode, x, y, z, sx, sy, color, intensity);
+            this.drawContext.drawUnified(this, EPrimitiveType.Quad, 4, mode, modelX, modelY, modelZ, scaleX, scaleY, color, intensity);
 		}
 
         this.frame_drawcalls++;

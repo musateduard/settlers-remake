@@ -36,11 +36,11 @@ import static org.lwjgl.opengl.GL20C.*;
 public class LWJGLDrawContext extends GLDrawContext {
 
     private final ArrayList<ShaderProgram> shaders;
-    private final Matrix4f global = new Matrix4f();
-    private final Matrix4f mat = new Matrix4f();
-    private final FloatBuffer materialBuffer = BufferUtils.createFloatBuffer(16);
+    private final Matrix4f viewMatrix = new Matrix4f();
+    private final Matrix4f projectionMatrix = new Matrix4f();
+    private final FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
     private LWJGLDebugOutput debugOutput = null;
-    final GLCapabilities glcaps;
+    final GLCapabilities glCapabilities;
     private BufferHandle lastGeometry = null;
     private TextureHandle[] lastTextures = new TextureHandle[2];
     private ShaderProgram lastProgram = null;
@@ -59,9 +59,9 @@ public class LWJGLDrawContext extends GLDrawContext {
     private boolean[] vertArrays = new boolean[4];
 
 
-	public LWJGLDrawContext(GLCapabilities glcaps, boolean debug, float guiScale) {
+	public LWJGLDrawContext(GLCapabilities glCapabilities, boolean debug, float guiScale) {
 
-		this.glcaps = glcaps;
+		this.glCapabilities = glCapabilities;
 		this.shaders = new ArrayList<>();
 		this.maxTextureSize = glGetInteger(GL_MAX_TEXTURE_SIZE);
 		this.maxUniformBlockSize = glGetInteger(GL_MAX_UNIFORM_BLOCK_SIZE);
@@ -78,11 +78,11 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-		if (glcaps.GL_ARB_instanced_arrays && glcaps.GL_ARB_uniform_buffer_object && false) {
+		if (glCapabilities.GL_ARB_instanced_arrays && glCapabilities.GL_ARB_uniform_buffer_object && false) {
 			this.prog_unified_multi = new ShaderProgram("unified-multi");
 		}
 
-		if (glcaps.GL_EXT_draw_instanced && false) {
+		if (glCapabilities.GL_EXT_draw_instanced && false) {
             this.prog_unified_array = new ShaderProgram("unified-array");
         }
 
@@ -152,13 +152,13 @@ public class LWJGLDrawContext extends GLDrawContext {
                 continue;
             }
 
-			int id = 0;
+			int textureId = 0;
 			if (texture != null) {
-				id = texture.getTextureId();
+				textureId = texture.getTextureId();
 			}
 
 			glActiveTexture(GL_TEXTURE0 + index);
-			glBindTexture(GL_TEXTURE_2D, id);
+			glBindTexture(GL_TEXTURE_2D, textureId);
 		}
 
 		this.lastTextures = textures;
@@ -205,7 +205,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 	private void setObjectLabel(int type, int id, String name) {
 
-		if (this.debugOutput != null && this.glcaps.GL_KHR_debug) {
+		if (this.debugOutput != null && this.glCapabilities.GL_KHR_debug) {
 			KHRDebug.glObjectLabel(type, id, name);
 		}
 
@@ -213,33 +213,33 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	public void setGlobalAttributes(float x, float y, float z, float sx, float sy, float sz) {
+	public void updateViewMatrix(float offsetX, float offsetY, float offsetZ, float scaleX, float scaleY, float scaleZ) {
 
         this.finishFrame();
 
-		this.global.identity();
-		this.global.scale(sx, sy, sz);
-		this.global.translate(x, y, z);
-		this.global.get(this.materialBuffer);
+		this.viewMatrix.identity();
+		this.viewMatrix.scale(scaleX, scaleY, scaleZ);
+		this.viewMatrix.translate(offsetX, offsetY, offsetZ);
+		this.viewMatrix.get(this.matrixBuffer);
 
 		for (ShaderProgram shader : this.shaders) {
             this.useProgram(shader);
-			glUniformMatrix4fv(shader.global, false, this.materialBuffer);
+			glUniformMatrix4fv(shader.global, false, this.matrixBuffer);
 		}
 
         return;
 	}
 
 
-	public void resize(int width, int height) {
+	public void updateProjectionMatrix(int screenWidth, int screenHeight) {
 
-		glViewport(0, 0, width, height);
-		this.mat.setOrtho(0, width, 0, height, -1, 1);
-		this.mat.get(this.materialBuffer);
+		glViewport(0, 0, screenWidth, screenHeight);
+		this.projectionMatrix.setOrtho(0, screenWidth, 0, screenHeight, -1, 1);
+		this.projectionMatrix.get(this.matrixBuffer);
 
 		for (ShaderProgram shader : this.shaders) {
             this.useProgram(shader);
-			glUniformMatrix4fv(shader.projection, false, this.materialBuffer);
+			glUniformMatrix4fv(shader.projection, false, this.matrixBuffer);
 		}
 
         return;
@@ -274,7 +274,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		int vao = -1;
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
             vao = glGenVertexArrays();
         }
 
@@ -287,7 +287,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		BackgroundDrawHandle handle = new BackgroundDrawHandle(this, vao, texture, vertexBuffer);
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
             this.bindFormat(vao);
             this.setObjectLabel(GL_VERTEX_ARRAY, vao, "background-vao");
             this.fillBackgroundFormat(handle);
@@ -302,7 +302,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		int vao = -1;
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
             vao = glGenVertexArrays();
         }
 
@@ -321,7 +321,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		UnifiedDrawHandle handle = new UnifiedDrawHandle(this, vao, 0, vertices, texture, texture2, vertexBuffer);
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
 			this.bindFormat(vao);
 			this.setObjectLabel(GL_VERTEX_ARRAY, vao, name + "-vao");
 			this.fillUnifiedFormat(handle);
@@ -340,7 +340,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		int vao = -1;
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
             vao = glGenVertexArrays();
         }
 
@@ -352,7 +352,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		MultiDrawHandle handle = new MultiDrawHandle(this, vao, MultiDrawHandle.MAX_CACHE_ENTRIES, source, drawCalls);
 
-		if (this.glcaps.GL_ARB_vertex_array_object) {
+		if (this.glCapabilities.GL_ARB_vertex_array_object) {
 			this.bindFormat(vao);
 			this.setObjectLabel(GL_VERTEX_ARRAY, vao, name + "-vao");
 			this.fillMultiFormat(handle);
@@ -481,7 +481,7 @@ public class LWJGLDrawContext extends GLDrawContext {
             this.useProgram(this.prog_unified_array);
 
 			glUniform4fv(this.prog_unified_array.color, colors);
-			glUniform4fv(this.prog_unified_array.trans, trans);
+			glUniform4fv(this.prog_unified_array.transform, trans);
 
 			glDrawArraysInstancedARB(primitive, call.offset, vertexCount, array_len);
 		}
@@ -497,7 +497,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 				glUniform1i(prog_unified.mode, mode);
 				glUniform1fv(prog_unified.color, new float[] {colors[index * 4], colors[index * 4 + 1], colors[index * 4 + 2], colors[index * 4 + 3], intensity});
-				glUniform3fv(prog_unified.trans, new float[] {trans[index * 4], trans[index * 4 + 1], trans[index * 4 + 2], 1, 1, 0});
+				glUniform3fv(prog_unified.transform, new float[] {trans[index * 4], trans[index * 4 + 1], trans[index * 4 + 2], 1, 1, 0});
 
 				glDrawArrays(primitive, call.offset, vertexCount);
 			}
@@ -511,83 +511,86 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 
 	@Override
-	public void drawUnified(
+    public void drawUnified(
         UnifiedDrawHandle call,
         int primitive, int vertexCount, int mode,
-        float offsetX, float offsetY, float offsetZ, float sizeX, float sizeY,
+        float modelX, float modelY, float modelZ, float scaleX, float scaleY,
         AbstractColor color, float intensity) {
 
-		if (call.texture != null) {
+        // bind texture
+        if (call.texture != null) {
             this.bindTextures(call.texture, call.texture2);
         }
 
+        // activate shader
         this.useProgram(this.prog_unified);
 
-		if (call.getVertexArrayId() != -1) {
+        // set vao
+        if (call.getVertexArrayId() != -1) {
             this.bindFormat(call.getVertexArrayId());
-		}
+        }
 
         else {
-			this.enableVertArrays(true, call.texture != null, false, false);
-			this.fillUnifiedFormat(call);
-		}
+            this.enableVertArrays(true, call.texture != null, false, false);
+            this.fillUnifiedFormat(call);
+        }
 
-		float red;
-		float green;
-		float blue;
-		float alpha;
+        float red;
+        float green;
+        float blue;
+        float alpha;
 
-		if (color != null) {
-			red = color.red;
-			green = color.green;
-			blue = color.blue;
-			alpha = color.alpha;
-		}
+        if (color != null) {
+            red = color.red;
+            green = color.green;
+            blue = color.blue;
+            alpha = color.alpha;
+        }
 
         else {
-			red = green = blue = alpha = 1;
-		}
+            red = green = blue = alpha = 1;
+        }
 
-        // update uniform color
-		if (this.ulr != red ||
+        // update color uniform
+        if (this.ulr != red ||
             this.ulg != green ||
             this.ulb != blue ||
             this.ula != alpha ||
             this.uli != intensity) {
 
-			this.ulr = red;
-			this.ulg = green;
-			this.ulb = blue;
-			this.ula = alpha;
-			this.uli = intensity;
+            this.ulr = red;
+            this.ulg = green;
+            this.ulb = blue;
+            this.ula = alpha;
+            this.uli = intensity;
 
             float[] colorValue = {
                 red, green, blue,
                 alpha, intensity
             };
 
-			glUniform1fv(this.prog_unified.color, colorValue);
-		}
+            glUniform1fv(this.prog_unified.color, colorValue);
+        }
 
-        // apply uniform mode
-		if (this.ulm != mode) {
+        // apply mode uniform
+        if (this.ulm != mode) {
             this.ulm = mode;
-			glUniform1i(this.prog_unified.mode, mode);
-		}
+            glUniform1i(this.prog_unified.mode, mode);
+        }
 
-        float[] spritePosition = {
-            offsetX, offsetY, offsetZ,
-            sizeX, sizeY, 0
+        float[] spriteModelMatrix = {
+            modelX, modelY, modelZ,
+            scaleX, scaleY, 0
         };
 
-        // specify uniform position
-		glUniform3fv(this.prog_unified.trans, spritePosition);
+        // send sprite position uniform
+        glUniform3fv(this.prog_unified.transform, spriteModelMatrix);
 
         // draw sprite
-		glDrawArrays(primitive, call.offset, vertexCount);
+        glDrawArrays(primitive, call.offset, vertexCount);
 
         return;
-	}
+    }
 
 
 	public void drawBackground(BackgroundDrawHandle handle) {
@@ -625,7 +628,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		public final int program;
 		public final int projection;
 		public final int global;
-		public final int trans;
+		public final int transform;
 		public final int tex;
 		public final int tex2;
 		public final int color;
@@ -688,7 +691,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 			this.projection = glGetUniformLocation(this.program, "projection");
 			this.global = glGetUniformLocation(this.program, "globalTransform");
-			this.trans = glGetUniformLocation(this.program, "transform");
+			this.transform = glGetUniformLocation(this.program, "transform");
 			this.tex = glGetUniformLocation(this.program, "texHandle");
 			this.tex2 = glGetUniformLocation(this.program, "tex2Handle");
 			this.color = glGetUniformLocation(this.program, "color");
@@ -696,7 +699,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 			this.mode = glGetUniformLocation(this.program, "mode");
 			this.shadow_depth = glGetUniformLocation(this.program, "shadow_depth");
 
-			if (glcaps.GL_ARB_uniform_buffer_object) {
+			if (glCapabilities.GL_ARB_uniform_buffer_object) {
 
                 this.geometry_data = glGetUniformBlockIndex(this.program, "geometryDataBuffer");
 
@@ -770,7 +773,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		private int createShader(String name, int type) throws IOException {
 
-			if (glcaps.OpenGL33) {
+			if (glCapabilities.OpenGL33) {
 				name = "gl33/" + name;
 			}
 

@@ -27,9 +27,9 @@ public class LWJGLDebugOutput {
 
 	LWJGLDebugOutput(LWJGLDrawContext dc) {
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		if(dc.glcaps.GL_KHR_debug) {
+		if(dc.glCapabilities.GL_KHR_debug) {
 			glDebugMessageCallback(debugCallback, 0);
-		} else if(dc.glcaps.GL_ARB_debug_output) {
+		} else if(dc.glCapabilities.GL_ARB_debug_output) {
 			glDebugMessageCallbackARB(debugCallbackARB, 0);
 		}
 	}

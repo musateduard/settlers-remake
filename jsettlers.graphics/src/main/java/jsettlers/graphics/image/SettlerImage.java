@@ -27,11 +27,12 @@ import jsettlers.graphics.image.reader.ImageMetadata;
 import go.graphics.ImageData;
 import jsettlers.graphics.image.reader.translator.ImageDataProducer;
 
+
 /**
- * This is the image of something that is displayed as an object on the map, e.g. an settler.
+ * This is the image of something that is displayed as an object on the map, e.g. a settler.
  * <p>
  * It can have a torso, an overlay that is always drawn together with the image.
- * 
+ *
  * @author michael
  */
 public class SettlerImage extends SingleImage {
@@ -40,25 +41,32 @@ public class SettlerImage extends SingleImage {
 	private SingleImage torso = null;
 	private SingleImage shadow = null;
 
+
 	/**
 	 * Creates a new settler image.
-	 * 
-	 * @param metadata
-	 *            The mata data to use.
-	 * @param data
-	 *            The data to use.
-	 * @param name
-	 * 				The name of the image.
+	 *
+	 * @param metadata The mata data to use.
+	 * @param data The data to use.
+	 * @param name The name of the image.
 	 */
 	public SettlerImage(ImageMetadata metadata, ImageDataProducer data, String name) {
 		super(metadata, data, name);
+        return;
 	}
 
+
 	@Override
-	public void drawAt(GLDrawContext gl, float x, float y, float z, Color torsoColor, float fow) {
-		checkHandles(gl);
-		geometryIndex.drawComplexQuad(EUnifiedMode.SETTLER_SHADOW, x, y, z, 1, 1, torsoColor, fow);
+	public void drawAt(GLDrawContext glContext, float modelX, float modelY, float modelZ, Color torsoColor, float fow) {
+
+        int scaleX = 1;
+        int scaleY = 1;
+
+        this.checkHandles(glContext);
+		this.geometryIndex.drawComplexQuad(EUnifiedMode.SETTLER_SHADOW, modelX, modelY, modelZ, scaleX, scaleY, torsoColor, fow);
+
+        return;
 	}
+
 
 	@Override
 	public void drawOnlyImageAt(GLDrawContext gl, float x, float y, float z, Color torsoColor, float fow) {
@@ -74,7 +82,7 @@ public class SettlerImage extends SingleImage {
 
 	/**
 	 * Sets the image overlay.
-	 * 
+	 *
 	 * @param torso
 	 *            The torso. May be null.
 	 */
@@ -88,7 +96,7 @@ public class SettlerImage extends SingleImage {
 
 	/**
 	 * Gets the torso for this image.
-	 * 
+	 *
 	 * @return The torso.
 	 */
 	public SingleImage getTorso() {

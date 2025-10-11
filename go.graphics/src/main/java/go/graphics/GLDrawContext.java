@@ -32,7 +32,7 @@ public abstract class GLDrawContext {
     protected abstract void drawUnified(UnifiedDrawHandle call, int primitive, int vertices, int mode, float x, float y, float z, float sx, float sy, AbstractColor color, float intensity);
     public abstract void drawBackground(BackgroundDrawHandle call);
     public abstract void setHeightMatrix(float[] matrix);
-    public abstract void setGlobalAttributes(float x, float y, float z, float sx, float sy, float sz);
+    public abstract void updateViewMatrix(float offsetX, float offsetY, float offsetZ, float scaleX, float scaleY, float scaleZ);
     public abstract void setShadowDepthOffset(float depth);
 
     /**
@@ -60,7 +60,7 @@ public abstract class GLDrawContext {
     public abstract UnifiedDrawHandle createUnifiedDrawCall(int vertices, String name, TextureHandle texture, TextureHandle texture2, float[] data);
     protected abstract MultiDrawHandle createMultiDrawCall(String name, ManagedHandle source);
     public abstract void clearDepthBuffer();
-    public abstract void resize(int width, int height);
+    public abstract void updateProjectionMatrix(int screenWidth, int screenHeight);
 
 
 	public GLDrawContext() {
@@ -105,7 +105,7 @@ public abstract class GLDrawContext {
 
 		TextureHandle tex = this.generateTexture(new ImageData(texture_size, texture_size), "managed" + ManagedHandle.instance_count);
 		TextureHandle tex2 = this.generateTexture(new ImageData(texture_size, texture_size), "managed" + ManagedHandle.instance_count + "-2");
-		UnifiedDrawHandle parent = this.createUnifiedDrawCall(quad_count*4, "managed" + ManagedHandle.instance_count, tex, tex2, null);
+		UnifiedDrawHandle parent = this.createUnifiedDrawCall(quad_count * 4, "managed" + ManagedHandle.instance_count, tex, tex2, null);
 		this.managedHandles.add(new ManagedHandle(parent, quad_count, texture_size));
 
         return;

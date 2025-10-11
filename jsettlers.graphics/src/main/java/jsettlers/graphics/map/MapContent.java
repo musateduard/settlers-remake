@@ -377,7 +377,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 			start = System.nanoTime();
 			glContext.clearDepthBuffer();
-			glContext.setGlobalAttributes(0, 0, 0, 1, 1, 1);
+			glContext.updateViewMatrix(0, 0, 0, 1, 1, 1);
 
             this.drawSelectionHint(glContext);
 			this.controls.drawAt(glContext);
@@ -420,7 +420,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	private void showError(GLDrawContext gl, Throwable t) {
 		gl.clearDepthBuffer();
-		gl.setGlobalAttributes(0, 0, 0, 1, 1, 1);
+		gl.updateViewMatrix(0, 0, 0, 1, 1, 1);
 		float posX = 0;
 
 		float posY = windowHeight/3f*2f;
@@ -636,31 +636,39 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		drawer.drawString(x, y, string);
 	}
 
+
 	/**
 	 * Draws the main content (buildings, settlers, ...), assuming the context is set up.
 	 */
 	private void drawMain(FloatRectangle screen) {
+
 		MapRectangle area = this.context.getConverter().getMapForScreen(screen);
 
-		double bottomDrawY = screen.getMinY() - OVERDRAW_BOTTOM_PX;
+		double bottomDrawY = screen.getMinY() - MapContent.OVERDRAW_BOTTOM_PX;
 
 		boolean linePartiallyVisible = true;
-		for(int line = 0; line < area.getHeight() + 50 && linePartiallyVisible; line++) {
-			int y = area.getLineY(line);
-			if (y < 0) {
+		for (int line = 0; line < area.getHeight() + 50 && linePartiallyVisible; line++) {
+
+			int offsetY = area.getLineY(line);
+			if (offsetY < 0) {
 				continue;
 			}
-			if (y >= height) {
+
+			if (offsetY >= this.height) {
 				break;
 			}
+
 			linePartiallyVisible = false;
 
 			int endX = Math.min(area.getLineEndX(line), width - 1);
 			int startX = Math.max(area.getLineStartX(line), 0);
-			for(int x = startX; x <= endX; x++) {
-				drawTile(x, y);
-				if(!linePartiallyVisible) {
-					double drawSpaceY = this.context.getConverter().getViewY(x, y, heightGrid == null ? this.context.getHeight(x, y) : heightGrid[x][y]);
+
+			for (int offsetX = startX; offsetX <= endX; offsetX++) {
+
+                this.drawTile(offsetX, offsetY);
+
+                if (!linePartiallyVisible) {
+					double drawSpaceY = this.context.getConverter().getViewY(offsetX, offsetY, this.heightGrid == null ? this.context.getHeight(offsetX, offsetY) : this.heightGrid[offsetX][offsetY]);
 					if (drawSpaceY > bottomDrawY) {
 						linePartiallyVisible = true;
 					}
@@ -668,21 +676,30 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			}
 		}
 
-		if(placementBuilding != null) {
-			ShortPoint2D underMouse = this.context.getPositionOnScreen((float) mousePosition.getX(), (float) mousePosition.getY());
-			if(0 <= underMouse.x && underMouse.x < width && 0 <= underMouse.y && underMouse.y < height) {
-				IMapObject mapObject = map.getVisibleMapObjectsAt(underMouse.x, underMouse.y);
+		if (this.placementBuilding != null) {
+
+			ShortPoint2D underMouse = this.context.getPositionOnScreen((float) this.mousePosition.getX(), (float) this.mousePosition.getY());
+
+            if (0 <= underMouse.x &&
+                underMouse.x < this.width &&
+                0 <= underMouse.y &&
+                underMouse.y < this.height) {
+
+				IMapObject mapObject = this.map.getVisibleMapObjectsAt(underMouse.x, underMouse.y);
 
 				if (mapObject != null && mapObject.getMapObject(EMapObjectType.CONSTRUCTION_MARK) != null) { // if there is a construction mark
-					this.objectDrawer.drawMapObject(underMouse.x, underMouse.y, placementBuilding);
+					this.objectDrawer.drawMapObject(underMouse.x, underMouse.y, this.placementBuilding);
 				}
 			}
 		}
 
-		if(debugColorMode != EDebugColorModes.NONE) {
-			drawDebugColors();
+		if (this.debugColorMode != EDebugColorModes.NONE) {
+            this.drawDebugColors();
 		}
+
+        return;
 	}
+
 
 	private void drawTile(int x, int y) {
 		int tileIndex = x+y*width;

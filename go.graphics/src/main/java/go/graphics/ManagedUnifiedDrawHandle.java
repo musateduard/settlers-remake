@@ -25,14 +25,14 @@ public class ManagedUnifiedDrawHandle extends UnifiedDrawHandle {
 
 
 	@Override
-	public void drawComplexQuad(int mode, float x, float y, float z, float sx, float sy, AbstractColor color, float intensity) {
+	public void drawComplexQuad(int mode, float modelX, float modelY, float modelZ, float scaleX, float scaleY, AbstractColor color, float intensity) {
 
 		if (this.parent.multiCache != null) {
-			this.parent.multiCache.schedule(this, mode, x, y, z, sx, sy, color, intensity);
+			this.parent.multiCache.schedule(this, mode, modelX, modelY, modelZ, scaleX, scaleY, color, intensity);
 		}
 
         else {
-			super.drawComplexQuad(mode, x, y, z, sx, sy, color, intensity);
+			super.drawComplexQuad(mode, modelX, modelY, modelZ, scaleX, scaleY, color, intensity);
 		}
 
         return;

@@ -76,13 +76,18 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
 		}
 	}
 
+
 	@Override
 	public synchronized void startExecution() {
-		if (!scheduled) {
-			scheduled = true;
-			timer.schedule(this, 0, TIME_SLICE);
-		}
+
+        if (!this.scheduled) {
+            this.scheduled = true;
+            this.timer.schedule(this, 0, NetworkTimer.TIME_SLICE);
+        }
+
+        return;
 	}
+
 
 	@Override
 	public void stopExecution() {

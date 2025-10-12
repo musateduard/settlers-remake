@@ -336,18 +336,23 @@ class OriginalMapFileContentReader {
 		mapData.freeBuffer();
 	}
 
-	// - to process a map File this class loads the whole file to memory. To save memory this File-Buffer is
-	// - closed after using/when done processing. If more data are requested from the File, the File-Biffer
-	// - is loaded again with this reOpen() function.
-	void reOpen(InputStream originalMapFile) throws IOException {
-		// - read File into buffer
-		mapContent = getBytesFromInputStream(originalMapFile);
 
-		// - reset Crypt Info
-		for (MapResourceInfo element : resources.values()) {
+	// to process a map File this class loads the whole file to memory. To save memory this File-Buffer is
+	// closed after using/when done processing. If more data are requested from the File, the File-Buffer
+	// is loaded again with this reOpen() function.
+	void reOpen(InputStream originalMapFile) throws IOException {
+
+		// read File into buffer
+		this.mapContent = OriginalMapFileContentReader.getBytesFromInputStream(originalMapFile);
+
+		// reset Crypt Info
+		for (MapResourceInfo element : this.resources.values()) {
 			element.resetDecryptedFlag();
 		}
+
+        return;
 	}
+
 
 	void readBasicMapInformation() throws MapLoadException {
 		this.readBasicMapInformation(0, 0);

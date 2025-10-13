@@ -13,12 +13,13 @@ include ':jsettlers.network'
 include ':jsettlers.tests'
 include ':jsettlers.testutils'
 include ':jsettlers.tools'
+include ':glfw-renderer'
 
 // Android projects
 // Android is automatically disabled if SDK is not set.
 def androidFile = new File(rootProject.dir, 'local.properties');
 
-if (System.env.ANDROID_HOME || androidFile.isFile() && androidFile.text.matches('(?s)^(.*\\n)?\\s*sdk.dir=.*'))  {
+if (System.env.ANDROID_HOME || androidFile.isFile() && androidFile.text.matches('(?s)^(.*\\n)?\\s*sdk.dir=.*')) {
     include ':go.graphics.android'
     include ':jsettlers.main.android'
 }

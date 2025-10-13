@@ -1,0 +1,60 @@
+plugins {
+    id "java"
+}
+
+group = "org.example"
+version = "unspecified"
+
+repositories {
+    mavenCentral()
+}
+
+String[] variants = new String[] {
+    "natives-linux",
+    "natives-linux-arm32",
+    "natives-linux-arm64",
+    "natives-macos",
+    "natives-macos-arm64",
+    "natives-windows",
+    "natives-windows-x86",
+    "natives-windows-arm64",
+};
+
+String[] modules = new String[] {
+    "lwjgl",
+    "lwjgl-opengl",
+    "lwjgl-openal",
+    "lwjgl-glfw",
+    "lwjgl-vma",
+}
+
+dependencies {
+
+    String lwjglVersion = rootProject.ext.lwjglVersion
+
+    for (String module : modules) {
+        implementation "org.lwjgl:${module}:${lwjglVersion}"
+
+        for (String variant : variants) {
+            runtimeOnly "org.lwjgl:${module}:${lwjglVersion}:${variant}"
+        }
+    }
+
+    implementation project(":go.graphics")
+    implementation project(":go.graphics.swing")
+    implementation project(":jsettlers.logic")
+    implementation project(":jsettlers.network")
+    implementation project(":jsettlers.common")
+    implementation project(":jsettlers.graphics")
+    implementation project(":jsettlers.main.swing")
+
+    implementation "org.joml:joml:1.9.17"
+
+    testImplementation platform("org.junit:junit-bom:5.10.0")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    useJUnitPlatform()
+}

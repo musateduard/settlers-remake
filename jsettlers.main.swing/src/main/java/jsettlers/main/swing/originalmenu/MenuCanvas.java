@@ -93,6 +93,8 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
 
+        // this.internalPanel.addNotify();
+
         return;
     }
 
@@ -144,6 +146,8 @@ public class MenuCanvas extends JPanel implements MouseListener, MouseMotionList
         tempContext.drawImage(this.menuImage, 0, 0, this.tempBuffer.getWidth(), this.tempBuffer.getHeight(), this);
 
         // paint internal panel
+        // this.internalPanel.addNotify();
+        this.internalPanel.validate();
         this.internalPanel.printAll(tempContext);
 
         tempContext.dispose();

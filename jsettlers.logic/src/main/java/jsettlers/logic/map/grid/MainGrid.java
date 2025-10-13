@@ -224,13 +224,20 @@ public final class MainGrid implements Serializable {
 		return width;
 	}
 
-	public void initForPlayer(byte playerId, FogOfWar fogOfWar) {
-		if (fogOfWar != null) {
-			this.fogOfWar = fogOfWar;
-		} else {
-			this.fogOfWar = new FogOfWar(this, partitionsGrid.getPlayer(playerId).getTeamId());
-		}
-	}
+
+    public void initForPlayer(byte playerId, FogOfWar fogOfWar) {
+
+        if (fogOfWar != null) {
+            this.fogOfWar = fogOfWar;
+        }
+
+        else {
+            this.fogOfWar = new FogOfWar(this, this.partitionsGrid.getPlayer(playerId).getTeamId());
+        }
+
+        return;
+    }
+
 
 	private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		ois.defaultReadObject();
@@ -2255,7 +2262,7 @@ public final class MainGrid implements Serializable {
 		public void setAcceptedStockMaterial(ShortPoint2D position, EMaterialType materialType, boolean accepted) {
 			partitionsGrid.getPartitionSettings(position).setAcceptedStockMaterial(materialType, accepted);
 		}
-		
+
 		@Override
 		public void changeMovableSettings(ShortPoint2D position, EMovableType movableType, boolean relative,
 										  int amount) {

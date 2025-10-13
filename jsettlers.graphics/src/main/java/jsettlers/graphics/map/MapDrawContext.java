@@ -149,8 +149,8 @@ public final class MapDrawContext implements IGLProvider {
 
 		float zoom = this.screen.getZoom();
 
-		this.offsetX = (int) (-this.screen.getLeft() + .5f);
-		this.offsetY = (int) (-this.screen.getBottom() + .5f);
+		this.offsetX = (int) (-this.screen.getLeft() + 0.50f);
+		this.offsetY = (int) (-this.screen.getBottom() + 0.50f);
 		this.glContext.updateViewMatrix(this.offsetX, this.offsetY, 0, zoom, zoom, 1);
 
         return;

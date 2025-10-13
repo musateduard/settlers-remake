@@ -1,13 +1,15 @@
 package jsettlers.main.swing.originalmenu.components;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Component;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import javax.swing.JPanel;
 import java.util.ArrayList;
 import java.util.Objects;
+import javax.swing.JPanel;
+import javax.swing.JList;
 
 import jsettlers.logic.map.loading.MapLoader;
 
@@ -34,6 +36,8 @@ public class OriginalDialog extends JPanel implements MouseListener {
         ArrayList<MapLoader> singleMapList,
         ArrayList<MapLoader> multiMapList,
         ArrayList<MapLoader> userMapList) {
+
+        // note: map list size 118 x 195
 
         super();
 
@@ -86,6 +90,22 @@ public class OriginalDialog extends JPanel implements MouseListener {
         // add dropdown list popups to overlay on top of dialog layer
 
         // image index at file_2::menu_11
+
+        String[] items = {
+            "test item", "test item", "test item", "test item", "test item", "test item", "test item",
+            "test item", "test item", "test item", "test item", "test item", "test item", "test item",
+            "test item", "test item"
+        };
+
+        JList<String> list1 = new JList<>(items);
+
+        list1.setOpaque(true);
+        list1.setBackground(Color.GREEN);
+        list1.setForeground(Color.YELLOW);
+
+        OriginalMapList mapList = new OriginalMapList(list1);
+
+        this.add(mapList);
 
         this.addMouseListener(this);
 

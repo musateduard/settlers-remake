@@ -28,6 +28,8 @@ import jsettlers.network.client.task.packets.TaskPacket;
 import jsettlers.network.synchronic.timer.ITaskExecutor;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
+import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
@@ -63,6 +65,10 @@ public class DemoGLFWFrame {
     public final long startTime;
     public final float saturation;
     public final GLCapabilities capabilities;
+    public float minY;
+    public float maxY;
+    public float minX;
+    public float maxX;
 
 
     public DemoGLFWFrame() {
@@ -71,6 +77,10 @@ public class DemoGLFWFrame {
         this.height = 600;
         this.startTime = System.currentTimeMillis();
         this.saturation = 0.40f;
+        this.minY = -100;
+        this.maxY = 100;
+        this.minX = -100;
+        this.maxX = 100;
 
         // init glfw
         if (!GLFW.glfwInit()) {
@@ -94,6 +104,52 @@ public class DemoGLFWFrame {
 
         // enable vsync
         GLFW.glfwSwapInterval(1);
+
+        // register keyboard handler
+        GLFWKeyCallbackI keyHandler = (windowId, key, scanCode, action, modifiers) -> {
+
+            if (key == GLFW.GLFW_KEY_UP && action == GLFW.GLFW_PRESS) {
+                this.maxY += 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_DOWN && action == GLFW.GLFW_PRESS) {
+                this.maxY -= 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_LEFT && action == GLFW.GLFW_PRESS) {
+                this.minY += 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_RIGHT && action == GLFW.GLFW_PRESS) {
+                this.minY -= 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_I && action == GLFW.GLFW_PRESS) {
+                this.minX += 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_K && action == GLFW.GLFW_PRESS) {
+                this.minX -= 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_J && action == GLFW.GLFW_PRESS) {
+                this.maxX += 10;
+            }
+
+            else if (key == GLFW.GLFW_KEY_L && action == GLFW.GLFW_PRESS) {
+                this.maxX -= 10;
+            }
+
+            else {
+                System.out.printf("key event\n");
+            }
+
+            System.out.printf("%d %d %d %d\n", (int) this.minX, (int) this.minY, (int) this.maxX, (int) this.maxY);
+
+            return;
+        };
+
+        GLFW.glfwSetKeyCallback(this.windowId, keyHandler);
 
         // make window visible
         GLFW.glfwShowWindow(this.windowId);
@@ -390,12 +446,16 @@ public class DemoGLFWFrame {
              */
 
             // todo: render map terrain using mapContent
+            // todo: fix minY not affecting screenViewport properly
 
             // draw map terrain
-            FloatRectangle screen = mapContent.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            // FloatRectangle screenViewport = mapContent.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            FloatRectangle screenViewport = new FloatRectangle(this.minX, this.minY, this.maxX, this.maxY);
 
-            mapContent.drawContent(context, this.width, this.height);
-            mapContent.drawMapTerrain(screen);
+            // mapContent.drawContent(context, this.width, this.height);
+            // context.updateViewMatrix(0, 0, 0, 1, 1, 1);  // note: view matrix is set by mapContext during begin()
+            mapContent.mapContext.begin(context);
+            mapContent.drawMapTerrain(screenViewport);
 
             // draw test sprite
             context.updateViewMatrix(0, 0, 0, 1, 1, 1);

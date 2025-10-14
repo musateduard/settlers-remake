@@ -219,6 +219,7 @@ public final class MapCoordinateConverter {
 		return new ShortPoint2D(getMapX(x, y), getMapY(x, y));
 	}
 
+
 	/**
 	 * Gets a rectangle that is almost covered by the given int rectangle.
 	 * <p>
@@ -229,13 +230,18 @@ public final class MapCoordinateConverter {
 	 * @return A MapRectangle
 	 */
 	public MapRectangle getMapForScreen(FloatRectangle screen) {
-		float maxMountainHeight = HEIGHT_Y_DISPLACEMENT * Byte.MAX_VALUE;
-		float minX = getExactMapXwithHeight(screen.getMinX(), screen.getMaxY(), 0);
-		float maxX = getExactMapXwithHeight(screen.getMaxX(), screen.getMinY(), maxMountainHeight);
-		float minY = getExactMapYwithHeight(screen.getMaxX(), screen.getMaxY(), 0);
-		float maxY = getExactMapYwithHeight(screen.getMinX(), screen.getMinY(), maxMountainHeight);
-		return new MapRectangle((short) minX, (short) minY, (short) (maxX - minX), (short) (maxY - minY));
+
+		float maxMountainHeight = MapCoordinateConverter.HEIGHT_Y_DISPLACEMENT * Byte.MAX_VALUE;
+		float minX = this.getExactMapXwithHeight(screen.getMinX(), screen.getMaxY(), 0);
+		float maxX = this.getExactMapXwithHeight(screen.getMaxX(), screen.getMinY(), maxMountainHeight);
+		float minY = this.getExactMapYwithHeight(screen.getMaxX(), screen.getMaxY(), 0);
+		float maxY = this.getExactMapYwithHeight(screen.getMinX(), screen.getMinY(), maxMountainHeight);
+
+        MapRectangle viewport = new MapRectangle((short) minX, (short) minY, (short) (maxX - minX), (short) (maxY - minY));
+
+		return viewport;
 	}
+
 
 	/**
 	 * Gets a coordinate converter by the width and the height of the map, rathe than by the final size of the draw space.

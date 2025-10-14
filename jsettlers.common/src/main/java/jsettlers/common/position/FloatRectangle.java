@@ -14,143 +14,174 @@
  *******************************************************************************/
 package jsettlers.common.position;
 
+
 /**
  * This is an int rectangle. It covers the area from (including) x1 to (unincluding) x2.
- * 
+ *
  * @author michael
  */
 public class FloatRectangle {
-	private final float minx, miny, maxx, maxy;
 
-	public FloatRectangle(float minx, float miny, float maxx, float maxy) {
-		this.minx = minx;
-		this.miny = miny;
-		this.maxx = maxx;
-		this.maxy = maxy;
+	private final float minX;
+	private final float minY;
+	private final float maxX;
+	private final float maxY;
+
+
+	public FloatRectangle(float minX, float minY, float maxX, float maxY) {
+
+		this.minX = minX;
+		this.minY = minY;
+		this.maxX = maxX;
+		this.maxY = maxY;
+
+        return;
 	}
+
 
 	/**
 	 * Gets the minimal x coordinate for a point that is inside the rect.
-	 * 
+	 *
 	 * @return The x coordinate.
 	 */
 	public float getMinX() {
-		return minx;
+		return this.minX;
 	}
+
 
 	/**
 	 * Gets the minimal y coordinate for a point that is inside the rect.
-	 * 
+	 *
 	 * @return The y coordinate.
 	 */
 	public float getMinY() {
-		return miny;
+		return this.minY;
 	}
+
 
 	/**
 	 * Gets the x coordinate for a point that is just outside of rect. Points with a x coordinate smaller than this value are inside the rect.
-	 * 
+	 *
 	 * @return The x coordinate.
 	 */
 	public float getMaxX() {
-		return maxx;
+		return this.maxX;
 	}
+
 
 	/**
 	 * Gets the x coordinate for a point that is just outside of rect. Points with a x coordinate smaller than this value are inside the rect.
-	 * 
+	 *
 	 * @return The x coordinate.
 	 */
 	public float getMaxY() {
-		return maxy;
+		return this.maxY;
 	}
+
 
 	/**
 	 * Gets the width of the rectangle. That states how many pixels are contained in it in x direction.
-	 * 
+	 *
 	 * @return The width
 	 */
 	public float getWidth() {
-		return maxx - minx;
+        float width = this.maxX - this.minX;
+		return width;
 	}
+
 
 	/**
 	 * Gets the height of the rectangle. That states how many pixels are contained in it in y direction.
-	 * 
+	 *
 	 * @return The height
 	 */
 	public float getHeight() {
-		return maxy - miny;
+        float height = this.maxY - this.minY;
+		return height;
 	}
+
 
 	/**
 	 * Gets the center of the rectangle in x direction.
-	 * 
+	 *
 	 * @return The center.
 	 */
 	public float getCenterX() {
-		return (minx + maxx) / 2;
+        float centerX = (this.minX + this.maxX) / 2;
+		return centerX;
 	}
+
 
 	/**
 	 * Gets the center of the rectangle in y direction.
-	 * 
+	 *
 	 * @return The center.
 	 */
 	public float getCenterY() {
-		return (miny + maxy) / 2;
+        float centerY = (this.minY + this.maxY) / 2;
+		return centerY;
 	}
+
 
 	/**
 	 * Checks whether a point is inside the rectangle.
-	 * 
-	 * @param x
-	 *            The x coordinate to check
-	 * @param y
-	 *            The y coordinate to check
+	 *
+	 * @param pointX The x coordinate to check
+	 * @param pointY The y coordinate to check
+     *
 	 * @return If the point is inside.
 	 */
-	public boolean contains(float x, float y) {
-		return x >= minx && x < maxx && y >= miny && y < maxy;
+	public boolean contains(float pointX, float pointY) {
+		return pointX >= this.minX && pointX < this.maxX && pointY >= this.minY && pointY < this.maxY;
 	}
+
 
 	/**
 	 * Shrinks the rectangle by the given amount. The center of the new rectangle is the same as the one of the old one, but its size is in each
 	 * direction 2*border bigger.
-	 * 
-	 * @param border
-	 *            the size to reduce the rectangle on each side. If it is negative, the rectangle is made smaller.
+	 *
+	 * @param border the size to reduce the rectangle on each side. If it is negative, the rectangle is made smaller.
 	 * @return The bigger rectangle.
 	 */
 	public FloatRectangle bigger(float border) {
-		return new FloatRectangle(minx - border, miny - border, maxx + border,
-				maxy + border);
+        FloatRectangle newRectangle = new FloatRectangle(this.minX - border, this.minY - border, this.maxX + border, this.maxY + border);
+		return newRectangle;
 	}
 
+
 	@Override
-	public boolean equals(Object obj) {
-		if (obj instanceof FloatRectangle) {
-			return equals((FloatRectangle) obj);
-		} else {
+	public boolean equals(Object object) {
+
+		if (object instanceof FloatRectangle) {
+			return this.equals((FloatRectangle) object);
+		}
+
+        else {
 			return false;
 		}
 	}
 
+
 	private boolean equals(FloatRectangle rect) {
-		return rect.minx == minx && rect.miny == miny && rect.maxx == maxx
-				&& rect.maxy == maxy;
+		return rect.minX == this.minX && rect.minY == this.minY && rect.maxX == this.maxX && rect.maxY == this.maxY;
 	}
+
 
 	@Override
 	public String toString() {
-		return "rect[minx=" + minx + ",miny=" + miny + ",maxx=" + maxx
-				+ ",maxy=" + maxy + "]";
+        String string = "rect[minX=%f,minY=%f,maxX=%f,maxY=%f]".formatted(this.minX, this.minY, this.maxX, this.maxY);
+		return string;
 	}
+
 
 	@Override
 	public int hashCode() {
-		return Float.floatToIntBits(minx) * 104729 + Float.floatToIntBits(miny)
-				* 4900099 + Float.floatToIntBits(maxx) * 135084239
-				+ Float.floatToIntBits(maxy);
+
+        int hash = Float.floatToIntBits(this.minX) * 104729 +
+            Float.floatToIntBits(this.minY) * 4900099 +
+            Float.floatToIntBits(this.maxX) * 135084239 +
+            Float.floatToIntBits(this.maxY);
+
+        return hash;
 	}
 }

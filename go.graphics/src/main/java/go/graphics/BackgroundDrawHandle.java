@@ -11,8 +11,8 @@ public class BackgroundDrawHandle extends GLResourceIndex {
 		this.texture = texture;
 	}
 
-	public int[] regions;
-	public int regionCount;
+	public int[] visibleLineObjectList;
+	public int visibleLineCount;
 
 	public int getVertexArrayId() {
 		return id;

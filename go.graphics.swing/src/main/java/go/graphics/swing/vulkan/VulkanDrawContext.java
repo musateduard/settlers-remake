@@ -439,7 +439,7 @@ public class VulkanDrawContext extends GLDrawContext implements VkDrawContext {
 				call == null ||
 				call.texture == null ||
 				call.vertices == null ||
-				call.regions == null) {
+				call.visibleLineObjectList == null) {
 			return;
 		}
 
@@ -456,9 +456,9 @@ public class VulkanDrawContext extends GLDrawContext implements VkDrawContext {
 
 		pipelineManager.bindVertexBuffers(vkShape.getBufferIdVk());
 
-		for(int i = 0; i < call.regionCount; i++) {
-			int from = call.regions[i*2];
-			int len = call.regions[i*2+1];
+		for(int i = 0; i < call.visibleLineCount; i++) {
+			int from = call.visibleLineObjectList[i*2];
+			int len = call.visibleLineObjectList[i*2+1];
 
 			vkCmdDraw(graphCommandBuffer, len, 1, from, 0);
 		}

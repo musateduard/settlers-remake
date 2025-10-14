@@ -136,7 +136,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	private final class ZoomEventHandler implements GOModalEventHandler {
 
-        float startZoom = context.getScreen().getZoom();
+        float startZoom = mapContext.getScreen().getZoom();
 
 		@Override
 		public void phaseChanged(GOEvent event) {
@@ -166,7 +166,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	private static final AnimationSequence GOTO_ANIMATION = new AnimationSequence(new OriginalImageLink(EImageLinkType.SETTLER, 3, 1).getName(), 0, 2);
 
-	private static final int SCREEN_PADDING = 50;
+	public static final int SCREEN_PADDING = 50;
 	private static final float OVERDRAW_BOTTOM_PX = 50;
 	private static final float MESSAGE_OFFSET_X = 300;
 	private static final int MESSAGE_OFFSET_Y = 30;
@@ -188,9 +188,9 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	private final Background background;
 
-	private final MapDrawContext context;
+	public final MapDrawContext mapContext;
 
-	private final MapObjectDrawer objectDrawer;
+	public final MapObjectDrawer objectDrawer;
 
 	/**
 	 * The current connector that connects the outside world to us.
@@ -290,13 +290,13 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		this.textDrawPosition = textDrawPosition;
 		this.messenger = new Messenger(this.gameTimeProvider);
 		this.textDrawer = new ReplaceableTextDrawer();
-		this.context = new MapDrawContext(this.map);
+		this.mapContext = new MapDrawContext(this.map);
 		this.soundmanager = new SoundManager(soundPlayer);
 		this.musicManager = new MusicManager(soundPlayer, this.localPlayer.getCivilisation());
-		this.background = new Background(this.context);
+		this.background = new Background(this.mapContext);
 
-		this.objectDrawer = new MapObjectDrawer(this.context, this.soundmanager, this.localPlayer);
-		this.backgroundSound = new BackgroundSound(this.context, this.soundmanager);
+		this.objectDrawer = new MapObjectDrawer(this.mapContext, this.soundmanager, this.localPlayer);
+		this.backgroundSound = new BackgroundSound(this.mapContext, this.soundmanager);
 		this.backgroundSound.start();
 		this.musicManager.startMusic();
 
@@ -308,7 +308,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			this.controls = controls;
 		}
 
-		this.controls.setDrawContext(this, this.context);
+		this.controls.setDrawContext(this, this.mapContext);
 		this.connector = new MapInterfaceConnector(this);
 		this.connector.addListener(this);
 	}
@@ -326,7 +326,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 
 	private void reapplyContentSizes() {
-		this.context.setSize(this.windowWidth, this.windowHeight);
+		this.mapContext.setSize(this.windowWidth, this.windowHeight);
         return;
 	}
 
@@ -351,18 +351,18 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
                 this.resizeTo(newWidth, newHeight);
 			}
 
-            this.adaptScreenSize();
+            this.adaptScreenSize();  // adaptScreenSize fiers a ScreenChangeAction on screen resize
 			this.objectDrawer.nextFrame();
 
-			this.context.begin(glContext);
-			long start = System.nanoTime();
+			this.mapContext.begin(glContext);
+			long startTime = System.nanoTime();
 
-			FloatRectangle screen = this.context.getScreen().getPosition().bigger(SCREEN_PADDING);
-            this.drawBackground(screen);
-			long backgroundDuration = System.nanoTime() - start;
+			FloatRectangle screen = this.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            this.drawMapTerrain(screen);
+			long backgroundDuration = System.nanoTime() - startTime;
 
-			start = System.nanoTime();
-            this.drawMain(screen);
+			startTime = System.nanoTime();
+            this.drawMapObjects(screen);
 
 			if (this.scrollMarker != null) {
                 this.drawGotoMarker();
@@ -372,10 +372,10 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
                 this.drawMoveToMarker();
 			}
 
-			this.context.end();
-			long foregroundDuration = System.nanoTime() - start;
+			this.mapContext.end();
+			long foregroundDuration = System.nanoTime() - startTime;
 
-			start = System.nanoTime();
+			startTime = System.nanoTime();
 			glContext.clearDepthBuffer();
 			glContext.updateViewMatrix(0, 0, 0, 1, 1, 1);
 
@@ -390,7 +390,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			}
 
             this.drawTooltip(glContext);
-			long uiTime = System.nanoTime() - start;
+			long uiTime = System.nanoTime() - startTime;
 
 			if (CommonConstants.ENABLE_GRAPHICS_TIMES_DEBUG_OUTPUT) {
 				System.out.println("Background: " + backgroundDuration / 1000 + "µs, Foreground: " + foregroundDuration / 1000 + "µs, UI: " + uiTime / 1000 + "µs");
@@ -520,7 +520,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			float y = offsetY + messageIndex * (fontSize.getSize()*1.3f) * yDirection;
 			float a = messageAlpha(m);
 			if (m.getSender() >= 0) {
-				String name = getPlayername(m.getSender()) + ":";
+				String name = getPlayerName(m.getSender()) + ":";
 				Color color = MapDrawContext.getPlayerColor(m.getSender());
 				float width = drawer.getWidth(name);
 				for (int i = -1; i < 3; i++) {
@@ -536,18 +536,25 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		}
 	}
 
-	private String getPlayername(byte sender) {
+
+	private String getPlayerName(byte sender) {
 		// TODO: Player names
 		return "player " + sender;
 	}
 
+
 	private void adaptScreenSize() {
-		FloatRectangle newScreen = context.getScreen().getPosition();
-		if (!newScreen.equals(oldScreen)) {
-			getInterfaceConnector().fireAction(new ScreenChangeAction(context.getScreenArea(), context.getPositionUnder(newScreen.getCenterX(), newScreen.getCenterY())));
+
+		FloatRectangle newScreen = this.mapContext.getScreen().getPosition();
+
+		if (!newScreen.equals(this.oldScreen)) {
+			this.getInterfaceConnector().fireAction(new ScreenChangeAction(this.mapContext.getScreenArea(), this.mapContext.getPositionUnder(newScreen.getCenterX(), newScreen.getCenterY())));
 		}
-		oldScreen = newScreen;
+
+        this.oldScreen = newScreen;
+        return;
 	}
+
 
 	private UnifiedDrawHandle selectionArea = null;
 
@@ -640,9 +647,9 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	/**
 	 * Draws the main content (buildings, settlers, ...), assuming the context is set up.
 	 */
-	private void drawMain(FloatRectangle screen) {
+	private void drawMapObjects(FloatRectangle screen) {
 
-		MapRectangle area = this.context.getConverter().getMapForScreen(screen);
+		MapRectangle area = this.mapContext.getConverter().getMapForScreen(screen);
 
 		double bottomDrawY = screen.getMinY() - MapContent.OVERDRAW_BOTTOM_PX;
 
@@ -668,7 +675,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
                 this.drawTile(offsetX, offsetY);
 
                 if (!linePartiallyVisible) {
-					double drawSpaceY = this.context.getConverter().getViewY(offsetX, offsetY, this.heightGrid == null ? this.context.getHeight(offsetX, offsetY) : this.heightGrid[offsetX][offsetY]);
+					double drawSpaceY = this.mapContext.getConverter().getViewY(offsetX, offsetY, this.heightGrid == null ? this.mapContext.getHeight(offsetX, offsetY) : this.heightGrid[offsetX][offsetY]);
 					if (drawSpaceY > bottomDrawY) {
 						linePartiallyVisible = true;
 					}
@@ -678,7 +685,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 		if (this.placementBuilding != null) {
 
-			ShortPoint2D underMouse = this.context.getPositionOnScreen((float) this.mousePosition.getX(), (float) this.mousePosition.getY());
+			ShortPoint2D underMouse = this.mapContext.getPositionOnScreen((float) this.mousePosition.getX(), (float) this.mousePosition.getY());
 
             if (0 <= underMouse.x &&
                 underMouse.x < this.width &&
@@ -751,36 +758,39 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private UnifiedDrawHandle shapeHandle = null;
 
 	private void drawDebugColors() {
-		GLDrawContext gl = this.context.getGl();
+		GLDrawContext gl = this.mapContext.getGl();
 
 		if(shapeHandle == null || !shapeHandle.isValid()) shapeHandle = gl.createUnifiedDrawCall(4, "debugshape", null, null, shape);
 
-		context.getScreenArea().stream().filterBounds(width, height).forEach((x, y) -> {
+		mapContext.getScreenArea().stream().filterBounds(width, height).forEach((x, y) -> {
 			int argb = map.getDebugColorAt(x, y, debugColorMode);
 			if (argb != 0) {
-				int height = context.getHeight(x, y);
-				float dx = context.getConverter().getViewX(x, y, height);
-				float dy = context.getConverter().getViewY(x, y, height);
+				int height = mapContext.getHeight(x, y);
+				float dx = mapContext.getConverter().getViewX(x, y, height);
+				float dy = mapContext.getConverter().getViewY(x, y, height);
 				shapeHandle.drawSimple(EPrimitiveType.Quad, dx, dy, .5f, 1, 1, Color.fromShort((short) argb), 1);
 			}
 		});
 	}
+
 
 	/**
 	 * Draws the background.
 	 *
 	 * @param screen
 	 */
-	private void drawBackground(FloatRectangle screen) {
-		this.background.drawMapContent(this.context, screen);
+	public void drawMapTerrain(FloatRectangle screen) {
+		this.background.drawMapContent(this.mapContext, screen);
+        return;
 	}
+
 
 	@Override
 	public void handleEvent(GOEvent event) {
 		if (event instanceof GOPanEvent) {
 			UIPoint center = ((GOPanEvent) event).getPanCenter();
 			if (center == null || !controls.containsPoint(center)) {
-				event.setHandler(new PanHandler(this.context.getScreen()));
+				event.setHandler(new PanHandler(this.mapContext.getScreen()));
 			}
 		} else if (event instanceof GOCommandEvent) {
 			GOCommandEvent commandEvent = (GOCommandEvent) event;
@@ -814,8 +824,8 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	 * Zoom in
 	 */
 	public void zoomIn() {
-		if (context != null) {
-			float zoom = context.getScreen().getZoom();
+		if (mapContext != null) {
+			float zoom = mapContext.getScreen().getZoom();
 			setZoom(zoom * 1.3f, null);
 		}
 	}
@@ -824,8 +834,8 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	 * Zoom out
 	 */
 	public void zoomOut() {
-		if (context != null) {
-			float zoom = context.getScreen().getZoom();
+		if (mapContext != null) {
+			float zoom = mapContext.getScreen().getZoom();
 			setZoom(zoom / 1.3f, null);
 		}
 	}
@@ -834,7 +844,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	 * Zoom to default value
 	 */
 	public void zoom100() {
-		if (context != null) {
+		if (mapContext != null) {
 			setZoom(1.0f, null);
 		}
 	}
@@ -936,7 +946,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		} else {
 			float x = (float) position.getX();
 			float y = (float) position.getY();
-			ShortPoint2D onMap = this.context.getPositionOnScreen(x, y);
+			ShortPoint2D onMap = this.mapContext.getPositionOnScreen(x, y);
 			tooltipString = controls.getMapTooltip(onMap);
 		}
 		if (tooltipString == null) {
@@ -991,8 +1001,8 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private Optional<Action> handleCommandOnMap(GOCommandEvent commandEvent, UIPoint position) {
 		float x = (float) position.getX();
 		float y = (float) position.getY();
-		ShortPoint2D onMap = this.context.getPositionOnScreen(x, y);
-		if (this.context.checkMapCoordinates(onMap.x, onMap.y)) {
+		ShortPoint2D onMap = this.mapContext.getPositionOnScreen(x, y);
+		if (this.mapContext.checkMapCoordinates(onMap.x, onMap.y)) {
 			Action action;
 			if (commandEvent.isSelecting()) {
 				action = handleSelectCommand(onMap);
@@ -1050,7 +1060,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 				y1 = y2;
 				y2 = temp;
 			}
-			IMapArea area = this.context.getRectangleOnScreen(x1, y1, x2, y2);
+			IMapArea area = this.mapContext.getRectangleOnScreen(x1, y1, x2, y2);
 			getInterfaceConnector().fireAction(new SelectAreaAction(area));
 
 			this.currentSelectionAreaStart = null;
@@ -1075,7 +1085,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	public void scrollTo(ShortPoint2D point, boolean mark) {
 		if (point != null) {
-			this.context.scrollTo(point);
+			this.mapContext.scrollTo(point);
 			if (mark) {
 				scrollMarker = point;
 				scrollMarkerTime = System.currentTimeMillis();
@@ -1103,13 +1113,13 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			controls.setMapViewport(screenAction.getScreenArea(), screenAction.getCenterPosition());
 			break;
 		case ZOOM_IN:
-			if (context.getScreen().getZoom() < 1.1) {
-				setZoom(context.getScreen().getZoom() * 2, null);
+			if (mapContext.getScreen().getZoom() < 1.1) {
+				setZoom(mapContext.getScreen().getZoom() * 2, null);
 			}
 			break;
 		case ZOOM_OUT:
-			if (context.getScreen().getZoom() > 0.6) {
-				setZoom(context.getScreen().getZoom() / 2, null);
+			if (mapContext.getScreen().getZoom() > 0.6) {
+				setZoom(mapContext.getScreen().getZoom() / 2, null);
 			}
 			break;
 		case MOVE_TO:
@@ -1144,7 +1154,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 	private void setZoom(float newZoom, UIPoint pointingPosition) {
-		context.getScreen().setZoom(newZoom, pointingPosition);
+		mapContext.getScreen().setZoom(newZoom, pointingPosition);
 		reapplyContentSizes();
 	}
 
@@ -1203,12 +1213,12 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			scrollTo(state.getStartPoint(), false);
 		} else {
 			setZoom(state.getZoom(), null);
-			context.getScreen().setScreenCenter(state.getScreenCenterX(), state.getScreenCenterY());
+			mapContext.getScreen().setScreenCenter(state.getScreenCenterX(), state.getScreenCenterY());
 		}
 	}
 
 	protected UIState getUIState() {
-		ScreenPosition screen = context.getScreen();
+		ScreenPosition screen = mapContext.getScreen();
 		return new UIState(screen.getScreenCenterX(), screen.getScreenCenterY(), screen.getZoom());
 	}
 

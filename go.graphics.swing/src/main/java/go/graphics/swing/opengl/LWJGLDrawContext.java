@@ -94,11 +94,11 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	private void useProgram(ShaderProgram id) {
+	private void activateShader(ShaderProgram shaderId) {
 
-		if (id != this.lastProgram) {
-			glUseProgram(id.program);
-            this.lastProgram = id;
+		if (shaderId != this.lastProgram) {
+			glUseProgram(shaderId.program);
+            this.lastProgram = shaderId;
 		}
 
         return;
@@ -166,16 +166,16 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	private void bindGeometry(BufferHandle geometry) {
+	private void bindVertexBufferObject(BufferHandle geometry) {
 
 		if (this.lastGeometry != geometry) {
 
-			int id = 0;
+			int vboId = 0;
 			if (geometry != null) {
-				id = geometry.getBufferId();
+				vboId = geometry.getBufferId();
 			}
 
-			glBindBuffer(GL_ARRAY_BUFFER, id);
+			glBindBuffer(GL_ARRAY_BUFFER, vboId);
             this.lastGeometry = geometry;
 		}
 
@@ -183,11 +183,11 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	private void bindFormat(int format) {
+	private void bindVertexArrayObject(int vaoId) {
 
-		if (format != this.lastFormat) {
-			glBindVertexArray(format);
-            this.lastFormat = format;
+		if (vaoId != this.lastFormat) {
+			glBindVertexArray(vaoId);
+            this.lastFormat = vaoId;
 		}
 
         return;
@@ -196,7 +196,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 	public void updateBufferAt(BufferHandle handle, int pos, ByteBuffer data) {
 
-        this.bindGeometry(handle);
+        this.bindVertexBufferObject(handle);
 		glBufferSubData(GL_ARRAY_BUFFER, pos, data);
 
         return;
@@ -223,7 +223,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		this.viewMatrix.get(this.matrixBuffer);
 
 		for (ShaderProgram shader : this.shaders) {
-            this.useProgram(shader);
+            this.activateShader(shader);
 			glUniformMatrix4fv(shader.global, false, this.matrixBuffer);
 		}
 
@@ -238,7 +238,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		this.projectionMatrix.get(this.matrixBuffer);
 
 		for (ShaderProgram shader : this.shaders) {
-            this.useProgram(shader);
+            this.activateShader(shader);
 			glUniformMatrix4fv(shader.projection, false, this.matrixBuffer);
 		}
 
@@ -251,7 +251,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		for (ShaderProgram shader : this.shaders) {
 
 			if (shader.shadow_depth != -1) {
-                this.useProgram(shader);
+                this.activateShader(shader);
 				glUniform1f(shader.shadow_depth, depth);
 			}
 		}
@@ -262,7 +262,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 	public void setHeightMatrix(float[] matrix) {
 
-        this.useProgram(this.prog_background);
+        this.activateShader(this.prog_background);
 		glUniformMatrix4fv(this.prog_background.height, false, matrix);
 
         return;
@@ -280,7 +280,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		BufferHandle vertexBuffer = new BufferHandle(this, glGenBuffers());
 
-        this.bindGeometry(vertexBuffer);
+        this.bindVertexBufferObject(vertexBuffer);
         this.setObjectLabel(KHRDebug.GL_BUFFER, vertexBuffer.getBufferId(), "background");
 
 		glBufferData(GL_ARRAY_BUFFER, (long) vertices * 6 * 4, GL_DYNAMIC_DRAW);
@@ -288,9 +288,9 @@ public class LWJGLDrawContext extends GLDrawContext {
 		BackgroundDrawHandle handle = new BackgroundDrawHandle(this, vao, texture, vertexBuffer);
 
 		if (this.glCapabilities.GL_ARB_vertex_array_object) {
-            this.bindFormat(vao);
+            this.bindVertexArrayObject(vao);
             this.setObjectLabel(GL_VERTEX_ARRAY, vao, "background-vao");
-            this.fillBackgroundFormat(handle);
+            this.fillBackgroundVertexArrayObject(handle);
 		}
 
 		return handle;
@@ -308,7 +308,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		BufferHandle vertexBuffer = new BufferHandle(this, glGenBuffers());
 
-        this.bindGeometry(vertexBuffer);
+        this.bindVertexBufferObject(vertexBuffer);
         this.setObjectLabel(KHRDebug.GL_BUFFER, vertexBuffer.getBufferId(), name + "-vertices");
 
 		if (data != null) {
@@ -322,7 +322,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		UnifiedDrawHandle handle = new UnifiedDrawHandle(this, vao, 0, vertices, texture, texture2, vertexBuffer);
 
 		if (this.glCapabilities.GL_ARB_vertex_array_object) {
-			this.bindFormat(vao);
+			this.bindVertexArrayObject(vao);
 			this.setObjectLabel(GL_VERTEX_ARRAY, vao, name + "-vao");
 			this.fillUnifiedFormat(handle);
 		}
@@ -346,14 +346,14 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 		BufferHandle drawCalls = new BufferHandle(this, glGenBuffers());
 
-		this.bindGeometry(drawCalls);
+		this.bindVertexBufferObject(drawCalls);
 		this.setObjectLabel(KHRDebug.GL_BUFFER, drawCalls.getBufferId(), name + "-drawcalls");
 		glBufferData(GL_ARRAY_BUFFER, MultiDrawHandle.MAX_CACHE_ENTRIES * 12 * 4, GL_STREAM_DRAW);
 
 		MultiDrawHandle handle = new MultiDrawHandle(this, vao, MultiDrawHandle.MAX_CACHE_ENTRIES, source, drawCalls);
 
 		if (this.glCapabilities.GL_ARB_vertex_array_object) {
-			this.bindFormat(vao);
+			this.bindVertexArrayObject(vao);
 			this.setObjectLabel(GL_VERTEX_ARRAY, vao, name + "-vao");
 			this.fillMultiFormat(handle);
 		}
@@ -362,13 +362,13 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	private void fillBackgroundFormat(BackgroundDrawHandle handle) {
+	private void fillBackgroundVertexArrayObject(BackgroundDrawHandle handle) {
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
 
-        this.bindGeometry(handle.vertices);
+        this.bindVertexBufferObject(handle.vertices);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * 4, 0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, false, 6 * 4, 3 * 4);
 		glVertexAttribPointer(2, 1, GL_FLOAT, false, 6 * 4, 5 * 4);
@@ -379,7 +379,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 	private void fillUnifiedFormat(UnifiedDrawHandle uh) {
 
-        this.bindGeometry(uh.vertices);
+        this.bindVertexBufferObject(uh.vertices);
 		glEnableVertexAttribArray(0);
 
 		if (uh.texture != null) {
@@ -409,7 +409,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		ARBInstancedArrays.glVertexAttribDivisorARB(2, 1);
 		ARBInstancedArrays.glVertexAttribDivisorARB(3, 1);
 
-        this.bindGeometry(handle.drawCalls);
+        this.bindVertexBufferObject(handle.drawCalls);
 		glVertexAttribPointer(0, 3, GL_FLOAT, false, 12 * 4, 0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, false, 12 * 4, 3 * 4);
 		glVertexAttribPointer(2, 4, GL_FLOAT, false, 12 * 4, 5 * 4);
@@ -419,7 +419,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
-	private void enableVertArrays(boolean... vertArrays) {
+	private void enableVertexArrays(boolean... vertArrays) {
 
 		for (int index = 0; index != vertArrays.length; index++) {
 
@@ -445,15 +445,15 @@ public class LWJGLDrawContext extends GLDrawContext {
 		this.bindTextures(call.sourceQuads.texture, call.sourceQuads.texture2);
 
 		if (call.getVertexArrayId() != -1) {
-            this.bindFormat(call.getVertexArrayId());
+            this.bindVertexArrayObject(call.getVertexArrayId());
 		}
 
         else {
-            this.enableVertArrays(true, true, true, true);
+            this.enableVertexArrays(true, true, true, true);
             this.fillMultiFormat(call);
 		}
 
-        this.useProgram(this.prog_unified_multi);
+        this.activateShader(this.prog_unified_multi);
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, call.sourceQuads.vertices.getBufferId());
 		glDrawArraysInstancedARB(GL_TRIANGLE_FAN, 0, 4, call.used);
@@ -469,16 +469,16 @@ public class LWJGLDrawContext extends GLDrawContext {
         }
 
 		if (call.getVertexArrayId() != -1) {
-            this.bindFormat(call.getVertexArrayId());
+            this.bindVertexArrayObject(call.getVertexArrayId());
 		}
 
         else {
-			this.enableVertArrays(true, call.texture != null, false, false);
+			this.enableVertexArrays(true, call.texture != null, false, false);
 			this.fillUnifiedFormat(call);
 		}
 
 		if (this.prog_unified_array != null) {
-            this.useProgram(this.prog_unified_array);
+            this.activateShader(this.prog_unified_array);
 
 			glUniform4fv(this.prog_unified_array.color, colors);
 			glUniform4fv(this.prog_unified_array.transform, trans);
@@ -487,7 +487,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		}
 
         else {
-            this.useProgram(this.prog_unified);
+            this.activateShader(this.prog_unified);
 
 			for (int index = 0; index != array_len; index++) {
 
@@ -523,15 +523,15 @@ public class LWJGLDrawContext extends GLDrawContext {
         }
 
         // activate shader
-        this.useProgram(this.prog_unified);
+        this.activateShader(this.prog_unified);
 
         // set vao
         if (call.getVertexArrayId() != -1) {
-            this.bindFormat(call.getVertexArrayId());
+            this.bindVertexArrayObject(call.getVertexArrayId());
         }
 
         else {
-            this.enableVertArrays(true, call.texture != null, false, false);
+            this.enableVertexArrays(true, call.texture != null, false, false);
             this.fillUnifiedFormat(call);
         }
 
@@ -593,33 +593,33 @@ public class LWJGLDrawContext extends GLDrawContext {
     }
 
 
-	public void drawBackground(BackgroundDrawHandle handle) {
+    public void drawBackground(BackgroundDrawHandle drawHandle) {
 
-		this.bindTextures(handle.texture, handle.texture);
-		this.useProgram(this.prog_background);
+        this.bindTextures(drawHandle.texture, drawHandle.texture);
+        this.activateShader(this.prog_background);
 
-		if (handle.getVertexArrayId() != -1) {
-            this.bindFormat(handle.getVertexArrayId());
-		}
+        if (drawHandle.getVertexArrayId() != -1) {
+            this.bindVertexArrayObject(drawHandle.getVertexArrayId());
+        }
 
         else {
-			this.enableVertArrays(true, true, true, false);
-			this.fillBackgroundFormat(handle);
-		}
+            this.enableVertexArrays(true, true, true, false);
+            this.fillBackgroundVertexArrayObject(drawHandle);
+        }
 
-		int draw_lines = handle.regionCount;
+        int lineCount = drawHandle.visibleLineCount;
 
-		int[] firsts = new int[draw_lines];
-		int[] counts = new int[draw_lines];
+        int[] lineVertexOffsetList = new int[lineCount];
+        int[] lineVertexCount = new int[lineCount];
 
-		for (int index = 0; index != draw_lines; index++) {
-			firsts[index] = handle.regions[index * 2];
-			counts[index] = handle.regions[index * 2 + 1];
-		}
+        for (int index = 0; index < lineCount; index++) {
+            lineVertexOffsetList[index] = drawHandle.visibleLineObjectList[index * 2];
+            lineVertexCount[index] = drawHandle.visibleLineObjectList[index * 2 + 1];
+        }
 
-		glMultiDrawArrays(GL_TRIANGLES, firsts, counts);
+        glMultiDrawArrays(GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
         return;
-	}
+    }
 
 
 	@SuppressWarnings("WeakerAccess")
@@ -712,7 +712,7 @@ public class LWJGLDrawContext extends GLDrawContext {
                 this.geometry_data = -1;
 			}
 
-            useProgram(this);
+            activateShader(this);
 
 			if (this.tex != -1) {
                 glUniform1i(this.tex, 0);

@@ -1124,68 +1124,87 @@ public class Background implements IGraphicsBackgroundListener {
 
 	};
 
+
 	/**
 	 * Draws a given map content.
 	 *
-	 * @param context
-	 *            The context to draw at.
-	 * @param screen
-	 *            The area to draw
+	 * @param mapContext opengl context used for drawing the sprites
+	 * @param screen rectangle used for specifying the camera size and position
 	 */
-	public void drawMapContent(MapDrawContext context, FloatRectangle screen) {
-		GLDrawContext gl = context.getGl();
-		try {
-			if(backgroundHandle == null || !backgroundHandle.isValid()) {
-				generateGeometry(context);
-				context.getGl().setHeightMatrix(context.getConverter().getMatrixWithHeight());
-			}
-		} catch (IllegalBufferException e) {
-			// TODO: Create crash report.
-			e.printStackTrace();
-		}
+    public void drawMapContent(MapDrawContext mapContext, FloatRectangle screen) {
 
-		MapRectangle screenArea = context.getConverter().getMapForScreen(screen);
+        GLDrawContext glContext = mapContext.getGl();  // possible null
 
-		updateGeometry(context, screenArea);
+        try {
+            if (this.backgroundHandle == null || !this.backgroundHandle.isValid()) {
+                this.generateGeometry(mapContext);  // note: why does generateGeometry take so long?
+                mapContext.getGl().setHeightMatrix(mapContext.getConverter().getMatrixWithHeight());
+            }
+        }
 
-		backgroundHandle.texture = getTextureData(gl);
+        catch (IllegalBufferException exception) {
+            // TODO: Create crash report.
+            exception.printStackTrace();
+        }
 
-		backgroundHandle.regionCount = screenArea.getLines();
-		backgroundHandle.regions = new int[backgroundHandle.regionCount*2];
-		for(int i = 0; i < backgroundHandle.regionCount; i++) {
-			int startX = screenArea.getLineStartX(i);
-			if(startX < 0) startX = 0;
+        MapRectangle screenArea = mapContext.getConverter().getMapForScreen(screen);
 
-			int endX = screenArea.getLineEndX(i);
-			if(endX >= bufferWidth) endX = bufferWidth;
+        this.updateGeometry(mapContext, screenArea);
 
-			int y = screenArea.getLineY(i);
-			if(y < 0 || y > bufferHeight) continue;
+        this.backgroundHandle.texture = Background.getTextureData(glContext);
 
-			backgroundHandle.regions[i*2] = (bufferWidth * y + startX) * 2 * 3;
-			backgroundHandle.regions[i*2+1] = (endX-startX)* 2 * 3;
-		}
-		gl.drawBackground(backgroundHandle);
-	}
+        this.backgroundHandle.visibleLineCount = screenArea.getLines();
+        this.backgroundHandle.visibleLineObjectList = new int[this.backgroundHandle.visibleLineCount * 2];
+
+        for (int index = 0; index < this.backgroundHandle.visibleLineCount; index++) {
+
+            int startX = screenArea.getLineStartX(index);
+            if (startX < 0) {
+                startX = 0;
+            }
+
+            int endX = screenArea.getLineEndX(index);
+            if (endX >= this.bufferWidth) {
+                endX = this.bufferWidth;
+            }
+
+            int lineY = screenArea.getLineY(index);
+            if (lineY < 0 || lineY > this.bufferHeight) {
+                continue;
+            }
+
+            this.backgroundHandle.visibleLineObjectList[index * 2] = (this.bufferWidth * lineY + startX) * 2 * 3;
+            this.backgroundHandle.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
+        }
+
+        glContext.drawBackground(this.backgroundHandle);
+        return;
+    }
+
 
 	private void generateGeometry(MapDrawContext context) throws IllegalBufferException {
-		int vertices = bufferWidth*bufferHeight*3*2;
-		backgroundHandle = context.getGl().createBackgroundDrawCall(vertices, getTextureData(context.getGl()));
 
-		fowEnabled = hasdgp && dgp.isFoWEnabled();
+		int vertices = this.bufferWidth * this.bufferHeight * 3 * 2;
+        this.backgroundHandle = context.getGl().createBackgroundDrawCall(vertices, getTextureData(context.getGl()));
 
-		ByteBuffer bufferLine = ByteBuffer.allocateDirect(BYTES_PER_FIELD * bufferWidth).order(ByteOrder.nativeOrder());
+        this.fowEnabled = this.hasdgp && this.dgp.isFoWEnabled();
 
-		for(int y = 0;y != bufferHeight;y++) {
-			for(int x = 0; x != bufferWidth;x++) {
-				addTrianglesToGeometry(context, bufferLine, x, y);
+		ByteBuffer bufferLine = ByteBuffer.allocateDirect(Background.BYTES_PER_FIELD * this.bufferWidth).order(ByteOrder.nativeOrder());
+
+		for (int offsetY = 0; offsetY != this.bufferHeight; offsetY++) {
+
+            for (int offsetX = 0; offsetX != this.bufferWidth; offsetX++) {
+                this.addTrianglesToGeometry(context, bufferLine, offsetX, offsetY);
 			}
+
 			bufferLine.rewind();
-			context.getGl().updateBufferAt(backgroundHandle.vertices, BYTES_PER_FIELD*bufferWidth*y, bufferLine);
+			context.getGl().updateBufferAt(this.backgroundHandle.vertices, Background.BYTES_PER_FIELD * this.bufferWidth * offsetY, bufferLine);
 		}
 
 		context.getMap().setBackgroundListener(this);
+        return;
 	}
+
 
 	private final AdvancedUpdateBufferCache vertexCache;
 	private final ByteBuffer vertexBfr;

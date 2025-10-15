@@ -21,16 +21,18 @@ import jsettlers.common.map.shapes.MapRectangle;
 import jsettlers.common.position.FloatRectangle;
 import jsettlers.common.position.ShortPoint2D;
 
+
 /**
  * This class converts map coordinates to e.g. draw coordinates.
  * <p>
- * For the conversion formulas used and what the witdh/height parameters mean, see:
+ * For the conversion formulas used and what the width/height parameters mean, see:
  * <p>
  * <img src="doc-files/MapCoordinateConverter.png">
  *
  * @author michael
  */
 public final class MapCoordinateConverter {
+
 	private static final int M_HX = 2 * 4 + 0;
 	private static final int M_HY = 2 * 4 + 1;
 	/**
@@ -53,66 +55,67 @@ public final class MapCoordinateConverter {
 
 	private float[] heightinverse = new float[4 * 4];
 
+
 	/**
 	 * Creates a new converter.
 	 *
-	 * @param mapwidth
-	 *            The map width
-	 * @param mapheight
-	 *            The map height
-	 * @param viewwidth
-	 *            The view width
-	 * @param viewheight
-	 *            The view height
+	 * @param mapWidth The map width
+	 * @param mapHeight The map height
+	 * @param viewWidth The view width
+	 * @param viewHeight The view height
 	 */
-	public MapCoordinateConverter(short mapwidth, short mapheight,
-								  float viewwidth, float viewheight) {
-		if (mapwidth <= 1 || mapheight <= 1) {
+	public MapCoordinateConverter(short mapWidth, short mapHeight, float viewWidth, float viewHeight) {
+
+		if (mapWidth <= 1 || mapHeight <= 1) {
 			throw new IllegalArgumentException("Map size too small");
 		}
-		if (viewwidth <= 0 || viewheight <= 0) {
+
+		if (viewWidth <= 0 || viewHeight <= 0) {
 			throw new IllegalArgumentException("View size too small");
 		}
 
-		int realMapWidth = mapwidth - 1;
-		int realMapHeight = mapheight - 1;
-		/*
-	  The width of a tile in view space.
-	 */
-		float xscale = viewwidth / realMapWidth;
-		/*
-	  The height of a tile in view space.
-	 */
-		float yscale = viewheight / realMapHeight;
+		int realMapWidth = mapWidth - 1;
+		int realMapHeight = mapHeight - 1;
 
-		this.matrix[M_00] = xscale;
-		this.matrix[M_01] = -.5f * xscale;
-		this.matrix[M_02] = .5f * realMapHeight * xscale;
+        /*
+	    The width of a tile in view space.
+	    */
+		float scaleX = viewWidth / realMapWidth;
+
+        /*
+	    The height of a tile in view space.
+	    */
+		float scaleY = viewHeight / realMapHeight;
+
+		this.matrix[M_00] = scaleX;
+		this.matrix[M_01] = -0.50f * scaleX;
+		this.matrix[M_02] = 0.50f * realMapHeight * scaleX;
 		this.matrix[M_10] = 0;
-		this.matrix[M_11] = -yscale;
-		this.matrix[M_12] = viewheight;
+		this.matrix[M_11] = -scaleY;
+		this.matrix[M_12] = viewHeight;
 		this.matrix[2 + 2 * 4] = 1;
 		this.matrix[3 + 3 * 4] = 1;
 
-		System.arraycopy(this.matrix, 0, this.heightmatrix, 0,
-				this.matrix.length);
+		System.arraycopy(this.matrix, 0, this.heightmatrix, 0, this.matrix.length);
 		this.heightmatrix[M_HX] = HEIGHT_X_DISPLACEMENT;
 		this.heightmatrix[M_HY] = HEIGHT_Y_DISPLACEMENT;
 
-		this.inverse[M_00] = 1 / xscale;
-		this.inverse[M_01] = -.5f / yscale;
+		this.inverse[M_00] = 1 / scaleX;
+		this.inverse[M_01] = -0.50f / scaleY;
 		this.inverse[M_02] = 0;
 		this.inverse[M_10] = 0;
-		this.inverse[M_11] = -1 / yscale;
+		this.inverse[M_11] = -1 / scaleY;
 		this.inverse[M_12] = realMapHeight;
 		this.inverse[2 + 2 * 4] = 1;
 		this.inverse[3 + 3 * 4] = 1;
 
-		System.arraycopy(this.inverse, 0, this.heightinverse, 0,
-				this.inverse.length);
-		this.heightinverse[M_HX] = 1 / yscale;
-		this.heightinverse[M_HY] = 2 / yscale;
+		System.arraycopy(this.inverse, 0, this.heightinverse, 0, this.inverse.length);
+		this.heightinverse[M_HX] = 1 / scaleY;
+		this.heightinverse[M_HY] = 2 / scaleY;
+
+        return;
 	}
+
 
 	/**
 	 * Gets the x coordinate of a point in view space.
@@ -225,9 +228,9 @@ public final class MapCoordinateConverter {
 	 * <p>
 	 * No assumptions can be made about the rect.
 	 *
-	 * @param screen
-	 *            The screen positions
-	 * @return A MapRectangle
+	 * @param screen {@link FloatRectangle} The screen positions
+     *
+	 * @return {@link MapRectangle}
 	 */
 	public MapRectangle getMapForScreen(FloatRectangle screen) {
 
@@ -237,14 +240,14 @@ public final class MapCoordinateConverter {
 		float minY = this.getExactMapYwithHeight(screen.getMaxX(), screen.getMaxY(), 0);
 		float maxY = this.getExactMapYwithHeight(screen.getMinX(), screen.getMinY(), maxMountainHeight);
 
-        MapRectangle viewport = new MapRectangle((short) minX, (short) minY, (short) (maxX - minX), (short) (maxY - minY));
+        MapRectangle visibleMapSection = new MapRectangle((short) minX, (short) minY, (short) (maxX - minX), (short) (maxY - minY));
 
-		return viewport;
+		return visibleMapSection;
 	}
 
 
 	/**
-	 * Gets a coordinate converter by the width and the height of the map, rathe than by the final size of the draw space.
+	 * Gets a coordinate converter by the width and the height of the map, rather than by the final size of the draw space.
 	 *
 	 * @param xTileDistance
 	 *            The x distance between two tiles in the same row.

@@ -16,7 +16,6 @@ import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.sound.SoundManager;
 import jsettlers.logic.constants.MatchConstants;
 import jsettlers.logic.map.loading.EMapStartResources;
-import jsettlers.logic.map.loading.MapLoadException;
 import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.map.loading.list.DirectoryMapLister;
 import jsettlers.logic.player.InitialGameState;
@@ -28,7 +27,6 @@ import jsettlers.network.client.task.packets.TaskPacket;
 import jsettlers.network.synchronic.timer.ITaskExecutor;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20C;
@@ -38,7 +36,6 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.glfw.GLFW;
 import java.io.File;
-import java.io.IOException;
 import java.nio.FloatBuffer;
 
 
@@ -69,6 +66,8 @@ public class DemoGLFWFrame {
     public float maxY;
     public float minX;
     public float maxX;
+    public int screenX;
+    public int screenY;
 
 
     public DemoGLFWFrame() {
@@ -77,10 +76,12 @@ public class DemoGLFWFrame {
         this.height = 600;
         this.startTime = System.currentTimeMillis();
         this.saturation = 0.40f;
-        this.minY = -100;
-        this.maxY = 100;
-        this.minX = -100;
-        this.maxX = 100;
+        this.minY = 520;
+        this.maxY = 570;
+        this.minX = 50;
+        this.maxX = 300;
+        this.screenX = 0;
+        this.screenY = 0;
 
         // init glfw
         if (!GLFW.glfwInit()) {
@@ -106,56 +107,98 @@ public class DemoGLFWFrame {
         GLFW.glfwSwapInterval(1);
 
         // register keyboard handler
-        GLFWKeyCallbackI keyHandler = (windowId, key, scanCode, action, modifiers) -> {
-
-            if (key == GLFW.GLFW_KEY_UP && action == GLFW.GLFW_PRESS) {
-                this.maxY += 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_DOWN && action == GLFW.GLFW_PRESS) {
-                this.maxY -= 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_LEFT && action == GLFW.GLFW_PRESS) {
-                this.minY += 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_RIGHT && action == GLFW.GLFW_PRESS) {
-                this.minY -= 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_I && action == GLFW.GLFW_PRESS) {
-                this.minX += 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_K && action == GLFW.GLFW_PRESS) {
-                this.minX -= 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_J && action == GLFW.GLFW_PRESS) {
-                this.maxX += 10;
-            }
-
-            else if (key == GLFW.GLFW_KEY_L && action == GLFW.GLFW_PRESS) {
-                this.maxX -= 10;
-            }
-
-            else {
-                System.out.printf("key event\n");
-            }
-
-            System.out.printf("%d %d %d %d\n", (int) this.minX, (int) this.minY, (int) this.maxX, (int) this.maxY);
-
-            return;
-        };
-
-        GLFW.glfwSetKeyCallback(this.windowId, keyHandler);
+        GLFW.glfwSetKeyCallback(this.windowId, this::keyHandler);
 
         // make window visible
         GLFW.glfwShowWindow(this.windowId);
 
         // init gl capabilities for current context
         this.capabilities = GL.createCapabilities();
+
+        return;
+    }
+
+
+    public void keyHandler(long windowId, int key, int scanCode, int action, int modifier) {
+
+        if (action == GLFW.GLFW_PRESS) {
+
+            if (key == GLFW.GLFW_KEY_UP) {
+
+                    /*
+                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
+                        this.maxY -= 10;
+                    }
+
+                    else {
+                        this.maxY += 10;
+                    }
+                    */
+
+                this.screenY -= 20;
+            }
+
+            else if (key == GLFW.GLFW_KEY_DOWN) {
+
+                    /*
+                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
+                        this.minY += 10;
+                    }
+
+                    else {
+                        this.minY -= 10;
+                    }
+                    */
+
+                this.screenY += 20;
+            }
+
+            else if (key == GLFW.GLFW_KEY_LEFT) {
+
+                    /*
+                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
+                        this.minX += 10;
+                    }
+
+                    else {
+                        this.minX -= 10;
+                    }
+                    */
+
+                this.screenX += 20;
+            }
+
+            else if (key == GLFW.GLFW_KEY_RIGHT) {
+
+                    /*
+                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
+                        this.maxX -= 10;
+                    }
+
+                    else {
+                        this.maxX += 10;
+                    }
+                    */
+
+                this.screenX -= 20;
+            }
+
+            else if (key == GLFW.GLFW_KEY_I) {
+            }
+
+            else if (key == GLFW.GLFW_KEY_K) {
+            }
+
+            else if (key == GLFW.GLFW_KEY_J) {
+            }
+
+            else if (key == GLFW.GLFW_KEY_L) {
+            }
+
+            else {
+                // do nothing
+            }
+        }
 
         return;
     }
@@ -406,14 +449,13 @@ public class DemoGLFWFrame {
         JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) game.start();
         SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
 
-        // JSettlersFrame settlersFrame = new JSettlersFrame();
-        // StartingGamePanel startPanel = new StartingGamePanel(settlersFrame);
-        // runner.setListener(startPanel);
-
         // note: MapContent can only be instantiated after GameRunner.mainGrid is properly loaded
         while (runner.getMainGrid() == null) {
             Thread.sleep(100);
         }
+
+        // todo: mapContent needs reference to lwjgl context from the beginning
+        // todo: mapContent doesn't need reference to soundPlayer or gui position
 
         MapContent mapContent = new MapContent(runner, soundPlayer, ETextDrawPosition.DESKTOP);
         LWJGLDrawContext context = new LWJGLDrawContext(this.capabilities, false, 1.00f);
@@ -446,16 +488,15 @@ public class DemoGLFWFrame {
              */
 
             // todo: render map terrain using mapContent
-            // todo: fix minY not affecting screenViewport properly
 
             // draw map terrain
-            // FloatRectangle screenViewport = mapContent.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            FloatRectangle screenViewport = new FloatRectangle(this.minX, this.minY, this.maxX, this.maxY);
+            // FloatRectangle visibleMapSection = mapContent.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            FloatRectangle visibleMapSection = new FloatRectangle(-this.screenX + 20, -this.screenY + 520, -this.screenX + 290, -this.screenY + 580);
 
             // mapContent.drawContent(context, this.width, this.height);
-            // context.updateViewMatrix(0, 0, 0, 1, 1, 1);  // note: view matrix is set by mapContext during begin()
+            context.updateViewMatrix(this.screenX, this.screenY, 0, 1, 1, 1);  // note: view matrix is set by mapContext during begin()
             mapContent.mapContext.begin(context);
-            mapContent.drawMapTerrain(screenViewport);
+            mapContent.drawMapTerrain(visibleMapSection);
 
             // draw test sprite
             context.updateViewMatrix(0, 0, 0, 1, 1, 1);

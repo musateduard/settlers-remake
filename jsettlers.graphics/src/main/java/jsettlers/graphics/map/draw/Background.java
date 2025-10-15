@@ -1147,28 +1147,28 @@ public class Background implements IGraphicsBackgroundListener {
             exception.printStackTrace();
         }
 
-        MapRectangle screenArea = mapContext.getConverter().getMapForScreen(screen);
+        MapRectangle visibleMapSection = mapContext.getConverter().getMapForScreen(screen);
 
-        this.updateGeometry(mapContext, screenArea);
+        this.updateGeometry(mapContext, visibleMapSection);
 
         this.backgroundHandle.texture = Background.getTextureData(glContext);
 
-        this.backgroundHandle.visibleLineCount = screenArea.getLines();
+        this.backgroundHandle.visibleLineCount = visibleMapSection.getLines();
         this.backgroundHandle.visibleLineObjectList = new int[this.backgroundHandle.visibleLineCount * 2];
 
         for (int index = 0; index < this.backgroundHandle.visibleLineCount; index++) {
 
-            int startX = screenArea.getLineStartX(index);
+            int startX = visibleMapSection.getLineStartX(index);
             if (startX < 0) {
                 startX = 0;
             }
 
-            int endX = screenArea.getLineEndX(index);
+            int endX = visibleMapSection.getLineEndX(index);
             if (endX >= this.bufferWidth) {
                 endX = this.bufferWidth;
             }
 
-            int lineY = screenArea.getLineY(index);
+            int lineY = visibleMapSection.getLineY(index);
             if (lineY < 0 || lineY > this.bufferHeight) {
                 continue;
             }

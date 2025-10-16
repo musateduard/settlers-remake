@@ -23,11 +23,8 @@ import jsettlers.logic.player.PlayerSetting;
 import jsettlers.main.JSettlersGameGLFW;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
-import jsettlers.network.client.task.packets.TaskPacket;
-import jsettlers.network.synchronic.timer.ITaskExecutor;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWKeyCallbackI;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
@@ -39,35 +36,25 @@ import java.io.File;
 import java.nio.FloatBuffer;
 
 
-class MyTaskExecutor implements ITaskExecutor {
-
-    public MyTaskExecutor() {
-        return;
-    }
-
-
-    @Override
-    public void executeTask(TaskPacket task) {
-        System.out.printf("executing task object: %s\n", task);
-        return;
-    }
-}
-
-
 public class DemoGLFWFrame {
 
     public final int width;
     public final int height;
     public final long windowId;
     public final long startTime;
+    public long lastTime;
     public final float saturation;
     public final GLCapabilities capabilities;
     public float minY;
     public float maxY;
     public float minX;
     public float maxX;
-    public int screenX;
-    public int screenY;
+    public float screenX;
+    public float screenY;
+    public boolean keyUpPressed;
+    public boolean keyDownPressed;
+    public boolean keyLeftPressed;
+    public boolean keyRightPressed;
 
 
     public DemoGLFWFrame() {
@@ -124,75 +111,42 @@ public class DemoGLFWFrame {
         if (action == GLFW.GLFW_PRESS) {
 
             if (key == GLFW.GLFW_KEY_UP) {
-
-                    /*
-                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
-                        this.maxY -= 10;
-                    }
-
-                    else {
-                        this.maxY += 10;
-                    }
-                    */
-
-                this.screenY -= 20;
+                this.keyUpPressed = true;
             }
 
             else if (key == GLFW.GLFW_KEY_DOWN) {
-
-                    /*
-                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
-                        this.minY += 10;
-                    }
-
-                    else {
-                        this.minY -= 10;
-                    }
-                    */
-
-                this.screenY += 20;
+                this.keyDownPressed = true;
             }
 
             else if (key == GLFW.GLFW_KEY_LEFT) {
-
-                    /*
-                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
-                        this.minX += 10;
-                    }
-
-                    else {
-                        this.minX -= 10;
-                    }
-                    */
-
-                this.screenX += 20;
+                this.keyLeftPressed = true;
             }
 
             else if (key == GLFW.GLFW_KEY_RIGHT) {
-
-                    /*
-                    if (modifier == GLFW.GLFW_MOD_SHIFT) {
-                        this.maxX -= 10;
-                    }
-
-                    else {
-                        this.maxX += 10;
-                    }
-                    */
-
-                this.screenX -= 20;
+                this.keyRightPressed = true;
             }
 
-            else if (key == GLFW.GLFW_KEY_I) {
+            else {
+                // do nothing
+            }
+        }
+
+        else if (action == GLFW.GLFW_RELEASE) {
+
+            if (key == GLFW.GLFW_KEY_UP) {
+                this.keyUpPressed = false;
             }
 
-            else if (key == GLFW.GLFW_KEY_K) {
+            else if (key == GLFW.GLFW_KEY_DOWN) {
+                this.keyDownPressed = false;
             }
 
-            else if (key == GLFW.GLFW_KEY_J) {
+            else if (key == GLFW.GLFW_KEY_LEFT) {
+                this.keyLeftPressed = false;
             }
 
-            else if (key == GLFW.GLFW_KEY_L) {
+            else if (key == GLFW.GLFW_KEY_RIGHT) {
+                this.keyRightPressed = false;
             }
 
             else {
@@ -440,11 +394,12 @@ public class DemoGLFWFrame {
 
         InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
         JSettlersGameGLFW game = new JSettlersGameGLFW(selectedMap, initialGameState);
+        TaskExecutorGLFW taskExecutor = new TaskExecutorGLFW();
 
-        game.networkConnector.getGameClock().setTaskExecutor(new MyTaskExecutor());
+        game.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
 
         MatchConstants.init(game.networkConnector.getGameClock(), randomSeed);
-        MatchConstants.clock().setTaskExecutor(new MyTaskExecutor());
+        MatchConstants.clock().setTaskExecutor(taskExecutor);
 
         JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) game.start();
         SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
@@ -464,11 +419,13 @@ public class DemoGLFWFrame {
 
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
-            float currentTime = (System.currentTimeMillis() - this.startTime) / 1000.00f;
+            long currentTime = System.currentTimeMillis();
+            long currentTimeNano = System.nanoTime();
+            float currentTimeDelta = (currentTime - this.startTime) / 1000.00f;
 
-            float red = (float) (Math.sin(currentTime) * this.saturation + (1.00f - this.saturation));
-            float green = (float) (Math.sin(currentTime + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
-            float blue = (float) (Math.sin(currentTime + 4.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+            float red = (float) (Math.sin(currentTimeDelta) * this.saturation + (1.00f - this.saturation));
+            float green = (float) (Math.sin(currentTimeDelta + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+            float blue = (float) (Math.sin(currentTimeDelta + 4.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
 
             // set clear color
             // GL11C.glClearColor(0.80f, 0.80f, 0.80f, 1.00f);
@@ -479,6 +436,8 @@ public class DemoGLFWFrame {
 
             // poll events
             GLFW.glfwPollEvents();
+
+            this.updateCameraPosition(currentTimeNano, this.lastTime);
 
             /*
             note:
@@ -506,6 +465,49 @@ public class DemoGLFWFrame {
 
             // swap buffers
             GLFW.glfwSwapBuffers(this.windowId);
+
+            this.lastTime = System.nanoTime();
+        }
+
+        return;
+    }
+
+
+    public void updateCameraPosition(long currentTime, long lastTime) {
+
+        final float CAMERA_SPEED_UPMS = 800.00f;  // units per millisecond
+        final float TIME_DELTA_MILLIS = (currentTime - lastTime) / 1_000_000.00f;
+
+        float vectorX = 0.00f;
+        float vectorY = 0.00f;
+
+        if (this.keyUpPressed) {
+            vectorY -= 1.00f;
+        }
+
+        if (this.keyDownPressed) {
+            vectorY += 1.00f;
+        }
+
+        if (this.keyLeftPressed) {
+            vectorX += 1.00f;
+        }
+
+        if (this.keyRightPressed) {
+            vectorX -= 1.00f;
+        }
+
+        float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+
+        if (vectorMagnitude > 0.00f) {
+
+            float normalX = vectorX / vectorMagnitude;
+            float normalY = vectorY / vectorMagnitude;
+
+            float distance = CAMERA_SPEED_UPMS * TIME_DELTA_MILLIS;
+
+            this.screenX += normalX * distance;
+            this.screenY += normalY * distance;
         }
 
         return;

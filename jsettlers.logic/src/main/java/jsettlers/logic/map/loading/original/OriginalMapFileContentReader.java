@@ -146,22 +146,42 @@ class OriginalMapFileContentReader {
 		mapContent = getBytesFromInputStream(originalMapFile);
 	}
 
-	// - reads the whole stream and returns it as BYTE-Array
-	private static byte[] getBytesFromInputStream(InputStream is) throws IOException {
-		// - read file to buffer
-		try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+
+    /**
+     * reads an {@link InputStream} object and returns the read content as {@code byte[]}
+     *
+     * @param inputStream
+     * @return
+     * @throws IOException
+     */
+	private static byte[] getBytesFromInputStream(InputStream inputStream) throws IOException {
+
+        // read file to buffer
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
 			byte[] buffer = new byte[0xFFFF];
+            int startOffset = 0;
+            int readSize = inputStream.read(buffer);
 
-			for (int len; (len = is.read(buffer)) != -1; ) {
-				os.write(buffer, 0, len);
-			}
-			os.flush();
+            while (readSize != -1) {
 
-			return os.toByteArray();
-		} catch (Exception e) {
+                outputStream.write(buffer, startOffset, readSize);
+                readSize = inputStream.read(buffer);
+
+                continue;
+            }
+
+			outputStream.flush();
+            byte[] fileByteArray = outputStream.toByteArray();
+
+			return fileByteArray;
+		}
+
+        catch (Exception exception) {
 			return new byte[0];
 		}
 	}
+
 
 	// - Read boolean as single byte from Buffer
 	private boolean readBooleanFrom(int offset) throws MapLoadException {

@@ -1137,7 +1137,19 @@ public class Background implements IGraphicsBackgroundListener {
 
         try {
             if (this.backgroundHandle == null || !this.backgroundHandle.isValid()) {
-                this.generateGeometry(mapContext);  // note: why does generateGeometry take so long?
+
+                /*
+                note:
+
+                why does generateGeometry take so long?
+                generateGeometry generates list of vertexes for each triangle
+                this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
+
+                todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
+                note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
+                */
+
+                this.generateGeometry(mapContext);
                 mapContext.getGl().setHeightMatrix(mapContext.getConverter().getMatrixWithHeight());
             }
         }
@@ -1185,7 +1197,7 @@ public class Background implements IGraphicsBackgroundListener {
 	private void generateGeometry(MapDrawContext context) throws IllegalBufferException {
 
 		int vertices = this.bufferWidth * this.bufferHeight * 3 * 2;
-        this.backgroundHandle = context.getGl().createBackgroundDrawCall(vertices, getTextureData(context.getGl()));
+        this.backgroundHandle = context.getGl().createBackgroundDrawCall(vertices, Background.getTextureData(context.getGl()));
 
         this.fowEnabled = this.hasdgp && this.dgp.isFoWEnabled();
 
@@ -1248,20 +1260,32 @@ public class Background implements IGraphicsBackgroundListener {
 		}
 	}
 
+
 	/**
-	 * Adds the two triangles for a point to the list of verteces
+	 * Adds the two triangles for a point to the list of vertexes
 	 */
 	private void addTrianglesToGeometry(MapDrawContext context, ByteBuffer buffer, int x, int y) {
-		addTriangleToGeometry(context, buffer, x, y, true,x*37 + y*17);
-		addTriangleToGeometry(context, buffer, x, y, false, x);
+
+        /*
+        note:
+
+        why is useSecondParameter calculated as x * 37 + y * 17
+        */
+
+        this.addTriangleToGeometry(context, buffer, x, y, true, x * 37 + y * 17);
+		this.addTriangleToGeometry(context, buffer, x, y, false, x);
+
+        return;
 	}
 
+
 	private void addTriangleToGeometry(MapDrawContext context, ByteBuffer buffer, int x1, int y, boolean up, int useSecondParameter) {
-		int y1 = y + (up?1:0);
-		int x2 = x1 + (up?0:1);
-		int y2 = y + (up?0:1);
+
+		int y1 = y + (up ? 1 : 0);
+		int x2 = x1 + (up ? 0 : 1);
+		int y2 = y + (up ? 0 : 1);
 		int x3 = x1 + 1;
-		int y3 = y + (up?1:0);
+		int y3 = y + (up ? 1 : 0);
 
 		ELandscapeType leftLandscape = context.getLandscape(x1, y1);
 		ELandscapeType aLandscape = context.getLandscape(x2, y2);
@@ -1269,95 +1293,138 @@ public class Background implements IGraphicsBackgroundListener {
 
 		float[] texturePos;
 		int textureIndex;
-		int orientationIndex = up?0:1;
+		int orientationIndex = up ? 0 : 1;
+
 		if (aLandscape == leftLandscape && aLandscape == rightLandscape) {
 			textureIndex = aLandscape.getImageNumber();
 			texturePos = ETextureOrientation.CONTINUOS[orientationIndex];
-		} else {
+		}
+
+        else {
+
 			textureIndex = leftLandscape.getImageNumber();
-			for(TextureIntersections intersect : borderTextures) {
+
+			for (TextureIntersections intersect : this.borderTextures) {
+
 				int type1count = 0;
 				int type1acount = 0;
 				int type2count = 0;
 
-				if(leftLandscape == intersect.type1) type1count++;
-				else if(leftLandscape == intersect.type1alt) type1acount++;
+				if (leftLandscape == intersect.type1) {
+                    type1count++;
+                }
 
-				if(aLandscape == intersect.type1) type1count++;
-				else if(aLandscape == intersect.type1alt) type1acount++;
+				else if (leftLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
 
-				if(rightLandscape == intersect.type1) type1count++;
-				else if(rightLandscape == intersect.type1alt) type1acount++;
+				if (aLandscape == intersect.type1) {
+                    type1count++;
+                }
 
-				if(leftLandscape == intersect.type2) type2count++;
-				if(aLandscape == intersect.type2) type2count++;
-				if(rightLandscape == intersect.type2) type2count++;
+				else if (aLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
 
-				if(type1count + type1acount + type2count != 3 || type1acount == 2 || type2count == 0) continue;
+				if (rightLandscape == intersect.type1) {
+                    type1count++;
+                }
+
+				else if (rightLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
+
+				if (leftLandscape == intersect.type2) {
+                    type2count++;
+                }
+
+				if (aLandscape == intersect.type2) {
+                    type2count++;
+                }
+
+				if (rightLandscape == intersect.type2) {
+                    type2count++;
+                }
+
+				if (type1count + type1acount + type2count != 3 || type1acount == 2 || type2count == 0) {
+                    continue;
+                }
 
 				textureIndex = intersect.baseIndex;
-				textureIndex += (type2count==2)?2:0;
-				textureIndex += useSecondParameter&1;
+				textureIndex += (type2count == 2) ? 2 : 0;
+				textureIndex += useSecondParameter & 1;
 				break;
 			}
 
 			if (leftLandscape == rightLandscape) {
 				texturePos = ETextureOrientation.ORIENTATION[orientationIndex];
-			} else if (leftLandscape == aLandscape) {
+			}
+
+            else if (leftLandscape == aLandscape) {
 				texturePos = ETextureOrientation.LEFT[orientationIndex];
-			} else {
+			}
+
+            else {
 				texturePos = ETextureOrientation.RIGHT[orientationIndex];
 			}
 		}
 
-		int[] positions = TEXTURE_POSITIONS[textureIndex];
 		// texture position
+		int[] positions = Background.TEXTURE_POSITIONS[textureIndex];
 		int addDx = 0;
 		int addDy = 0;
+
 		if (positions[2] >= 2) {
 			addDx = x1 * DrawConstants.DISTANCE_X - y * DrawConstants.DISTANCE_X / 2;
 			addDy = y * DrawConstants.TEXTUREUNIT_Y;
-			addDx = realModulo(addDx, (positions[2] - 1) * TEXTURE_GRID);
-			addDy = realModulo(addDy, (positions[2] - 1) * TEXTURE_GRID);
+			addDx = Background.realModulo(addDx, (positions[2] - 1) * Background.TEXTURE_GRID);
+			addDy = Background.realModulo(addDy, (positions[2] - 1) * Background.TEXTURE_GRID);
 		}
-		addDx += positions[0] * TEXTURE_GRID;
-		addDy += positions[1] * TEXTURE_GRID;
+
+		addDx += positions[0] * Background.TEXTURE_GRID;
+		addDy += positions[1] * Background.TEXTURE_GRID;
 
 		{
 			// left
-			float u = (texturePos[0] + addDx) / TEXTURE_SIZE;
-			float v = (texturePos[1] + addDy) / TEXTURE_SIZE;
-			addPointToGeometry(context, buffer, up?x2:x1, up?y2:y1, u, v);
+			float u = (texturePos[0] + addDx) / Background.TEXTURE_SIZE;
+			float v = (texturePos[1] + addDy) / Background.TEXTURE_SIZE;
+            this.addPointToGeometry(context, buffer, up ? x2 : x1, up ? y2 : y1, u, v);
 		}
 		{
 			// bottom
-			float u = (texturePos[2] + addDx) / TEXTURE_SIZE;
-			float v = (texturePos[3] + addDy) / TEXTURE_SIZE;
-			addPointToGeometry(context, buffer, up?x1:x2, up?y1:y2, u, v);
+			float u = (texturePos[2] + addDx) / Background.TEXTURE_SIZE;
+			float v = (texturePos[3] + addDy) / Background.TEXTURE_SIZE;
+			this.addPointToGeometry(context, buffer, up ? x1 : x2, up ? y1 : y2, u, v);
 		}
 		{
 			// right
-			float u = (texturePos[4] + addDx) / TEXTURE_SIZE;
-			float v = (texturePos[5] + addDy) / TEXTURE_SIZE;
-			addPointToGeometry(context, buffer, x3, y3, u, v);
+			float u = (texturePos[4] + addDx) / Background.TEXTURE_SIZE;
+			float v = (texturePos[5] + addDy) / Background.TEXTURE_SIZE;
+            this.addPointToGeometry(context, buffer, x3, y3, u, v);
 		}
 
+        return;
 	}
 
 
 	private void addPointToGeometry(MapDrawContext context, ByteBuffer buffer, int x, int y, float u, float v) {
+
 		int height = context.getHeight(x, y);
 		byte visibleStatus = context.getVisibleStatus(x, y);
 
 		float color = 0;
-		if (x > 0 && x < mapWidth - 2 && y > 0 && y < mapHeight - 2 && (visibleStatus > 0 || !fowEnabled)) {
-			int dHeight = context.getHeight(x, y-1) - height;
+		if (x > 0 && x < this.mapWidth - 2 && y > 0 && y < this.mapHeight - 2 && (visibleStatus > 0 || !this.fowEnabled)) {
 
+            int dHeight = context.getHeight(x, y - 1) - height;
 			color = 0.875f + dHeight * .125f;
+
 			if (color < 0.4f) {
 				color = 0.4f;
 			}
-			if(fowEnabled) color *= visibleStatus / (float)CommonConstants.FOG_OF_WAR_VISIBLE;
+
+            if (this.fowEnabled) {
+                color *= visibleStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            }
 		}
 
 		buffer.putFloat(x);
@@ -1366,7 +1433,10 @@ public class Background implements IGraphicsBackgroundListener {
 		buffer.putFloat(u);
 		buffer.putFloat(v);
 		buffer.putFloat(color);
+
+        return;
 	}
+
 
 	private static int realModulo(int number, int modulo) {
 		if (number >= 0) {

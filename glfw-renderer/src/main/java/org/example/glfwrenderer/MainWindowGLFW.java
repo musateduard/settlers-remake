@@ -20,7 +20,6 @@ import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.map.loading.list.DirectoryMapLister;
 import jsettlers.logic.player.InitialGameState;
 import jsettlers.logic.player.PlayerSetting;
-import jsettlers.main.JSettlersGameGLFW;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
 import org.joml.Matrix4f;
@@ -36,7 +35,7 @@ import java.io.File;
 import java.nio.FloatBuffer;
 
 
-public class DemoGLFWFrame {
+public class MainWindowGLFW {
 
     public final int width;
     public final int height;
@@ -57,7 +56,7 @@ public class DemoGLFWFrame {
     public boolean keyRightPressed;
 
 
-    public DemoGLFWFrame() {
+    public MainWindowGLFW() {
 
         this.width = 800;
         this.height = 600;
@@ -409,6 +408,7 @@ public class DemoGLFWFrame {
             Thread.sleep(100);
         }
 
+        // todo: mapContent should be member of JSettlersGame
         // todo: mapContent needs reference to lwjgl context from the beginning
         // todo: mapContent doesn't need reference to soundPlayer or gui position
 
@@ -419,8 +419,8 @@ public class DemoGLFWFrame {
 
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
-            long currentTime = System.currentTimeMillis();
             long currentTimeNano = System.nanoTime();
+            long currentTime = System.currentTimeMillis();
             float currentTimeDelta = (currentTime - this.startTime) / 1000.00f;
 
             float red = (float) (Math.sin(currentTimeDelta) * this.saturation + (1.00f - this.saturation));
@@ -444,7 +444,7 @@ public class DemoGLFWFrame {
 
             drawContent doesn't work in current setup
             try rendering map elements separately one by one
-             */
+            */
 
             // todo: render map terrain using mapContent
 

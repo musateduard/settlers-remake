@@ -21,10 +21,11 @@ import java.io.ObjectOutputStream;
 import jsettlers.logic.movable.civilian.BuildingWorkerMovable;
 import jsettlers.network.client.interfaces.IGameClock;
 
+
 /**
- * 
+ *
  * @author Andreas Eberle
- * 
+ *
  */
 public final class MatchConstants {
 	/**
@@ -96,5 +97,4 @@ public final class MatchConstants {
 		gameRandom = (ExtendedRandom) ois.readObject();
 		aiRandom = (ExtendedRandom) ois.readObject();
 	}
-
 }

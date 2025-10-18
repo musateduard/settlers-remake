@@ -241,29 +241,33 @@ public class MapObjectDrawer {
 		this.visibleGrid = visibleGrid;
 	}
 
+
 	/**
 	 * Draws a map object at a given position.
 	 *
-	 * @param x
-	 * 		THe position to draw the object.
-	 * @param y
-	 * 		THe position to draw the object.
-	 * @param object
-	 * 		The object (tree, ...) to draw.
+	 * @param x The position to draw the object.
+	 * @param y THe position to draw the object.
+	 * @param object The object (tree, ...) to draw.
 	 */
 	public void drawMapObject(int x, int y, IMapObject object) {
-		byte fogStatus = visibleGrid != null ? visibleGrid[x][y] : CommonConstants.FOG_OF_WAR_VISIBLE;
-		if (fogStatus == 0) {
+
+		byte fogStatus = this.visibleGrid != null ? this.visibleGrid[x][y] : CommonConstants.FOG_OF_WAR_VISIBLE;
+
+        if (fogStatus == 0) {
 			return; // break
 		}
-		float color = getColor(fogStatus);
 
-		drawObject(x, y, object, color);
+        float color = MapObjectDrawer.getColor(fogStatus);
+
+		this.drawObject(x, y, object, color);
 
 		if (object.getNextObject() != null) {
-			drawMapObject(x, y, object.getNextObject());
+			this.drawMapObject(x, y, object.getNextObject());
 		}
+
+        return;
 	}
+
 
 	public void drawDock(int x, int y, IMapObject object) {
 		byte fogStatus = context.getVisibleStatus(x, y);

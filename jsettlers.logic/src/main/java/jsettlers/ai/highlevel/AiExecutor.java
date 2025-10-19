@@ -29,7 +29,7 @@ import jsettlers.network.synchronic.timer.INetworkTimerable;
 
 /**
  * The AiExecutor holds all IWhatToDoAi high level KIs and executes them when NetworkTimer notifies it.
- * 
+ *
  * @author codingberlin
  */
 public class AiExecutor implements INetworkTimerable {

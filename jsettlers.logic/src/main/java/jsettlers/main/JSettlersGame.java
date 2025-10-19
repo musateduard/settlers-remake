@@ -265,8 +265,13 @@ public class JSettlersGame {
                     initialGameState.getPlayerId(), multiplayer
                 );
 
-				connector.loadUIState(playerState.getUiState()); // This is required after the GuiInterface instantiation so that
-				// ConstructionMarksThread has it's mapArea variable initialized via the EActionType.SCREEN_CHANGE event.
+                /*
+                note:
+
+                This is required after the GuiInterface instantiation so that
+				ConstructionMarksThread has it's mapArea variable initialized via the EActionType.SCREEN_CHANGE event.
+                */
+				connector.loadUIState(playerState.getUiState());
 
 				this.aiExecutor = new AiExecutor(initialGameState.getPlayerSettings(), this.mainGrid, networkConnector.getTaskScheduler());
 				networkConnector.getGameClock().schedule(this.aiExecutor, (short) 1000);

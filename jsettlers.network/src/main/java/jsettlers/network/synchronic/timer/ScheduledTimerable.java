@@ -16,9 +16,9 @@ package jsettlers.network.synchronic.timer;
 
 /**
  * Container class for a {@link INetworkTimerable}, it's periodic execution delay and it's current execution delay.
- * 
+ *
  * @author Andreas Eberle
- * 
+ *
  */
 public final class ScheduledTimerable {
 
@@ -38,7 +38,7 @@ public final class ScheduledTimerable {
 
 	/**
 	 * Checks if this task needs to be executed. (Is able to execute tasks serveral times if needed
-	 * 
+	 *
 	 * @param timeSlice
 	 *            number of milliseconds of the game time that expired since the last call.
 	 */

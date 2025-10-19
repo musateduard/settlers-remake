@@ -61,7 +61,7 @@ public final class RescheduleTimer implements INetworkTimerable, Serializable {
 
 	/**
 	 * Schedules the given {@link IScheduledTimerable} in max delay milliseconds.
-	 * 
+	 *
 	 * @param t
 	 * @param delay
 	 */

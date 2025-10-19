@@ -12,7 +12,7 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *******************************************************************************/
-package jsettlers.main;
+package org.example.glfwrenderer;
 
 import jsettlers.ai.highlevel.AiExecutor;
 import jsettlers.common.CommitInfo;
@@ -21,14 +21,12 @@ import jsettlers.common.logging.MultiplexingOutputStream;
 import jsettlers.common.map.IGraphicsGrid;
 import jsettlers.common.menu.EGameError;
 import jsettlers.common.menu.EProgressState;
-import jsettlers.common.menu.IMapInterfaceConnector;
 import jsettlers.common.menu.IStartedGame;
 import jsettlers.common.menu.IStartingGame;
 import jsettlers.common.menu.IStartingGameListener;
 import jsettlers.common.player.IInGamePlayer;
 import jsettlers.common.resources.ResourceManager;
 import jsettlers.common.statistics.IGameTimeProvider;
-import jsettlers.input.GuiInterface;
 import jsettlers.input.IGameStoppable;
 import jsettlers.input.PlayerState;
 import jsettlers.logic.buildings.Building;
@@ -41,6 +39,8 @@ import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.movable.MovableManager;
 import jsettlers.logic.player.InitialGameState;
 import jsettlers.logic.timer.RescheduleTimer;
+import jsettlers.main.GameTimeProvider;
+import jsettlers.main.ReplayStartInformation;
 import jsettlers.main.replay.ReplayUtils;
 import jsettlers.network.client.OfflineNetworkConnector;
 import jsettlers.network.client.interfaces.INetworkConnector;
@@ -56,8 +56,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+
 /**
- * This class can start a Thread that loads and sets up a game and wait's for its termination.
+ * This class can start a Thread that loads and sets up a game and waits for its termination.
  *
  * @author Andreas Eberle
  */
@@ -129,12 +130,13 @@ public class JSettlersGameGLFW {
 
 
 	/**
-	 * Creates a new {@link JSettlersGameGLFW} object with an {@link OfflineNetworkConnector}.
+	 * Creates a {@link JSettlersGameGLFW} instance with {@link OfflineNetworkConnector}.
 	 *
 	 * @param mapCreator
+     * @param initialGameState
 	 */
 	public JSettlersGameGLFW(IGameCreator mapCreator, InitialGameState initialGameState) {
-		this(mapCreator, new OfflineNetworkConnector(), initialGameState, CommonConstants.CONTROL_ALL, false, null);
+		this(mapCreator, new OfflineNetworkConnector(), initialGameState, true, false, null);
         return;
 	}
 
@@ -196,8 +198,8 @@ public class JSettlersGameGLFW {
 		// private IStartingGameListener startingGameListener;
 		private MainGrid mainGrid;
 		private GameTimeProvider gameTimeProvider;
-		private EProgressState progressState;
-		private float progress;
+		// private EProgressState progressState;
+		// private float progress;
 		private Consumer<IStartedGame> exitListener;
 		private boolean gameRunning;
 		private AiExecutor aiExecutor;
@@ -212,11 +214,19 @@ public class JSettlersGameGLFW {
 		public void run() {
 
 			try {
-				// if (this.startingGameListener != null) {
-				// 	this.startingGameListener.startingLoadingGame();
-				// }
 
-				this.updateProgressListener(EProgressState.LOADING, 0.1f);
+                /*
+                note:
+
+                notify startingGameListener of loading status
+                not needed when not using swing
+
+				if (this.startingGameListener != null) {
+					this.startingGameListener.startingLoadingGame();
+				}
+                */
+
+				// this.updateProgressListener(EProgressState.LOADING, 0.1f);  // not needed
 
                 JSettlersGameGLFW.clearState();
 				MatchConstants.init(networkConnector.getGameClock(), initialGameState.getRandomSeed());
@@ -230,7 +240,7 @@ public class JSettlersGameGLFW {
 					System.out.println("Cannot write jsettlers.integration.replay file.");
 				}
 
-				this.updateProgressListener(EProgressState.LOADING_MAP, 0.3f);
+				// this.updateProgressListener(EProgressState.LOADING_MAP, 0.3f);  // not needed
 
 				MainGridWithUiSettings gridWithUiState = mapCreator.loadMainGrid(initialGameState.getPlayerSettings(), initialGameState.getStartResources());
 				PlayerState playerState = gridWithUiState.getPlayerState(initialGameState.getPlayerId());
@@ -238,7 +248,8 @@ public class JSettlersGameGLFW {
 
 				RescheduleTimer.schedule(MatchConstants.clock()); // schedule timer
 
-				this.updateProgressListener(EProgressState.LOADING_IMAGES, 0.7f);
+				// this.updateProgressListener(EProgressState.LOADING_IMAGES, 0.7f);  // not needed
+
 				this.gameTimeProvider = new GameTimeProvider(MatchConstants.clock());
 
 				this.mainGrid.initForPlayer(initialGameState.getPlayerId(), playerState.getFogOfWar());
@@ -247,7 +258,7 @@ public class JSettlersGameGLFW {
                 // this.waitForStartingGameListener();  // disable
                 // this.startingGameListener.waitForPreloading();  // disable
 
-                this.updateProgressListener(EProgressState.WAITING_FOR_OTHER_PLAYERS, 0.98f);
+                // this.updateProgressListener(EProgressState.WAITING_FOR_OTHER_PLAYERS, 0.98f);  // not needed
 
 				if (replayFileInputStream != null) {
 					MatchConstants.clock().loadReplayLogFromStream(replayFileInputStream);
@@ -299,7 +310,6 @@ public class JSettlersGameGLFW {
 
 				System.setErr(systemErrorStream);
 				System.setOut(systemOutStream);
-
 			}
 
             catch (MapLoadException exception) {
@@ -377,6 +387,14 @@ public class JSettlersGameGLFW {
 		}
 
 
+        /**
+         * this function updates the game loading progress state based on the current load stage.
+         * (doesn't seem very necessary)
+         *
+         * @param progressState {@link EProgressState} enum containing progress stage to set
+         * @param progress {@code float} number with current load percentage
+         */
+        /*
 		private void updateProgressListener(EProgressState progressState, float progress) {
 
 			this.progressState = progressState;
@@ -388,6 +406,7 @@ public class JSettlersGameGLFW {
 
             return;
 		}
+        */
 
 
 		private void reportFail(EGameError gameError, Exception exception) {
@@ -524,6 +543,13 @@ public class JSettlersGameGLFW {
 	}
 
 
+    /**
+     * the {@link #clearState()} method resets state for several classes by calling their static methods.
+     * this approach is inherently flawed and wouldn't be necessary if said classes didn't have static fields
+     * and thus not needing to keep track of their state.
+     * all state should be contained in a class's instance and cleared when the class is destructed.
+     * this method should also not be necessary.
+     */
 	public static void clearState() {
 
 		RescheduleTimer.stopAndClear();

@@ -392,15 +392,15 @@ public class MainWindowGLFW {
         MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
 
         InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
-        JSettlersGameGLFW game = new JSettlersGameGLFW(selectedMap, initialGameState);
+        JSettlersGameGLFW offlineGame = new JSettlersGameGLFW(selectedMap, initialGameState);
         TaskExecutorGLFW taskExecutor = new TaskExecutorGLFW();
 
-        game.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
+        offlineGame.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
 
-        MatchConstants.init(game.networkConnector.getGameClock(), randomSeed);
+        MatchConstants.init(offlineGame.networkConnector.getGameClock(), randomSeed);
         MatchConstants.clock().setTaskExecutor(taskExecutor);
 
-        JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) game.start();
+        JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) offlineGame.start();
         SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
 
         // note: MapContent can only be instantiated after GameRunner.mainGrid is properly loaded

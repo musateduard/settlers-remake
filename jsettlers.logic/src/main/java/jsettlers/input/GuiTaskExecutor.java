@@ -352,7 +352,7 @@ class GuiTaskExecutor implements ITaskExecutor {
 	 *            position to move to
 	 * @param movableIds
 	 *            A list of the id's of the movables.
-	 * @param moveToType 
+	 * @param moveToType
 	 *            How to move there.
 	 */
 	private void moveSelectedTo(ShortPoint2D targetPosition, List<Integer> movableIds, EMoveToType moveToType) {

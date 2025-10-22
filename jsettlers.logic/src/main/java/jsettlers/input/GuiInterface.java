@@ -405,7 +405,7 @@ public class GuiInterface implements IMapInterfaceListener, ITaskExecutorGuiInte
 			case UNLOAD_FERRIES:
 				unloadFerries();
 				break;
-				
+
 			case CHANGE_MOVABLE_SETTINGS:
 				ChangeMovableSettingsAction ratioAction = (ChangeMovableSettingsAction) action;
 

@@ -17,8 +17,11 @@ package jsettlers.logic.map.loading.original;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -40,11 +43,14 @@ import jsettlers.logic.map.loading.original.data.OriginalDestroyBuildingsWinCond
 import jsettlers.logic.map.loading.original.data.OriginalProduceGoodsWinCondition;
 import jsettlers.logic.map.loading.original.data.OriginalSurviveDurationWinCondition;
 
+
 /**
  * @author Thomas Zeugner
  */
 class OriginalMapFileContentReader {
+
 	private class MapResourceInfo {
+
 		final EOriginalMapFilePartType partType;
 		public final int offset;
 		public final int size;
@@ -52,12 +58,16 @@ class OriginalMapFileContentReader {
 		final byte initialCryptKey;
 		private int decryptLimit;
 
+
 		MapResourceInfo(EOriginalMapFilePartType partType, int offset, int size, int cryptKey) {
+
 			this.partType = partType;
 			this.offset = offset;
 			this.size = size;
-			initialCryptKey = (byte) cryptKey;
-			lastCryptKey = cryptKey;
+			this.initialCryptKey = (byte) cryptKey;
+			this.lastCryptKey = cryptKey;
+
+            return;
 		}
 
 		// - Decrypt a file resource
@@ -148,10 +158,11 @@ class OriginalMapFileContentReader {
 
 
     /**
-     * reads an {@link InputStream} object and returns the read content as {@code byte[]}
+     * this function reads an {@link InputStream}, writes the content to a {@link ByteArrayOutputStream} and
+     * then returns a {@code byte[]} with the read content.
      *
-     * @param inputStream
-     * @return
+     * @param inputStream {@link InputStream} source object to read from
+     * @return {@code byte[]} byte array of the read content
      * @throws IOException
      */
 	private static byte[] getBytesFromInputStream(InputStream inputStream) throws IOException {
@@ -205,17 +216,22 @@ class OriginalMapFileContentReader {
 		return mapContent[offset] & 0xFF;
 	}
 
+
 	// - Read Big-Ending INT from Buffer
 	private int readBEIntFrom(int offset) {
-		if (mapContent == null) {
+
+		if (this.mapContent == null) {
 			return 0;
-		} else {
-			return (mapContent[offset] & 0xFF) |
-					((mapContent[offset + 1] & 0xFF) << 8) |
-					((mapContent[offset + 2] & 0xFF) << 16) |
-					((mapContent[offset + 3] & 0xFF) << 24);
+		}
+
+        else {
+            byte[] bytes = Arrays.copyOfRange(this.mapContent, offset, offset + 4);
+            int number = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+
+			return number;
 		}
 	}
+
 
 	// - Read Big-Ending 2 Byte Number from Buffer
 	private int readBEWordFrom(int offset) {
@@ -273,82 +289,125 @@ class OriginalMapFileContentReader {
 		return resources.get(type);
 	}
 
-	// - calculates the checksum of the file and compares it
-	boolean isChecksumValid() {
-		// - read Checksum from File
-		int fileChecksum = readBEIntFrom(0);
 
-		mapData.fileChecksum = fileChecksum;
+    /**
+     * this method calculates the map file checksum and compares it with the value stored in the file at offset 0x00.
+     *
+     * @return {@code boolean} {@code true} if values match {@code false} otherwise
+     */
+    public boolean isChecksumValid() {
 
-		// - make "count" a Multiple of four
-		int count = mapContent.length & 0xFFFFFFFC;
-		int currentChecksum = 0;
+        // - read Checksum from File
+        int fileChecksum = this.readBEIntFrom(0);
 
-		// - Map Content starts at Byte 8
-		for (int i = 8; i < count; i += 4) {
+        this.mapData.fileChecksum = fileChecksum;
 
-			// - read DWord
-			int currentInt = (mapContent[i] & 0xFF) |
-					((mapContent[i + 1] & 0xFF) << 8) |
-					((mapContent[i + 2] & 0xFF) << 16) |
-					((mapContent[i + 3] & 0xFF) << 24);
+        // - make "count" a Multiple of four
+        int count = this.mapContent.length & 0xFFFFFFFC;
+        int currentChecksum = 0;
 
-			// - using: Logic Right-Shift-Operator: >>>
-			currentChecksum = ((currentChecksum >>> 31) | ((currentChecksum << 1) ^ currentInt));
-		}
+        // - Map Content starts at Byte 8
+        for (int index = 8; index < count; index += 4) {
 
-		// - return TRUE if the checksum is OK!
-		return (currentChecksum == fileChecksum);
-	}
+            // - read DWord
+            byte[] bytes = Arrays.copyOfRange(this.mapContent, index, index + 4);
+            int currentInt = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+
+            // - using: Logic Right-Shift-Operator: >>>
+            currentChecksum = ((currentChecksum >>> 31) | ((currentChecksum << 1) ^ currentInt));
+        }
+
+        // - return TRUE if the checksum is OK!
+        boolean result = (currentChecksum == fileChecksum);
+
+        return result;
+    }
+
 
 	boolean isSinglePlayerMap() {
 		return singlePlayerMap;
 	}
 
-	// - Reads in the Map-File-Structure
-	void loadMapResources() throws MapLoadException {
-		// - Version of File: 0x0A : Original Settlers Map ; 0x0B : Amazon Map
-		int fileVersion = readBEIntFrom(4);
 
-		// - check if the Version is compatible?
-		if ((fileVersion != EOriginalMapFileVersion.DEFAULT.value) && (fileVersion != EOriginalMapFileVersion.AMAZONS.value)) {
-			throw new MapLoadException("The version " + fileVersion + " is unknown");
-		}
+    // - Reads in the Map-File-Structure
+    void loadMapResources() throws MapLoadException {
 
-		// - Data length
-		int dataLength = mapContent.length;
+        /*
+        note:
 
-		// - start of map-content
-		int filePos = 8;
-		int partTypeTemp;
+        offset 0 contains the file checksum
+        the checksum is calculated starting at offset 0x08 up to the end of the file
+        the map file is used in its raw form to calculate the checksum without decrypting the chunk bytes
+        editing the checksum bytes will lead to map corruption but
+        not all parts when edited will lead to corruption
 
-		do {
-			partTypeTemp = readBEIntFrom(filePos);
-			int partLen = readBEIntFrom(filePos + 4);
+        map file structure
 
-			// - don't know what the [FileTypeSub] is for -> it should by zero
-			int partType = (partTypeTemp & 0x0000FFFF);
+        struct map_file = {
+            checksum: u32
+            file_version: u32 0x0A (original settlers map) or 0x0B (amazons map)
+            chunk_decrypt_key: u32
+            chunk_size: u32
+            chunk_data: byte[chunk_size]
+            ...
+        }
+        */
 
-			// - position/start of data
-			int mapPartPos = filePos + 8;
+        // - Version of File: 0x0A : Original Settlers Map ; 0x0B : Amazon Map
+        int fileVersion = this.readBEIntFrom(4);
 
-			// - debug output
-			// System.out.println("@ "+ filePos +" size: "+ PartLen +" Type:"+ partType +" Sub:"+ PartTypeSub +" -> "+
-			// OriginalMapFileDataStructs.EOriginalMapFilePartType .getTypeByInt(partType).toString() );
+        // - check if the Version is compatible?
+        if ((fileVersion != EOriginalMapFileVersion.DEFAULT.value) && (fileVersion != EOriginalMapFileVersion.AMAZONS.value)) {
+            throw new MapLoadException("unknown map file version: %d".formatted(fileVersion));
+        }
 
-			// - next position in File
-			filePos = filePos + partLen;
+        // - Data length
+        int dataLength = this.mapContent.length;
 
-			// - save the values
-			EOriginalMapFilePartType type = EOriginalMapFilePartType.getTypeByInt(partType);
-			if (type != EOriginalMapFilePartType.EOF && (partLen >= 0)) {
-				MapResourceInfo newRes = new MapResourceInfo(type, mapPartPos, partLen - 8, partType);
+        // - start of map-content
+        int currentOffset = 8;
+        int currentSectionTypeNumber;
 
-				resources.put(type, newRes);
-			}
+        do {
+            currentSectionTypeNumber = this.readBEIntFrom(currentOffset);
+            int sectionSize = this.readBEIntFrom(currentOffset + 4);
 
-		} while ((partTypeTemp != 0) && ((filePos + 8) <= dataLength));
-	}
+            /*
+            each section contains a decrypt key and a size
+            decrypt key is stored at offset 0 of the section and size is stored at offset 4
+            all data starting at offset 8 of section is encrypted and needs to be decrypted using key at offset 0
+
+            note:
+            why is sectionTypeId ANDed with 0xffff
+            */
+
+            // - don't know what the [FileTypeSub] is for -> it should by zero
+            int sectionTypeId = (currentSectionTypeNumber & 0x0000FFFF);
+
+            // - position/start of data
+            int sectionOffset = currentOffset + 8;
+
+            // - debug output
+            // System.out.println("@ "+ currentOffset +" size: "+ PartLen +" Type:"+ sectionTypeId +" Sub:"+ PartTypeSub +" -> "+
+            // OriginalMapFileDataStructs.EOriginalMapFilePartType .getTypeByInt(sectionTypeId).toString() );
+
+            // - next position in File
+            currentOffset = currentOffset + sectionSize;
+
+            // - save the values
+            EOriginalMapFilePartType sectionType = EOriginalMapFilePartType.getTypeByInt(sectionTypeId);
+
+            if (sectionType != EOriginalMapFilePartType.EOF && (sectionSize >= 0)) {
+                MapResourceInfo mapSection = new MapResourceInfo(sectionType, sectionOffset, sectionSize - 8, sectionTypeId);
+                this.resources.put(sectionType, mapSection);
+            }
+        }
+
+        while ((currentSectionTypeNumber != 0) && ((currentOffset + 8) <= dataLength));
+
+        return;
+    }
+
 
 	// - freeing the internal File-Buffer
 	void freeBuffer() {

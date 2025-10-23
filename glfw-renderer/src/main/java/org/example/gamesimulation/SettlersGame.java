@@ -1,9 +1,16 @@
-package org.example.glfwrenderer;
+package org.example.gamesimulation;
+
+import org.example.gamemap.SettlersMap;
 
 
 public class SettlersGame implements Runnable {
 
-    public SettlersGame() {
+    public SettlersMap gameMap;
+
+
+    public SettlersGame(SettlersMap gameMap) {
+
+        this.gameMap = gameMap;
 
         /*
         game architecture
@@ -39,6 +46,20 @@ public class SettlersGame implements Runnable {
 
     @Override
     public void run() {
+
+        while (this.gameMap.gameOver == false) {
+
+            try {
+                System.out.printf("calculating game state\n");
+                Thread.sleep(1000);
+            }
+
+            catch (InterruptedException exception) {
+                System.out.printf("keyboard interrupt detected\n");
+                break;
+            }
+        }
+
         return;
     }
 }

@@ -1,4 +1,4 @@
-package org.example.glfwrenderer;
+package org.example.gamemap;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -7,9 +7,12 @@ import java.nio.file.Files;
 public class SettlersMap {
 
     public byte[] mapData;
+    public boolean gameOver;
 
 
     public SettlersMap() throws Exception {
+
+        this.gameOver = false;
 
         // load raw byte data
         File mapLocation = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");

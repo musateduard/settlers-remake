@@ -1,4 +1,4 @@
-package org.example.glfwrenderer;
+package org.example.maingamewindow;
 
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import go.graphics.swing.sound.SwingSoundPlayer;
@@ -22,6 +22,10 @@ import jsettlers.logic.player.InitialGameState;
 import jsettlers.logic.player.PlayerSetting;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
+import org.example.gamemap.SettlersMap;
+import org.example.gamesimulation.JSettlersGameGLFW;
+import org.example.gamesimulation.SettlersGame;
+import org.example.gamesimulation.TaskExecutorGLFW;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11C;
@@ -33,6 +37,7 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.glfw.GLFW;
 import java.io.File;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 
 
 public class MainWindowGLFW {
@@ -54,9 +59,13 @@ public class MainWindowGLFW {
     public boolean keyDownPressed;
     public boolean keyLeftPressed;
     public boolean keyRightPressed;
+    public SettlersMap gameMap;
+    public final int shaderProgramId;
+    public final int transformMatrixAddress;
+    public final int colorUniformAddress;
 
 
-    public MainWindowGLFW() {
+    public MainWindowGLFW() throws Exception {
 
         this.width = 800;
         this.height = 600;
@@ -68,6 +77,7 @@ public class MainWindowGLFW {
         this.maxX = 300;
         this.screenX = 0;
         this.screenY = 0;
+        this.gameMap = null;
 
         // init glfw
         if (!GLFW.glfwInit()) {
@@ -100,6 +110,33 @@ public class MainWindowGLFW {
 
         // init gl capabilities for current context
         this.capabilities = GL.createCapabilities();
+
+        // create shader program
+        String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
+        String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
+
+        int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
+        GL20C.glShaderSource(vertexShaderId, vertexShaderSource);
+        GL20C.glCompileShader(vertexShaderId);
+
+        int fragmentShaderId = GL20C.glCreateShader(GL20C.GL_FRAGMENT_SHADER);
+        GL20C.glShaderSource(fragmentShaderId, fragmentShaderSource);
+        GL20C.glCompileShader(fragmentShaderId);
+
+        this.shaderProgramId = GL20C.glCreateProgram();
+        GL20C.glAttachShader(this.shaderProgramId, vertexShaderId);
+        GL20C.glAttachShader(this.shaderProgramId, fragmentShaderId);
+
+        GL20C.glLinkProgram(this.shaderProgramId);
+
+        GL20C.glDetachShader(this.shaderProgramId, vertexShaderId);
+        GL20C.glDetachShader(this.shaderProgramId, fragmentShaderId);
+        GL20C.glDeleteShader(vertexShaderId);
+        GL20C.glDeleteShader(fragmentShaderId);
+
+        // get uniform addresses from shader
+        this.transformMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "transform_matrix");
+        this.colorUniformAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
 
         return;
     }
@@ -157,53 +194,48 @@ public class MainWindowGLFW {
     }
 
 
+    public void updateCameraPosition(long currentTime, long lastTime) {
+
+        final float CAMERA_SPEED_UPMS = 800.00f;  // units per millisecond
+        final float TIME_DELTA_MILLIS = (currentTime - lastTime) / 1_000_000.00f;
+
+        float vectorX = 0.00f;
+        float vectorY = 0.00f;
+
+        if (this.keyUpPressed) {
+            vectorY -= 1.00f;
+        }
+
+        if (this.keyDownPressed) {
+            vectorY += 1.00f;
+        }
+
+        if (this.keyLeftPressed) {
+            vectorX += 1.00f;
+        }
+
+        if (this.keyRightPressed) {
+            vectorX -= 1.00f;
+        }
+
+        float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+
+        if (vectorMagnitude > 0.00f) {
+
+            float normalX = vectorX / vectorMagnitude;
+            float normalY = vectorY / vectorMagnitude;
+
+            float distance = CAMERA_SPEED_UPMS * TIME_DELTA_MILLIS;
+
+            this.screenX += normalX * distance;
+            this.screenY += normalY * distance;
+        }
+
+        return;
+    }
+
+
     public void renderTestFrame() {
-
-        // create shader program
-        String vertexSource = """
-        #version 330 core
-
-        layout (location = 0) in vec3 vertex_position;
-        uniform mat4 transform_matrix;
-
-        void main() {
-            gl_Position = transform_matrix * vec4(vertex_position, 1.0);
-        }
-        """;
-
-        String fragmentSource = """
-        #version 330 core
-
-        uniform vec4 uniform_color;
-        layout (location = 0) out vec4 fragment_color;
-
-        void main() {
-            fragment_color = uniform_color;
-        }
-        """;
-
-        int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
-        GL20C.glShaderSource(vertexShaderId, vertexSource);
-        GL20C.glCompileShader(vertexShaderId);
-
-        int fragmentShaderId = GL20C.glCreateShader(GL20C.GL_FRAGMENT_SHADER);
-        GL20C.glShaderSource(fragmentShaderId, fragmentSource);
-        GL20C.glCompileShader(fragmentShaderId);
-
-        int shaderProgramId = GL20C.glCreateProgram();
-        GL20C.glAttachShader(shaderProgramId, vertexShaderId);
-        GL20C.glAttachShader(shaderProgramId, fragmentShaderId);
-
-        GL20C.glLinkProgram(shaderProgramId);
-
-        GL20C.glDetachShader(shaderProgramId, vertexShaderId);
-        GL20C.glDetachShader(shaderProgramId, fragmentShaderId);
-        GL20C.glDeleteShader(vertexShaderId);
-        GL20C.glDeleteShader(fragmentShaderId);
-
-        // get uniform values from shader
-        int transformMatrixAddress = GL30C.glGetUniformLocation(shaderProgramId, "transform_matrix");
-        int colorUniformAddress = GL30C.glGetUniformLocation(shaderProgramId, "uniform_color");
 
         // create vertex buffer
         float[] vertexList = {
@@ -295,15 +327,15 @@ public class MainWindowGLFW {
             draw using shader
             */
             // activate shader
-            GL30C.glUseProgram(shaderProgramId);
+            GL30C.glUseProgram(this.shaderProgramId);
 
             // set transform matrix uniform
             transformMatrix.get(transformMatrixArray);
 
-            GL30C.glUniformMatrix4fv(transformMatrixAddress, false, transformMatrixArray);
+            GL30C.glUniformMatrix4fv(this.transformMatrixAddress, false, transformMatrixArray);
 
             // set color uniform
-            GL30C.glUniform4f(colorUniformAddress, 1.00f, 0.00f, 0.00f, 1.00f);
+            GL30C.glUniform4f(this.colorUniformAddress, 1.00f, 0.00f, 0.00f, 1.00f);
 
             // bind vao and vbo
             GL30C.glBindVertexArray(vaoId);
@@ -370,6 +402,7 @@ public class MainWindowGLFW {
 
     public void renderGameFrame() throws Exception {
 
+        // old project game initialization
         ResourceManager.setProvider(new SwingResourceProvider());
         SettingsManager.setup();
 
@@ -473,52 +506,91 @@ public class MainWindowGLFW {
     }
 
 
-    public void updateCameraPosition(long currentTime, long lastTime) {
+    public void renderMapTerrain(SettlersMap gameMap) {
 
-        final float CAMERA_SPEED_UPMS = 800.00f;  // units per millisecond
-        final float TIME_DELTA_MILLIS = (currentTime - lastTime) / 1_000_000.00f;
+        // get map terrain
+        // calculate visible area
+        // render visible terrain
 
-        float vectorX = 0.00f;
-        float vectorY = 0.00f;
+        return;
+    }
 
-        if (this.keyUpPressed) {
-            vectorY -= 1.00f;
-        }
 
-        if (this.keyDownPressed) {
-            vectorY += 1.00f;
-        }
+    public void renderStaticObjects() {
+        return;
+    }
 
-        if (this.keyLeftPressed) {
-            vectorX += 1.00f;
-        }
 
-        if (this.keyRightPressed) {
-            vectorX -= 1.00f;
-        }
+    public void renderNonStaticObjects() {
+        return;
+    }
 
-        float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
 
-        if (vectorMagnitude > 0.00f) {
+    public void renderTeamObjects() {
+        return;
+    }
 
-            float normalX = vectorX / vectorMagnitude;
-            float normalY = vectorY / vectorMagnitude;
 
-            float distance = CAMERA_SPEED_UPMS * TIME_DELTA_MILLIS;
+    public void renderGui() {
+        return;
+    }
 
-            this.screenX += normalX * distance;
-            this.screenY += normalY * distance;
+
+    public void renderGame(SettlersMap gameMap) {
+
+        while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
+
+            long currentTime = System.currentTimeMillis();
+            float currentTimeDelta = (currentTime - this.startTime) / 1000.00f;
+
+            float red = (float) (Math.sin(currentTimeDelta) * this.saturation + (1.00f - this.saturation));
+            float green = (float) (Math.sin(currentTimeDelta + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+            float blue = (float) (Math.sin(currentTimeDelta + 4.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+
+            // set clear color
+            GL11C.glClearColor(red, green, blue, 1.00f);
+
+            // clear screen
+            GL11C.glClear(GL11C.GL_COLOR_BUFFER_BIT | GL11C.GL_DEPTH_BUFFER_BIT);
+
+            // poll events
+            GLFW.glfwPollEvents();
+
+            this.renderMapTerrain(gameMap);
+            this.renderStaticObjects();
+            this.renderNonStaticObjects();
+            this.renderTeamObjects();
+            this.renderGui();
+
+            // swap buffers
+            GLFW.glfwSwapBuffers(this.windowId);
+
+            continue;
         }
 
         return;
     }
 
 
-    public void start() throws Exception {
+    public void startGame() throws Exception {
 
-        // this.renderTestFrame();
+        // create map instance
+        SettlersMap gameMap = new SettlersMap();
+
+        // start game thread
+        SettlersGame gameSimulation = new SettlersGame(gameMap);
+        Thread simulationThread = new Thread(gameSimulation, "GameSimulationThread");
+
+        simulationThread.start();
+
+        // start rendering
+        this.renderTestFrame();
         // this.renderBuildingFrame();
-        this.renderGameFrame();
+        // this.renderGameFrame();
+        // this.renderGame(gameMap);
+
+        gameMap.gameOver = true;
+        simulationThread.join();
 
         System.out.printf("closing game\n");
 

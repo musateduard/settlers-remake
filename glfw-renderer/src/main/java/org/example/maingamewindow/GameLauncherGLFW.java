@@ -1,4 +1,4 @@
-package org.example.glfwrenderer;
+package org.example.maingamewindow;
 
 
 public class GameLauncherGLFW {
@@ -7,7 +7,7 @@ public class GameLauncherGLFW {
 
         MainWindowGLFW settlersGame = new MainWindowGLFW();
 
-        settlersGame.start();
+        settlersGame.startGame();
         settlersGame.cleanup();
 
         return;

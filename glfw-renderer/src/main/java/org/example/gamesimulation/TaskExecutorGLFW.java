@@ -1,4 +1,4 @@
-package org.example.glfwrenderer;
+package org.example.gamesimulation;
 
 import jsettlers.network.client.task.packets.TaskPacket;
 import jsettlers.network.synchronic.timer.ITaskExecutor;

@@ -308,9 +308,8 @@ public class MainWindowGLFW {
             this.screenX += deltaX;
             this.screenY += deltaY;
 
-            System.out.printf("adding magnitude %f %f\n", deltaX, deltaY);
-
             // update view matrix
+            this.viewMatrix.identity();
             this.viewMatrix.translate(this.screenX, this.screenY, 0);
             this.viewMatrix.get(this.floatBuffer);
 

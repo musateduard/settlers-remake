@@ -37,16 +37,15 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.glfw.GLFW;
 import java.io.File;
 import java.nio.FloatBuffer;
-import java.nio.charset.StandardCharsets;
 
 
 public class MainWindowGLFW {
 
-    public final int width;
-    public final int height;
+    public final int screenWidth;
+    public final int screenHeight;
     public final long windowId;
-    public final long startTime;
-    public long lastTime;
+    public final long startTimeMs;
+    public long lastFrameTimeNs;
     public final float saturation;
     public final GLCapabilities capabilities;
     public float minY;
@@ -62,22 +61,38 @@ public class MainWindowGLFW {
     public SettlersMap gameMap;
     public final int shaderProgramId;
     public final int transformMatrixAddress;
+    public final int modelMatrixAddress;
+    public final int viewMatrixAddress;
+    public final int projectionMatrixAddress;
     public final int colorUniformAddress;
+    public final float[] floatBuffer;
+    public final Matrix4f projectionMatrix;
+    public final Matrix4f viewMatrix;
 
 
     public MainWindowGLFW() throws Exception {
 
-        this.width = 800;
-        this.height = 600;
-        this.startTime = System.currentTimeMillis();
+        this.screenWidth = 800;
+        this.screenHeight = 600;
+        this.startTimeMs = System.currentTimeMillis();
+
         this.saturation = 0.40f;
         this.minY = 520;
         this.maxY = 570;
         this.minX = 50;
         this.maxX = 300;
+
         this.screenX = 0;
         this.screenY = 0;
         this.gameMap = null;
+
+        this.floatBuffer = new float[16];
+        this.projectionMatrix = new Matrix4f();
+        this.projectionMatrix.ortho(0, this.screenWidth, 0, this.screenHeight, -1, 1);
+
+        this.viewMatrix = new Matrix4f();
+        this.viewMatrix.scale(1);
+        this.viewMatrix.translate(0, 0, 0);
 
         // init glfw
         if (!GLFW.glfwInit()) {
@@ -90,7 +105,7 @@ public class MainWindowGLFW {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 
         // create window
-        this.windowId = GLFW.glfwCreateWindow(this.width, this.height, "demo window", MemoryUtil.NULL, MemoryUtil.NULL);
+        this.windowId = GLFW.glfwCreateWindow(this.screenWidth, this.screenHeight, "demo window", MemoryUtil.NULL, MemoryUtil.NULL);
 
         if (this.windowId == MemoryUtil.NULL) {
             throw new RuntimeException("Failed to create the GLFW window.");
@@ -112,16 +127,65 @@ public class MainWindowGLFW {
         this.capabilities = GL.createCapabilities();
 
         // create shader program
-        String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
-        String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
+        // String vertexPath = MainWindowGLFW.class.getResource("vertex_shader.vert").getPath();
+        // String vertexShaderSource = Files.readString(new File(vertexPath).toPath(), StandardCharsets.UTF_8);
+        // String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
+
+        // String fragmentPath = MainWindowGLFW.class.getResource("fragment_shader.frag").getPath();
+        // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
+        // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
+
+        String vertexShaderSource = """
+        #version 330 core
+        
+        layout (location = 0) in vec3 vertex_position;
+        
+        uniform mat4 transform_matrix;
+        uniform mat4 projection_matrix;
+        uniform mat4 view_matrix;
+        uniform mat4 model_matrix;
+        
+        
+        void main() {
+        
+            // todo: calculate gl_Position = projection_matrix * transform_matrix * model_matrix
+        
+            // gl_Position = transform_matrix * vec4(vertex_position, 1.0);
+            gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
+        }
+        """;
+
+        String fragmentShaderSource = """
+        #version 330 core
+        
+        uniform vec4 uniform_color;
+        layout (location = 0) out vec4 fragment_color;
+        
+        
+        void main() {
+            fragment_color = uniform_color;
+        }
+        """;
 
         int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
         GL20C.glShaderSource(vertexShaderId, vertexShaderSource);
         GL20C.glCompileShader(vertexShaderId);
 
+        int vertexCompileStatus = GL30C.glGetShaderi(vertexShaderId, GL30C.GL_COMPILE_STATUS);
+        if (vertexCompileStatus != GL30C.GL_TRUE) {
+            String info = GL30C.glGetShaderInfoLog(vertexShaderId);
+            throw new RuntimeException(info);
+        }
+
         int fragmentShaderId = GL20C.glCreateShader(GL20C.GL_FRAGMENT_SHADER);
         GL20C.glShaderSource(fragmentShaderId, fragmentShaderSource);
         GL20C.glCompileShader(fragmentShaderId);
+
+        int fragmentCompileStatus = GL30C.glGetShaderi(fragmentShaderId, GL30C.GL_COMPILE_STATUS);
+        if (fragmentCompileStatus != GL30C.GL_TRUE) {
+            String info = GL30C.glGetShaderInfoLog(fragmentShaderId);
+            throw new RuntimeException(info);
+        }
 
         this.shaderProgramId = GL20C.glCreateProgram();
         GL20C.glAttachShader(this.shaderProgramId, vertexShaderId);
@@ -129,14 +193,25 @@ public class MainWindowGLFW {
 
         GL20C.glLinkProgram(this.shaderProgramId);
 
+        int linkStatus = GL30C.glGetProgrami(this.shaderProgramId, GL30C.GL_LINK_STATUS);
+        if (linkStatus != GL30C.GL_TRUE) {
+            String info = GL30C.glGetProgramInfoLog(this.shaderProgramId);
+            throw new RuntimeException(info);
+        }
+
         GL20C.glDetachShader(this.shaderProgramId, vertexShaderId);
         GL20C.glDetachShader(this.shaderProgramId, fragmentShaderId);
         GL20C.glDeleteShader(vertexShaderId);
         GL20C.glDeleteShader(fragmentShaderId);
 
         // get uniform addresses from shader
+        this.modelMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "model_matrix");
+        this.viewMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "view_matrix");
+        this.projectionMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "projection_matrix");
         this.transformMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "transform_matrix");
         this.colorUniformAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
+
+        // todo: add error checking for shader uniform addresses
 
         return;
     }
@@ -227,8 +302,20 @@ public class MainWindowGLFW {
 
             float distance = CAMERA_SPEED_UPMS * TIME_DELTA_MILLIS;
 
-            this.screenX += normalX * distance;
-            this.screenY += normalY * distance;
+            float deltaX = normalX * distance;
+            float deltaY = normalY * distance;
+
+            this.screenX += deltaX;
+            this.screenY += deltaY;
+
+            System.out.printf("adding magnitude %f %f\n", deltaX, deltaY);
+
+            // update view matrix
+            this.viewMatrix.translate(this.screenX, this.screenY, 0);
+            this.viewMatrix.get(this.floatBuffer);
+
+            // upload view matrix to shader
+            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
         }
 
         return;
@@ -279,7 +366,7 @@ public class MainWindowGLFW {
 
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
-            float currentTime = (System.currentTimeMillis() - this.startTime) / 1000.00f;
+            float currentTime = (System.currentTimeMillis() - this.startTimeMs) / 1000.00f;
 
             float red = (float) (Math.sin(currentTime) * this.saturation + (1.00f - this.saturation));
             float green = (float) (Math.sin(currentTime + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
@@ -388,7 +475,7 @@ public class MainWindowGLFW {
             // note: need to configure model, view, projection matrix before drawing sprite to screen
 
             context.updateViewMatrix(0, 0, 0, 1, 1, 1);
-            context.updateProjectionMatrix(this.width, this.height);
+            context.updateProjectionMatrix(this.screenWidth, this.screenHeight);
 
             testImage.drawAt(context, 100, 100, 0, Color.CYAN, 1.00f);
 
@@ -454,7 +541,7 @@ public class MainWindowGLFW {
 
             long currentTimeNano = System.nanoTime();
             long currentTime = System.currentTimeMillis();
-            float currentTimeDelta = (currentTime - this.startTime) / 1000.00f;
+            float currentTimeDelta = (currentTime - this.startTimeMs) / 1000.00f;
 
             float red = (float) (Math.sin(currentTimeDelta) * this.saturation + (1.00f - this.saturation));
             float green = (float) (Math.sin(currentTimeDelta + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
@@ -470,7 +557,7 @@ public class MainWindowGLFW {
             // poll events
             GLFW.glfwPollEvents();
 
-            this.updateCameraPosition(currentTimeNano, this.lastTime);
+            this.updateCameraPosition(currentTimeNano, this.lastFrameTimeNs);
 
             /*
             note:
@@ -492,14 +579,14 @@ public class MainWindowGLFW {
 
             // draw test sprite
             context.updateViewMatrix(0, 0, 0, 1, 1, 1);
-            context.updateProjectionMatrix(this.width, this.height);
+            context.updateProjectionMatrix(this.screenWidth, this.screenHeight);
 
             testImage.drawAt(context, 100, 100, 0, Color.CYAN, 1.00f);
 
             // swap buffers
             GLFW.glfwSwapBuffers(this.windowId);
 
-            this.lastTime = System.nanoTime();
+            this.lastFrameTimeNs = System.nanoTime();
         }
 
         return;
@@ -511,6 +598,74 @@ public class MainWindowGLFW {
         // get map terrain
         // calculate visible area
         // render visible terrain
+
+        // note: this method should only scale its model matrix
+        // note: projection and view matrixes are only modified by screen resize and camera move
+
+        // create vertex buffer
+        float[] mapVertexBuffer = {
+            0.00f, 0.00f, 0.00f,  // bottom left
+            1.00f, 0.00f, 0.00f,  // bottom right
+            1.00f, 1.00f, 0.00f,  // top right
+            0.00f, 1.00f, 0.00f,  // top left
+        };
+
+        // create and bind vao
+        int vaoId = GL30C.glGenVertexArrays();
+        GL30C.glBindVertexArray(vaoId);
+
+        // create and bind vbo
+        int vboId = GL30C.glGenBuffers();
+        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, vboId);
+
+        // upload vertex buffer to gpu
+        GL30C.glBufferData(GL30C.GL_ARRAY_BUFFER, mapVertexBuffer, GL30C.GL_STATIC_DRAW);
+
+        // set vao properties for current vbo
+        GL30C.glVertexAttribPointer(0, 3, GL30C.GL_FLOAT, false, 0, 0);
+
+        // set start index for current vao
+        GL30C.glEnableVertexAttribArray(0);
+
+        // unbind vbo and vao
+        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, 0);
+        GL30C.glBindVertexArray(0);
+
+        // activate shader
+        GL30C.glUseProgram(this.shaderProgramId);
+
+        // upload projection matrix
+        this.projectionMatrix.get(this.floatBuffer);
+        GL30C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
+
+        // upload view matrix
+        this.viewMatrix.get(this.floatBuffer);
+        GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
+
+        // todo: add modelMatrix to gameMap object
+
+        // upload model matrix
+        Matrix4f modelMatrix = new Matrix4f();
+        modelMatrix.translate(50, 50, 0);
+        modelMatrix.scale(100, 100, 1);
+
+        modelMatrix.get(this.floatBuffer);
+        GL30C.glUniformMatrix4fv(this.modelMatrixAddress, false, this.floatBuffer);
+
+        // set color uniform
+        GL30C.glUniform4f(this.colorUniformAddress, 0.00f, 0.50f, 0.50f, 1.00f);
+
+        // bind vao and vbo
+        GL30C.glBindVertexArray(vaoId);
+        GL30C.glEnableVertexAttribArray(0);
+
+        // draw buffer
+        GL30C.glDrawArrays(GL11C.GL_TRIANGLE_FAN, 0, 4);
+
+        // cleanup
+        GL30C.glDisableVertexAttribArray(0);
+        GL30C.glBindVertexArray(0);
+        GL30C.glUseProgram(0);
 
         return;
     }
@@ -540,12 +695,13 @@ public class MainWindowGLFW {
 
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
-            long currentTime = System.currentTimeMillis();
-            float currentTimeDelta = (currentTime - this.startTime) / 1000.00f;
+            long currentFrameTimeNs = System.nanoTime();
+            long currentFrameTimeMs = System.currentTimeMillis();
+            float currentTimeDeltaS = (currentFrameTimeMs - this.startTimeMs) / 1000.00f;
 
-            float red = (float) (Math.sin(currentTimeDelta) * this.saturation + (1.00f - this.saturation));
-            float green = (float) (Math.sin(currentTimeDelta + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
-            float blue = (float) (Math.sin(currentTimeDelta + 4.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+            float red = (float) (Math.sin(currentTimeDeltaS) * this.saturation + (1.00f - this.saturation));
+            float green = (float) (Math.sin(currentTimeDeltaS + 2.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
+            float blue = (float) (Math.sin(currentTimeDeltaS + 4.00 * Math.PI / 3.00) * this.saturation + (1.00f - this.saturation));
 
             // set clear color
             GL11C.glClearColor(red, green, blue, 1.00f);
@@ -556,6 +712,8 @@ public class MainWindowGLFW {
             // poll events
             GLFW.glfwPollEvents();
 
+            this.updateCameraPosition(currentFrameTimeNs, this.lastFrameTimeNs);
+
             this.renderMapTerrain(gameMap);
             this.renderStaticObjects();
             this.renderNonStaticObjects();
@@ -564,6 +722,8 @@ public class MainWindowGLFW {
 
             // swap buffers
             GLFW.glfwSwapBuffers(this.windowId);
+
+            this.lastFrameTimeNs = System.nanoTime();
 
             continue;
         }
@@ -584,10 +744,10 @@ public class MainWindowGLFW {
         simulationThread.start();
 
         // start rendering
-        this.renderTestFrame();
         // this.renderBuildingFrame();
         // this.renderGameFrame();
-        // this.renderGame(gameMap);
+        // this.renderTestFrame();
+        this.renderGame(gameMap);
 
         gameMap.gameOver = true;
         simulationThread.join();

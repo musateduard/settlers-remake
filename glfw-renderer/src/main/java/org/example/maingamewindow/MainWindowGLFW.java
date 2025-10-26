@@ -52,12 +52,15 @@ public class MainWindowGLFW {
     public float maxY;
     public float minX;
     public float maxX;
-    public float screenX;
-    public float screenY;
+    public float cameraX;
+    public float cameraY;
     public boolean keyUpPressed;
     public boolean keyDownPressed;
     public boolean keyLeftPressed;
     public boolean keyRightPressed;
+    public boolean rmbPressed;
+    public boolean lmbPressed;
+    public boolean mmbPressed;
     public SettlersMap gameMap;
     public final int shaderProgramId;
     public final int transformMatrixAddress;
@@ -68,6 +71,8 @@ public class MainWindowGLFW {
     public final float[] floatBuffer;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
+    public float prevCursorX;
+    public float prevCursorY;
 
 
     public MainWindowGLFW() throws Exception {
@@ -82,9 +87,19 @@ public class MainWindowGLFW {
         this.minX = 50;
         this.maxX = 300;
 
-        this.screenX = 0;
-        this.screenY = 0;
+        this.cameraX = 0;
+        this.cameraY = 0;
         this.gameMap = null;
+
+        this.keyUpPressed = false;
+        this.keyDownPressed = false;
+        this.keyLeftPressed = false;
+        this.keyRightPressed = false;
+        this.rmbPressed = false;
+        this.lmbPressed = false;
+        this.mmbPressed = false;
+        this.prevCursorX = 0;
+        this.prevCursorY = 0;
 
         this.floatBuffer = new float[16];
         this.projectionMatrix = new Matrix4f();
@@ -119,6 +134,8 @@ public class MainWindowGLFW {
 
         // register keyboard handler
         GLFW.glfwSetKeyCallback(this.windowId, this::keyHandler);
+        GLFW.glfwSetMouseButtonCallback(this.windowId, this::mouseButtonHandler);
+        GLFW.glfwSetCursorPosCallback(this.windowId, this::mouseCursorHandler);
 
         // make window visible
         GLFW.glfwShowWindow(this.windowId);
@@ -221,47 +238,69 @@ public class MainWindowGLFW {
 
         if (action == GLFW.GLFW_PRESS) {
 
-            if (key == GLFW.GLFW_KEY_UP) {
-                this.keyUpPressed = true;
-            }
+            switch (key) {
 
-            else if (key == GLFW.GLFW_KEY_DOWN) {
-                this.keyDownPressed = true;
-            }
+                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = true;
+                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = true;
+                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = true;
+                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = true;
 
-            else if (key == GLFW.GLFW_KEY_LEFT) {
-                this.keyLeftPressed = true;
-            }
-
-            else if (key == GLFW.GLFW_KEY_RIGHT) {
-                this.keyRightPressed = true;
-            }
-
-            else {
-                // do nothing
+                default -> {
+                    // do nothing
+                }
             }
         }
 
         else if (action == GLFW.GLFW_RELEASE) {
 
-            if (key == GLFW.GLFW_KEY_UP) {
-                this.keyUpPressed = false;
-            }
+            switch (key) {
 
-            else if (key == GLFW.GLFW_KEY_DOWN) {
-                this.keyDownPressed = false;
-            }
+                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = false;
+                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = false;
+                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = false;
+                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = false;
 
-            else if (key == GLFW.GLFW_KEY_LEFT) {
-                this.keyLeftPressed = false;
+                default -> {
+                    // do nothing
+                }
             }
+        }
 
-            else if (key == GLFW.GLFW_KEY_RIGHT) {
-                this.keyRightPressed = false;
+        else {
+            // do nothing
+        }
+
+        return;
+    }
+
+
+    public void mouseButtonHandler(long window, int button, int action, int mods) {
+
+        if (action == GLFW.GLFW_PRESS) {
+
+            switch (button) {
+
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = true;
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = true;
+                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = true;
+
+                default -> {
+                    // do nothing
+                }
             }
+        }
 
-            else {
-                // do nothing
+        else {
+
+            switch (button) {
+
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = false;
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = false;
+                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = false;
+
+                default -> {
+                    // do nothing
+                }
             }
         }
 
@@ -269,10 +308,59 @@ public class MainWindowGLFW {
     }
 
 
-    public void updateCameraPosition(long currentTime, long lastTime) {
+    public void mouseCursorHandler(long window, double xpos, double ypos) {
 
-        final float CAMERA_SPEED_UPMS = 800.00f;  // units per millisecond
-        final float TIME_DELTA_MILLIS = (currentTime - lastTime) / 1_000_000.00f;
+        /*
+        note:
+
+        glfw screen coordinates are calculated from top-left to bottom right
+        opengl coordinates are bottom-left to top-right
+        deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
+        */
+
+        float deltaX = (float) xpos - this.prevCursorX;
+        float deltaY = this.prevCursorY - (float) ypos;  // deltaY needs to be inverted so that moves up are positive
+
+        if (this.rmbPressed) {
+
+            // note: when panning using rmb we apply delta negatively to simulate moving the camera
+
+            this.cameraX -= deltaX;
+            this.cameraY -= deltaY;
+
+            // update view matrix
+            this.viewMatrix.identity();
+            this.viewMatrix.translate(this.cameraX, this.cameraY, 0);
+            this.viewMatrix.get(this.floatBuffer);
+
+            // upload view matrix to shader
+            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
+        }
+
+        else if (this.mmbPressed) {
+
+            // note: when panning using mmb we apply delta positively to simulate dragging the map
+
+            this.cameraX += deltaX;
+            this.cameraY += deltaY;
+
+            // update view matrix
+            this.viewMatrix.identity();
+            this.viewMatrix.translate(this.cameraX, this.cameraY, 0);
+            this.viewMatrix.get(this.floatBuffer);
+
+            // upload view matrix to shader
+            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
+        }
+
+        this.prevCursorX = (float) xpos;
+        this.prevCursorY = (float) ypos;
+
+        return;
+    }
+
+
+    public void updateCameraPosition(long currentTimeNs, long lastTimeNs) {
 
         float vectorX = 0.00f;
         float vectorY = 0.00f;
@@ -293,24 +381,27 @@ public class MainWindowGLFW {
             vectorX -= 1.00f;
         }
 
-        float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+        if (vectorX != 0 || vectorY != 0) {
 
-        if (vectorMagnitude > 0.00f) {
+            final float TIME_DELTA_S = (currentTimeNs - lastTimeNs) / 1_000_000_000.00f;
+            final float CAMERA_SPEED_UPS = 400.00f;  // units per second
+
+            float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
 
             float normalX = vectorX / vectorMagnitude;
             float normalY = vectorY / vectorMagnitude;
 
-            float distance = CAMERA_SPEED_UPMS * TIME_DELTA_MILLIS;
+            float distance = CAMERA_SPEED_UPS * TIME_DELTA_S;
 
             float deltaX = normalX * distance;
             float deltaY = normalY * distance;
 
-            this.screenX += deltaX;
-            this.screenY += deltaY;
+            this.cameraX += deltaX;
+            this.cameraY += deltaY;
 
             // update view matrix
             this.viewMatrix.identity();
-            this.viewMatrix.translate(this.screenX, this.screenY, 0);
+            this.viewMatrix.translate(this.cameraX, this.cameraY, 0);
             this.viewMatrix.get(this.floatBuffer);
 
             // upload view matrix to shader
@@ -569,10 +660,10 @@ public class MainWindowGLFW {
 
             // draw map terrain
             // FloatRectangle visibleMapSection = mapContent.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            FloatRectangle visibleMapSection = new FloatRectangle(-this.screenX + 20, -this.screenY + 520, -this.screenX + 290, -this.screenY + 580);
+            FloatRectangle visibleMapSection = new FloatRectangle(-this.cameraX + 20, -this.cameraY + 520, -this.cameraX + 290, -this.cameraY + 580);
 
             // mapContent.drawContent(context, this.width, this.height);
-            context.updateViewMatrix(this.screenX, this.screenY, 0, 1, 1, 1);  // note: view matrix is set by mapContext during begin()
+            context.updateViewMatrix(this.cameraX, this.cameraY, 0, 1, 1, 1);  // note: view matrix is set by mapContext during begin()
             mapContent.mapContext.begin(context);
             mapContent.drawMapTerrain(visibleMapSection);
 
@@ -692,9 +783,14 @@ public class MainWindowGLFW {
 
     public void renderGame(SettlersMap gameMap) {
 
+        this.lastFrameTimeNs = System.nanoTime();
+
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
             long currentFrameTimeNs = System.nanoTime();
+            this.updateCameraPosition(currentFrameTimeNs, this.lastFrameTimeNs);
+            this.lastFrameTimeNs = System.nanoTime();
+
             long currentFrameTimeMs = System.currentTimeMillis();
             float currentTimeDeltaS = (currentFrameTimeMs - this.startTimeMs) / 1000.00f;
 
@@ -711,8 +807,6 @@ public class MainWindowGLFW {
             // poll events
             GLFW.glfwPollEvents();
 
-            this.updateCameraPosition(currentFrameTimeNs, this.lastFrameTimeNs);
-
             this.renderMapTerrain(gameMap);
             this.renderStaticObjects();
             this.renderNonStaticObjects();
@@ -721,8 +815,6 @@ public class MainWindowGLFW {
 
             // swap buffers
             GLFW.glfwSwapBuffers(this.windowId);
-
-            this.lastFrameTimeNs = System.nanoTime();
 
             continue;
         }

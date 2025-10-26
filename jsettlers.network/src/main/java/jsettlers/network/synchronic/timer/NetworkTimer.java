@@ -97,69 +97,90 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
 		closeReplayLogStreamIfNeeded();
 	}
 
-	@Override
-	public void run() {
-		if (!isPausing) {
-			if (pauseTime <= 0) { // this is used for synchronizing the network clients
-				progress += speedFactor;
 
-				while (progress >= 1) {
-					executeRun();
-					progress--;
-				}
-			} else {
-				pauseTime -= TIME_SLICE;
-			}
-		}
-	}
+    @Override
+    public void run() {
 
-	private synchronized void executeRun() {
-		try {
-			time += TIME_SLICE;
-			final int lockstep = time / NetworkConstants.Client.LOCKSTEP_PERIOD;
+        if (!this.isPausing) {
 
-			// check if the lockstep is allowed
-			synchronized (lockstepLock) {
-				while (lockstep > maxAllowedLockstep) {
-					System.out.println("WAITING for lockstep!");
-					lockstepLock.wait();
-				}
-			}
+            // this is used for synchronizing the network clients
+            if (this.pauseTime <= 0) {
 
-			SyncTasksPacket tasksPacket;
-			synchronized (tasks) {
-				tasksPacket = tasks.peekFirst();
-			}
+                this.progress += this.speedFactor;
 
-			while (tasksPacket != null && tasksPacket.getLockstepNumber() <= lockstep) {
-				assert tasksPacket.getLockstepNumber() == lockstep : "FOUND TasksPacket FOR older lockstep!";
+                while (this.progress >= 1) {
+                    this.executeRun();
+                    this.progress--;
+                }
+            }
 
-				System.out.println("Executing SyncTaskPacket(" + tasksPacket + ") in " + getLockstepText(lockstep));
+            else {
+                this.pauseTime -= NetworkTimer.TIME_SLICE;
+            }
+        }
 
-				try {
-					executeTasksPacket(tasksPacket);
-				} catch (Throwable t) {
-					System.err.println("Error during execution of scheduled task:");
-					t.printStackTrace();
-				}
+        return;
+    }
 
-				synchronized (tasks) {// remove the executed tasksPacket and retrieve the next one to check it.
-					tasks.pollFirst();
-					tasksPacket = tasks.peekFirst();
-				}
-			}
 
-			addNewTimerables();
-			handleRemovedTimerables();
+    private synchronized void executeRun() {
 
-			for (ScheduledTimerable curr : timerables) {
-				curr.checkExecution(TIME_SLICE);
-			}
-		} catch (Throwable t) {
-			System.err.println("WARNING: Networking Timer catched Throwable!!!");
-			t.printStackTrace();
-		}
-	}
+        try {
+
+            this.time += NetworkTimer.TIME_SLICE;
+            final int lockstep = this.time / NetworkConstants.Client.LOCKSTEP_PERIOD;
+
+            // check if the lockstep is allowed
+            synchronized (this.lockstepLock) {
+                while (lockstep > this.maxAllowedLockstep) {
+                    System.out.println("WAITING for lockstep!");
+                    this.lockstepLock.wait();
+                }
+            }
+
+            SyncTasksPacket tasksPacket;
+            synchronized (this.tasks) {
+                tasksPacket = this.tasks.peekFirst();
+            }
+
+            while (tasksPacket != null && tasksPacket.getLockstepNumber() <= lockstep) {
+
+                assert tasksPacket.getLockstepNumber() == lockstep : "FOUND TasksPacket FOR older lockstep!";
+
+                System.out.printf("Executing SyncTaskPacket(%s) in %s\n", tasksPacket, this.getLockstepText(lockstep));
+
+                try {
+                    this.executeTasksPacket(tasksPacket);
+                }
+
+                catch (Throwable exception) {
+                    System.err.println("Error during execution of scheduled task:");
+                    exception.printStackTrace();
+                }
+
+                // remove the executed tasksPacket and retrieve the next one to check it.
+                synchronized (this.tasks) {
+                    this.tasks.pollFirst();
+                    tasksPacket = this.tasks.peekFirst();
+                }
+            }
+
+            this.addNewTimerables();
+            this.handleRemovedTimerables();
+
+            for (ScheduledTimerable curr : this.timerables) {
+                curr.checkExecution(NetworkTimer.TIME_SLICE);
+            }
+        }
+
+        catch (Throwable exception) {
+            System.err.println("WARNING: Networking Timer caught Throwable!!!");
+            exception.printStackTrace();
+        }
+
+        return;
+    }
+
 
 	private void executeTasksPacket(SyncTasksPacket tasksPacket) {
 		if (taskExecutor != null) {

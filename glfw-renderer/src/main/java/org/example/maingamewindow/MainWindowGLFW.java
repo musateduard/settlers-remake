@@ -787,11 +787,32 @@ public class MainWindowGLFW {
 
         while (GLFW.glfwWindowShouldClose(this.windowId) == false) {
 
+            /*
+            - calculate current time, last time and frame time delta
+            - get all input
+            - calculate game state
+            - render game based on last_state and current_state
+
+            note:
+
+            when using separate game thread simulation you need a state buffer
+            this means all state objects are being calculated inside the game thread
+            and the render thread keeps a copy of all game objects to for rendering
+            when the game thread finished running a new state it swaps its state buffer
+            with the renderer's buffer
+
+            this way the render thread always has a state ready to render and
+            the game thread doesn't need to lock the state list
+
+            todo: implement this method using just the map terrain first, then add other types of objects to simulation/rendering
+            */
+
+
             long currentFrameTimeNs = System.nanoTime();
             this.updateCameraPosition(currentFrameTimeNs, this.lastFrameTimeNs);
             this.lastFrameTimeNs = System.nanoTime();
 
-            long currentFrameTimeMs = System.currentTimeMillis();
+            long currentFrameTimeMs = currentFrameTimeNs / 1000000;
             float currentTimeDeltaS = (currentFrameTimeMs - this.startTimeMs) / 1000.00f;
 
             float red = (float) (Math.sin(currentTimeDeltaS) * this.saturation + (1.00f - this.saturation));
@@ -807,6 +828,7 @@ public class MainWindowGLFW {
             // poll events
             GLFW.glfwPollEvents();
 
+            // render game state
             this.renderMapTerrain(gameMap);
             this.renderStaticObjects();
             this.renderNonStaticObjects();
@@ -830,9 +852,16 @@ public class MainWindowGLFW {
 
         // start game thread
         SettlersGame gameSimulation = new SettlersGame(gameMap);
-        Thread simulationThread = new Thread(gameSimulation, "GameSimulationThread");
+        Thread gameThread = new Thread(gameSimulation, "GameSimulationThread");
 
-        simulationThread.start();
+        gameThread.start();
+
+        /*
+        note:
+
+        instead of a game thread we should schedule a lockstep task to run ever n seconds
+        the game simulation doesn't do anything outside the lockstep task
+        */
 
         // start rendering
         // this.renderBuildingFrame();
@@ -841,7 +870,8 @@ public class MainWindowGLFW {
         this.renderGame(gameMap);
 
         gameMap.gameOver = true;
-        simulationThread.join();
+        gameSimulation.running = false;
+        gameThread.join();
 
         System.out.printf("closing game\n");
 

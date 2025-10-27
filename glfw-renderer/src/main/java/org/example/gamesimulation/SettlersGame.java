@@ -5,12 +5,38 @@ import org.example.gamemap.SettlersMap;
 
 public class SettlersGame implements Runnable {
 
+    public static final int LOCKSTEP_DURATION_MS = 100;
+    public static final int TIME_SLICE_MS = 50;
+
     public SettlersMap gameMap;
+    public boolean running;
+    public long accumulatedTime;
+    public long currentLockstep;
+    public long lastTime;
+    public long currentTime;
+    public long nextTime;
+    public boolean inputReady;
 
 
     public SettlersGame(SettlersMap gameMap) {
 
+        /*
+        todo: implement deterministic lockstep simulation
+        todo: implement state buffer so that game thread can write to a state and render thread can read from a state
+
+        note: state in this context means the map and all entities in the game world
+        note: swap buffers when new state is available
+        note: should we still use objects for game state or just use entities?
+        */
+
         this.gameMap = gameMap;
+        this.running = true;
+        this.accumulatedTime = 0;
+        this.currentLockstep = 0;
+        this.currentTime = 0;
+        this.lastTime = 0;
+        this.nextTime = 0;
+        this.inputReady = false;
 
         /*
         game architecture
@@ -44,20 +70,52 @@ public class SettlersGame implements Runnable {
     }
 
 
+    public void executeTasks() {
+
+        System.out.printf("executing tasks\n");
+
+        /*
+        for item in task_queue:
+
+            if item.scheduled_lockstep <= current_lockstep:
+                item.execute()
+
+            else:
+                continue
+        */
+
+        return;
+    }
+
+
     @Override
     public void run() {
 
-        while (this.gameMap.gameOver == false) {
+        while (this.running) {
 
-            try {
-                System.out.printf("calculating game state\n");
-                Thread.sleep(1000);
+            this.currentTime = System.currentTimeMillis();
+            this.currentLockstep = this.accumulatedTime / SettlersGame.LOCKSTEP_DURATION_MS;
+
+            // reschedule loop in the future and execute tasks now
+            if (this.nextTime <= this.currentTime) {
+                this.nextTime = this.currentTime + SettlersGame.TIME_SLICE_MS;
             }
 
-            catch (InterruptedException exception) {
-                System.out.printf("keyboard interrupt detected\n");
-                break;
+            // wait until next loop is scheduled and then execute tasks
+            else {
+                try {
+                    Thread.sleep(this.nextTime - this.currentTime);
+                }
+
+                catch (InterruptedException exception) {
+                    // do nothing yet
+                }
             }
+
+            this.executeTasks();
+
+            this.accumulatedTime += SettlersGame.TIME_SLICE_MS;
+            continue;
         }
 
         return;

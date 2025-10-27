@@ -32,6 +32,7 @@ import jsettlers.network.client.INetworkClientClock;
 import jsettlers.network.client.task.packets.SyncTasksPacket;
 import jsettlers.network.client.task.packets.TaskPacket;
 
+
 /**
  * This is a basic game timer. All synchronous actions must be based on this clock. The {@link NetworkTimer} also triggers the execution of synchronous tasks in the network game.
  *
@@ -39,6 +40,7 @@ import jsettlers.network.client.task.packets.TaskPacket;
  *
  */
 public final class NetworkTimer extends TimerTask implements INetworkClientClock {
+
 	public static final short TIME_SLICE = 50;
 	private static final Comparator<SyncTasksPacket> tasksByTimeComparator = Comparator.comparingInt(SyncTasksPacket::getLockstepNumber);
 
@@ -64,59 +66,68 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
 	private ITaskExecutor taskExecutor;
 	private DataOutputStream replayLogStream;
 
+
 	public NetworkTimer() {
 		this.timer = new Timer("NetworkTimer");
+        return;
 	}
+
 
 	public NetworkTimer(boolean disableLockstepWaiting) {
-		this();
+
+        this();
 
 		if (disableLockstepWaiting) {
-			maxAllowedLockstep = Integer.MAX_VALUE;
+			this.maxAllowedLockstep = Integer.MAX_VALUE;
 		}
-	}
-
-
-	@Override
-	public synchronized void startExecution() {
-
-        if (!this.scheduled) {
-            this.scheduled = true;
-            this.timer.schedule(this, 0, NetworkTimer.TIME_SLICE);
-        }
 
         return;
 	}
 
 
-	@Override
-	public void stopExecution() {
-		setPausing(true);
-		timer.cancel();
+    @Override
+    public synchronized void startExecution() {
 
-		closeReplayLogStreamIfNeeded();
-	}
+        if (this.scheduled == false) {
+            this.scheduled = true;
+            this.timer.schedule(this, 0, NetworkTimer.TIME_SLICE);
+        }
+
+        return;
+    }
+
+
+    @Override
+    public void stopExecution() {
+
+        this.setPausing(true);
+        this.timer.cancel();
+        this.closeReplayLogStreamIfNeeded();
+
+        return;
+    }
 
 
     @Override
     public void run() {
 
-        if (!this.isPausing) {
+        if (this.isPausing == true) {
+            return;
+        }
 
-            // this is used for synchronizing the network clients
-            if (this.pauseTime <= 0) {
+        // this is used for synchronizing the network clients
+        if (this.pauseTime <= 0) {
 
-                this.progress += this.speedFactor;
+            this.progress += this.speedFactor;
 
-                while (this.progress >= 1) {
-                    this.executeRun();
-                    this.progress--;
-                }
+            while (this.progress >= 1) {
+                this.executeRun();
+                this.progress--;
             }
+        }
 
-            else {
-                this.pauseTime -= NetworkTimer.TIME_SLICE;
-            }
+        else {
+            this.pauseTime -= NetworkTimer.TIME_SLICE;
         }
 
         return;
@@ -147,7 +158,7 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
 
                 assert tasksPacket.getLockstepNumber() == lockstep : "FOUND TasksPacket FOR older lockstep!";
 
-                System.out.printf("Executing SyncTaskPacket(%s) in %s\n", tasksPacket, this.getLockstepText(lockstep));
+                System.out.printf("Executing SyncTaskPacket %s in %s\n", tasksPacket, this.getLockstepText(lockstep));
 
                 try {
                     this.executeTasksPacket(tasksPacket);
@@ -182,15 +193,21 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
     }
 
 
-	private void executeTasksPacket(SyncTasksPacket tasksPacket) {
-		if (taskExecutor != null) {
-			for (TaskPacket currTask : tasksPacket.getTasks()) {
-				taskExecutor.executeTask(currTask);
-			}
-		} else {
-			System.err.println("couldn't exeucte task, due to missing taskExecutor!");
-		}
-	}
+    private void executeTasksPacket(SyncTasksPacket tasksPacket) {
+
+        if (this.taskExecutor != null) {
+            for (TaskPacket currTask : tasksPacket.getTasks()) {
+                this.taskExecutor.executeTask(currTask);
+            }
+        }
+
+        else {
+            System.err.println("couldn't execute task, due to missing taskExecutor!");
+        }
+
+        return;
+    }
+
 
 	private void addNewTimerables() {
 		synchronized (newTimerables) {
@@ -311,26 +328,36 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
 		this.taskExecutor = taskExecutor;
 	}
 
-	@Override
-	public void scheduleSyncTasksPacket(SyncTasksPacket tasksPacket) {
-		assert maxAllowedLockstep == Integer.MAX_VALUE
-				|| maxAllowedLockstep + 1 == tasksPacket.getLockstepNumber() : "received unlock for wrong step! current max allowed: "
-						+ maxAllowedLockstep + " new: " + tasksPacket.getLockstepNumber();
 
-		if (!tasksPacket.getTasks().isEmpty()) {
-			synchronized (tasks) {
-				System.out.println("Scheduled SyncTasksPacket(" + tasksPacket + " for " + getLockstepText(tasksPacket.getLockstepNumber()));
-				tasks.addLast(tasksPacket);
-				tasks.sort(tasksByTimeComparator);
-				saveReplayIfNeeded(tasksPacket);
-			}
-		}
-		maxAllowedLockstep = Math.max(maxAllowedLockstep, tasksPacket.getLockstepNumber());
+    @Override
+    public void scheduleSyncTasksPacket(SyncTasksPacket tasksPacket) {
 
-		synchronized (lockstepLock) {
-			lockstepLock.notifyAll();
-		}
-	}
+        assert
+            this.maxAllowedLockstep == Integer.MAX_VALUE ||
+            this.maxAllowedLockstep + 1 == tasksPacket.getLockstepNumber() :
+            "received unlock for wrong step! current max allowed: %d new: %d".formatted(this.maxAllowedLockstep, tasksPacket.getLockstepNumber());
+
+        if (tasksPacket.getTasks().isEmpty() == false) {
+
+            synchronized (this.tasks) {
+
+                System.out.println("Scheduled SyncTasksPacket %s for %s".formatted(tasksPacket, this.getLockstepText(tasksPacket.getLockstepNumber())));
+
+                this.tasks.addLast(tasksPacket);
+                this.tasks.sort(NetworkTimer.tasksByTimeComparator);
+                this.saveReplayIfNeeded(tasksPacket);
+            }
+        }
+
+        this.maxAllowedLockstep = Math.max(this.maxAllowedLockstep, tasksPacket.getLockstepNumber());
+
+        synchronized (this.lockstepLock) {
+            this.lockstepLock.notifyAll();
+        }
+
+        return;
+    }
+
 
 	private void saveReplayIfNeeded(SyncTasksPacket tasksPacket) {
 		if (replayLogStream != null) {

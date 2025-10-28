@@ -14,8 +14,7 @@
  *******************************************************************************/
 package jsettlers.network.client;
 
-import java.util.Arrays;
-
+import java.util.List;
 import jsettlers.network.NetworkConstants;
 import jsettlers.network.client.interfaces.IGameClock;
 import jsettlers.network.client.interfaces.INetworkConnector;
@@ -24,55 +23,78 @@ import jsettlers.network.client.task.packets.SyncTasksPacket;
 import jsettlers.network.client.task.packets.TaskPacket;
 import jsettlers.network.synchronic.timer.NetworkTimer;
 
+
 /**
- * This is a {@link ITaskScheduler} implementation that supports offline gameplay. It directly schedules the tasks in the {@link NetworkTimer}.
+ * This is a {@link ITaskScheduler} implementation that supports offline gameplay.
+ * It directly schedules the tasks in the {@link NetworkTimer}.
  *
  * @author Andreas Eberle
  */
 public class OfflineNetworkConnector implements ITaskScheduler, INetworkConnector {
 
-	public final NetworkTimer networkTimer = new NetworkTimer(true);
+	public final NetworkTimer networkTimer;
 	private boolean startFinished;
+
+
+    public OfflineNetworkConnector() {
+        this.networkTimer = new NetworkTimer(true);
+        return;
+    }
+
 
 	@Override
 	public void scheduleTask(TaskPacket task) {
-		scheduleTaskAt(networkTimer.getTime() / NetworkConstants.Client.LOCKSTEP_PERIOD + 2, task);
+
+        int futureLockstep = this.networkTimer.getTime() / NetworkConstants.Client.LOCKSTEP_PERIOD + 2;
+		this.scheduleTaskAt(futureLockstep, task);
+
+        return;
 	}
+
 
 	/**
 	 * Schedules the given task for execution in the given targetLockstep.
 	 *
-	 * @param targetLockstep
-	 *            Time the task should be scheduled in milliseconds.
-	 * @param task
-	 *            Task to be scheduled.
+	 * @param targetLockstep Time the task should be scheduled in milliseconds.
+	 * @param task Task to be scheduled.
 	 */
 	public void scheduleTaskAt(int targetLockstep, TaskPacket task) {
-		networkTimer.scheduleSyncTasksPacket(new SyncTasksPacket(targetLockstep, Arrays.asList(task)));
+
+        SyncTasksPacket taskPacket = new SyncTasksPacket(targetLockstep, List.of(task));
+		this.networkTimer.scheduleSyncTasksPacket(taskPacket);
+
+        return;
 	}
+
 
 	@Override
 	public IGameClock getGameClock() {
-		return networkTimer;
+		return this.networkTimer;
 	}
+
 
 	@Override
 	public void shutdown() {
-		networkTimer.stopExecution();
+        this.networkTimer.stopExecution();
+        return;
 	}
+
 
 	@Override
 	public ITaskScheduler getTaskScheduler() {
 		return this;
 	}
 
+
 	@Override
 	public void setStartFinished(boolean startFinished) {
 		this.startFinished = startFinished;
+        return;
 	}
+
 
 	@Override
 	public boolean haveAllPlayersStartFinished() {
-		return startFinished;
+		return this.startFinished;
 	}
 }

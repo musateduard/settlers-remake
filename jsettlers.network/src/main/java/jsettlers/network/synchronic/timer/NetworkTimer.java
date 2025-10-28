@@ -34,10 +34,10 @@ import jsettlers.network.client.task.packets.TaskPacket;
 
 
 /**
- * This is a basic game timer. All synchronous actions must be based on this clock. The {@link NetworkTimer} also triggers the execution of synchronous tasks in the network game.
+ * This is a basic game timer. All synchronous actions must be based on this clock.
+ * The {@link NetworkTimer} also triggers the execution of synchronous tasks in the network game.
  *
  * @author Andreas Eberle
- *
  */
 public final class NetworkTimer extends TimerTask implements INetworkClientClock {
 
@@ -209,81 +209,108 @@ public final class NetworkTimer extends TimerTask implements INetworkClientClock
     }
 
 
-	private void addNewTimerables() {
-		synchronized (newTimerables) {
-			timerables.addAll(newTimerables);
-			newTimerables.clear();
-		}
-	}
+    private void addNewTimerables() {
 
-	private void handleRemovedTimerables() {
-		synchronized (timerablesToBeRemoved) {
-			for (INetworkTimerable currToBeRemoved : timerablesToBeRemoved) {
-				for (Iterator<ScheduledTimerable> iter = timerables.iterator(); iter.hasNext();) {
-					if (iter.next().getTimerable() == currToBeRemoved) {
-						iter.remove();
-						break;
-					}
-				}
-				System.err.println("tried to remove a object from timer that's not registered!");
-			}
-			timerablesToBeRemoved.clear();
-		}
-	}
+        synchronized (this.newTimerables) {
+            this.timerables.addAll(this.newTimerables);
+            this.newTimerables.clear();
+        }
 
-	/**
-	 * Schedules the given {@link INetworkTimerable} with given delay. The internal delay of NetworkTimer is {@value #TIME_SLICE}, but you may choose smaller delays for the {@link INetworkTimerable}.
-	 * The NetworkTimer will then call the {@link INetworkTimerable} multiple times on each internal tick in the exact rate to ensure the given delay in the long run.
-	 *
-	 * @param timerable
-	 *            {@link INetworkTimerable} to be scheduled.
-	 * @param period
-	 *            delay of the given {@link INetworkTimerable}.
-	 */
-	@Override
-	public void schedule(INetworkTimerable timerable, short period) {
-		synchronized (newTimerables) {
-			newTimerables.add(new ScheduledTimerable(timerable, period));
-		}
-	}
+        return;
+    }
 
-	/**
-	 * removes an INetworkTimerable from the list of scheduled tasks.
-	 *
-	 * @param timerable
-	 */
-	@Override
-	public void remove(INetworkTimerable timerable) {
-		synchronized (timerablesToBeRemoved) {
-			timerablesToBeRemoved.add(timerable);
-		}
-	}
 
-	/**
-	 * Goes 60 * 1000 milliseconds forward as fast as possible
-	 */
-	@Override
-	public synchronized void fastForward() {
-		this.setPausing(true);
+    private void handleRemovedTimerables() {
 
-		final int runs = 60 * 1000 / TIME_SLICE;
-		for (int i = 0; i < runs; i++) {
-			executeRun();
-		}
+        synchronized (this.timerablesToBeRemoved) {
 
-		this.setPausing(false);
-	}
+            for (INetworkTimerable currToBeRemoved : this.timerablesToBeRemoved) {
 
-	@Override
-	public synchronized void fastForwardTo(int targetGameTime) {
-		this.setPausing(true);
+                for (Iterator<ScheduledTimerable> iter = this.timerables.iterator(); iter.hasNext();) {
+                    if (iter.next().getTimerable() == currToBeRemoved) {
+                        iter.remove();
+                        break;
+                    }
+                }
 
-		System.out.println("Playing game forward to game time: " + targetGameTime);
+                System.err.println("tried to remove an object from a timer that's not registered!");
+            }
 
-		while (time < targetGameTime) {
-			executeRun();
-		}
-	}
+            this.timerablesToBeRemoved.clear();
+        }
+
+        return;
+    }
+
+
+    /**
+     * Schedules the given {@link INetworkTimerable} with given delay. The internal delay of NetworkTimer is
+     * {@value #TIME_SLICE}, but you may choose smaller delays for the {@link INetworkTimerable}.
+     * The NetworkTimer will then call the {@link INetworkTimerable} multiple times on each internal tick
+     * in the exact rate to ensure the given delay in the long run.
+     *
+     * @param timerable {@link INetworkTimerable} to be scheduled.
+     * @param period delay of the given {@link INetworkTimerable}.
+     */
+    @Override
+    public void schedule(INetworkTimerable timerable, short period) {
+
+        synchronized (this.newTimerables) {
+            this.newTimerables.add(new ScheduledTimerable(timerable, period));
+        }
+
+        return;
+    }
+
+
+    /**
+     * removes an INetworkTimerable from the list of scheduled tasks.
+     *
+     * @param timerable
+     */
+    @Override
+    public void remove(INetworkTimerable timerable) {
+
+        synchronized (this.timerablesToBeRemoved) {
+            this.timerablesToBeRemoved.add(timerable);
+        }
+
+        return;
+    }
+
+
+    /**
+     * Goes 60 * 1000 milliseconds forward as fast as possible
+     */
+    @Override
+    public synchronized void fastForward() {
+
+        this.setPausing(true);
+
+        final int runs = 60 * 1000 / NetworkTimer.TIME_SLICE;
+        for (int i = 0; i < runs; i++) {
+            this.executeRun();
+        }
+
+        this.setPausing(false);
+        return;
+    }
+
+
+    @Override
+    public synchronized void fastForwardTo(int targetGameTime) {
+
+        this.setPausing(true);
+
+        System.out.printf("Playing game forward to game time: %d", targetGameTime);
+
+        while (this.time < targetGameTime) {
+            this.executeRun();
+        }
+
+        return;
+    }
+
 
 	// methods for pausing
 

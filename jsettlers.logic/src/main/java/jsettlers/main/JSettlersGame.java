@@ -269,7 +269,7 @@ public class JSettlersGame {
                 note:
 
                 This is required after the GuiInterface instantiation so that
-				ConstructionMarksThread has it's mapArea variable initialized via the EActionType.SCREEN_CHANGE event.
+				ConstructionMarksThread has its mapArea variable initialized via the EActionType.SCREEN_CHANGE event.
                 */
 				connector.loadUIState(playerState.getUiState());
 

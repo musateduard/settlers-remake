@@ -3,6 +3,29 @@ package org.example.gamesimulation;
 import org.example.gamemap.SettlersMap;
 
 
+class Task {
+
+    public Task() {
+        return;
+    }
+
+
+    public void execute() {
+        return;
+    }
+}
+
+
+class TaskPacket {
+
+    public TaskPacket() {
+        // task packet contains all tasks
+        // do i need separate task packet? can i just store tasks in list and append them?
+        return;
+    }
+}
+
+
 public class SettlersGame implements Runnable {
 
     public static final int LOCKSTEP_DURATION_MS = 100;
@@ -14,6 +37,7 @@ public class SettlersGame implements Runnable {
     public long nextLoopTime;
     public long currentLockstep;
     public long lastLockstep;
+    public TaskPacket[] taskPacketList;
 
     public SettlersMap gameMap;
 
@@ -46,6 +70,10 @@ public class SettlersGame implements Runnable {
         this.nextLoopTime = 0;
         this.currentLockstep = 0;
         this.lastLockstep = 0;
+        this.taskPacketList = new TaskPacket[10];
+
+        // todo: implement lockstep buffer
+        // note: lockstep buffer is a circular buffer where each slot contains tasks for that specific lockstep
 
         /*
         game architecture
@@ -70,6 +98,21 @@ public class SettlersGame implements Runnable {
         each menu class holds state of currently visible elements
         */
 
+        /*
+        conceptual game loop
+
+        starts at lockstep 0
+        clients compose packets for lockstep 0, 1, 2 immediately
+        server receives all packets for 0, 1, 2
+        server sends all inputs back to everyone for 0, 1, 2
+        clients then run simulation based on all inputs for next locksteps
+        while running simulation clients also compose packets for following locksteps
+        as server receives packets it stores them in a ring buffer where each slot corresponds to a lockstep
+        when server reaches a lockstep it reads all inputs packets for that lockstep and executes
+        whenever server receives packets for a lockstep it sends all relevant packets back to all clients
+        clients store packets in their input buffers and execute them whenever they reach that specific lockstep
+        */
+
         // start new game thread with simulation
         // apply state changes to game map
         // run user tasks from the ui
@@ -90,30 +133,78 @@ public class SettlersGame implements Runnable {
 
         a task packet is needed regardless of user input in order to advance lockstep
         in networked play we also need all current player task packets to arrive before advancing the lockstep
+        in single player a task packet is generated synthetically for the current lockstep
+
+        in multiplayer clients issue tasks that are stored locally in a buffer
+        these tasks then get sent to the server for the corresponding future lockstep
+
+        for ex.:
+        game starts at lockstep 0
+        - clients issue packets for locksteps 0, 1, 2
+        - server receives packets for lockstep 0, 1, 2
+        - server sends back all inputs to all players as confirmation for locksteps 0, 1, 2
+        - clients then start issuing tasks regularly for the corresponding future lockstep
+
+        server and client needs a catchup mechanism for when client can't reach server
+        for a period of time and needs to send certain nr of accumulated packets
+        client should also compose and send packets for future lockstep in advance
+        this is possible because all tasks get scheduled to a future lockstep by default
+        this means that at any given lockstep n we either already know the tasks associated
+        with packets n, n+1, n+2, or there are no tasks and we can send empty packets for
+        those specific locksteps already
+
+        note:
+
+        server needs to store all future packets in a circular buffer and access them
+        whenever it arrives at that specific lockstep
+        we also need to make sure that server doesn't overwrite packets in the circular buffer
+        that haven't been processed yet.
+
+        for ex.:
+        if server has a buffer of 10 slots and a client sends future packets worth of
+        12 locksteps this means that server will write 12 slots worth of packets for 12 locksteps
+        this means that after writing the first 10 packets for the next 10 future locksteps
+        the packets that were written in slots 0 and 1 will be overwritten by packets scheduled
+        for locksteps 11 and 12
         */
-
-        return;
-    }
-
-
-    public void executeTasks() {
-
-        System.out.printf("executing tasks for lockstep %d\n", this.currentLockstep);
 
         /*
-        for item in task_queue:
+        in single player this function only retrieves all user input from gui
+        and sets it as input for the scheduled lockstep
+        in single player it doesn't poll any sockets for network input
+        if player didn't submit any input it only generates an empty task packet which
+        gets stored in the assigned lockstep in the ring buffer
+        */
 
-            if item.scheduled_lockstep <= current_lockstep:
-                item.execute()
+        /*
+        if single player
+            get input from gui
+            generate task packet based on input
 
-            else:
-                continue
+        else
+            // send input
+            get input from gui
+            generate task packet
+            send packet to server
+
+            // receive input
+            poll network for task packets
+            store any task packets in relevant buffer slot
         */
 
         return;
     }
 
 
+    /**
+     * this function runs in a separate thread and is responsible for running the game simulation loop.
+     * the main loop runs in 2 intervals: {@link #TIME_SLICE_MS} interval and {@link #LOCKSTEP_DURATION_MS} interval
+     * the loop iterates every 50ms and every 100ms it executes a lockstep.
+     * the 50ms interval is used so that the network can poll twice for every lockstep interval. this gives
+     * the network the opportunity to recover network packets more frequently.
+     *
+     * {@return}
+     */
     @Override
     public void run() {
 
@@ -131,7 +222,15 @@ public class SettlersGame implements Runnable {
             this.pollPackets();
 
             if (this.currentLockstep > this.lastLockstep) {
-                this.executeTasks();
+
+                System.out.printf("executing tasks for lockstep %d\n", this.currentLockstep);
+
+                /*
+                int slotIndex = this.currentLockstep % this.taskPacketList.size();
+                for (Task item : this.taskPacketList[slotIndex]) {
+                    item.execute();
+                }
+                */
             }
 
             long currentTime = System.currentTimeMillis();
@@ -148,11 +247,9 @@ public class SettlersGame implements Runnable {
                 }
             }
 
-            /*
-            adjust nextLoopTime if loop took longer than TIME_SLICE_MS to execute
-            this ensures that the game still runs in fixed 50ms intervals even
-            when a loop iteration took longer to complete
-            */
+            // adjust nextLoopTime if loop took longer than TIME_SLICE_MS to execute
+            // this ensures that the game still runs in fixed 50ms intervals even
+            // when a loop iteration took longer to complete
             else if (waitTime < -SettlersGame.TIME_SLICE_MS) {
                 this.nextLoopTime = currentTime + SettlersGame.TIME_SLICE_MS;
             }

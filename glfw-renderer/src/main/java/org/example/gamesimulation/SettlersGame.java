@@ -203,7 +203,7 @@ public class SettlersGame implements Runnable {
      * the 50ms interval is used so that the network can poll twice for every lockstep interval. this gives
      * the network the opportunity to recover network packets more frequently.
      *
-     * {@return}
+     * @return {@code void}
      */
     @Override
     public void run() {

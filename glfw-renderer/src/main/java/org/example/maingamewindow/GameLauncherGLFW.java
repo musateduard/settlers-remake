@@ -8,7 +8,6 @@ public class GameLauncherGLFW {
         MainWindowGLFW settlersGame = new MainWindowGLFW();
 
         settlersGame.startGame();
-        settlersGame.cleanup();
 
         return;
     }

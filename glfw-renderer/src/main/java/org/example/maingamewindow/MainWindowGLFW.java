@@ -48,53 +48,70 @@ interface MouseListener {
 
 
 interface CursorListener {
-    void onCursorEvent();
+    void onCursorEvent(CursorEvent event);
 }
 
 
-class KeyEvent {
-
-    public KeyEvent() {
-        return;
-    }
+interface KeyListener {
+    void onKeyEvent(KeyEvent event);
 }
 
 
-record MouseEvent(long window, int button, int action, int mods) {
-
-    public MouseEvent(long window, int button, int action, int mods) {
-
-        this.window = window;
-        this.button = button;
-        this.action = action;
-        this.mods = mods;
-
-        return;
-    }
-}
+record KeyEvent(
+    long windowId,
+    int key,
+    int scanCode,
+    int action,
+    int modifier
+) {}
 
 
-class CursorEvent {
+record MouseEvent(
+    long window,
+    int button,
+    int action,
+    int mods
+) {}
 
-    public CursorEvent() {
-        return;
-    }
-}
+
+record CursorEvent(
+    long window,
+    double xpos,
+    double ypos
+) {}
 
 
 class EventManager {
 
     public final ArrayList<MouseListener> mouseListenerList;
+    public final ArrayList<CursorListener> cursorListenerList;
+    public final ArrayList<KeyListener> keyListenerList;
 
 
     public EventManager() {
-        this.mouseListenerList = new ArrayList<MouseListener>();
+
+        this.mouseListenerList = new ArrayList<>();
+        this.cursorListenerList = new ArrayList<>();
+        this.keyListenerList = new ArrayList<>();
+
         return;
     }
 
 
     public void addMouseListener(MouseListener listener) {
         this.mouseListenerList.add(listener);
+        return;
+    }
+
+
+    public void addCursorListener(CursorListener listener) {
+        this.cursorListenerList.add(listener);
+        return;
+    }
+
+
+    public void addKeyListener(KeyListener listener) {
+        this.keyListenerList.add(listener);
         return;
     }
 
@@ -107,28 +124,42 @@ class EventManager {
 
         return;
     }
+
+
+    public void emitCursorEvent(CursorEvent event) {
+
+        for (CursorListener item : this.cursorListenerList) {
+            item.onCursorEvent(event);
+        }
+
+        return;
+    }
+
+
+    public void emitKeyEvent(KeyEvent event) {
+
+        for (KeyListener item : this.keyListenerList) {
+            item.onKeyEvent(event);
+        }
+
+        return;
+    }
 }
 
 
 class Window {
 
-    public final int screenWidth;
-    public final int screenHeight;
+    public final int width;
+    public final int height;
     public final long windowId;
     public final EventManager eventManager;
-    // public final KeyHandler keyHandler;
-    // public final MouseButtonHandler mouseButtonHandler;
-    // public final MouseCursorHandler mouseCursorHandler;
 
 
-    public Window(EventManager eventManager /* KeyHandler keyHandler, MouseButtonHandler mouseHandler, MouseCursorHandler cursorHandler */) {
+    public Window(EventManager eventManager) {
 
-        this.screenWidth = 800;
-        this.screenHeight = 600;
+        this.width = 800;
+        this.height = 600;
         this.eventManager = eventManager;
-        // this.keyHandler = keyHandler;
-        // this.mouseButtonHandler = mouseHandler;
-        // this.mouseCursorHandler = cursorHandler;
 
         // init glfw
         if (!GLFW.glfwInit()) {
@@ -141,7 +172,7 @@ class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 
         // create window
-        this.windowId = GLFW.glfwCreateWindow(this.screenWidth, this.screenHeight, "demo window", MemoryUtil.NULL, MemoryUtil.NULL);
+        this.windowId = GLFW.glfwCreateWindow(this.width, this.height, "demo window", MemoryUtil.NULL, MemoryUtil.NULL);
 
         if (this.windowId == MemoryUtil.NULL) {
             throw new RuntimeException("Failed to create the GLFW window.");
@@ -154,8 +185,31 @@ class Window {
         GLFW.glfwSwapInterval(1);
 
         // register keyboard handler
-        // GLFW.glfwSetKeyCallback(this.windowId, this.keyHandler);
-        // GLFW.glfwSetCursorPosCallback(this.windowId, this.mouseCursorHandler);
+        GLFW.glfwSetKeyCallback(
+
+            this.windowId,
+
+            (long windowId, int key, int scanCode, int action, int modifier) -> {
+
+                KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifier);
+                this.eventManager.emitKeyEvent(event);
+
+                return;
+            }
+        );
+
+        GLFW.glfwSetCursorPosCallback(
+
+            this.windowId,
+
+            (long window, double xpos, double ypos) -> {
+
+                CursorEvent event = new CursorEvent(window, xpos, ypos);
+                this.eventManager.emitCursorEvent(event);
+
+                return;
+            }
+        );
 
         GLFW.glfwSetMouseButtonCallback(
 
@@ -194,6 +248,12 @@ class Window {
         GLFW.glfwSwapBuffers(this.windowId);
         return;
     }
+
+
+    public void pollEvents() {
+        GLFW.glfwPollEvents();
+        return;
+    }
 }
 
 
@@ -202,7 +262,6 @@ class Window {
  */
 class Renderer {
 
-    public final Window window;
     public final int shaderProgramId;
     public final int transformMatrixAddress;
     public final int modelMatrixAddress;
@@ -215,13 +274,11 @@ class Renderer {
     public final GLCapabilities capabilities;
 
 
-    public Renderer(Window gameWindow) {
-
-        this.window = gameWindow;
+    public Renderer(int screenWidth, int screenHeight) {
 
         this.floatBuffer = new float[16];
         this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0, this.window.screenWidth, 0, this.window.screenHeight, -1, 1);
+        this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
 
         this.viewMatrix = new Matrix4f();
         this.viewMatrix.scale(1);
@@ -341,7 +398,12 @@ class Renderer {
     }
 
 
-    public void updateCameraPosition(Camera cameraView) {
+    public void updateViewMatrix(Camera cameraView) {
+
+        this.viewMatrix.identity();
+        this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);
+        this.viewMatrix.get(this.floatBuffer);
+
         return;
     }
 
@@ -444,6 +506,7 @@ class Renderer {
     }
 
 
+    /*
     public void renderBuildingFrame() throws Exception {
 
         ResourceManager.setProvider(new SwingResourceProvider());
@@ -485,8 +548,10 @@ class Renderer {
 
         return;
     }
+    */
 
 
+    /*
     public void renderGameFrame() throws Exception {
 
         // old project game initialization
@@ -561,12 +626,10 @@ class Renderer {
 
             // this.updateCameraPosition(currentTimeNs - this.startFrameTimeNs);
 
-            /*
-            note:
-
-            drawContent doesn't work in current setup
-            try rendering map elements separately one by one
-            */
+            // note:
+            //
+            // drawContent doesn't work in current setup
+            // try rendering map elements separately one by one
 
             // todo: render map terrain using mapContent
 
@@ -593,8 +656,10 @@ class Renderer {
 
         return;
     }
+    */
 
 
+    /*
     public void renderTestFrame() {
 
         // create vertex buffer
@@ -656,38 +721,34 @@ class Renderer {
             // poll events
             GLFW.glfwPollEvents();
 
-            /*
-            draw using glBegin and glEnd
+            // draw using glBegin and glEnd
+            //
+            // // activate projection mode
+            // GL11.glMatrixMode(GL11.GL_PROJECTION);
+            // GL11.glLoadIdentity();
+            //
+            // // define screen size
+            // GL11.glOrtho(0, this.width, 0, this.height, -1, 1);
+            //
+            // // activate model view
+            // GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            // GL11.glLoadIdentity();
+            //
+            // // set vertex color
+            // GL11.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            //
+            // // begin vertex draw
+            // GL11.glBegin(GL11C.GL_QUADS);
+            //
+            // GL11.glVertex2f(50.0f, 50.0f);
+            // GL11.glVertex2f(150.0f, 50.0f);
+            // GL11.glVertex2f(150.0f, 150.0f);
+            // GL11.glVertex2f(50.0f, 150.0f);
+            //
+            // // end vertex draw
+            // GL11.glEnd();
 
-            // activate projection mode
-            GL11.glMatrixMode(GL11.GL_PROJECTION);
-            GL11.glLoadIdentity();
-
-            // define screen size
-            GL11.glOrtho(0, this.width, 0, this.height, -1, 1);
-
-            // activate model view
-            GL11.glMatrixMode(GL11.GL_MODELVIEW);
-            GL11.glLoadIdentity();
-
-            // set vertex color
-            GL11.glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-
-            // begin vertex draw
-            GL11.glBegin(GL11C.GL_QUADS);
-
-            GL11.glVertex2f(50.0f, 50.0f);
-            GL11.glVertex2f(150.0f, 50.0f);
-            GL11.glVertex2f(150.0f, 150.0f);
-            GL11.glVertex2f(50.0f, 150.0f);
-
-            // end vertex draw
-            GL11.glEnd();
-            */
-
-            /*
-            draw using shader
-            */
+            // draw using shader
             // activate shader
             GL30C.glUseProgram(this.shaderProgramId);
 
@@ -717,77 +778,130 @@ class Renderer {
 
         return;
     }
+    */
 }
 
 
 /**
  * this class handles all camera related functions like panning and zooming.
  */
-class Camera implements MouseListener, CursorListener {
+class Camera implements MouseListener, CursorListener, KeyListener {
 
     public float offsetX;
     public float offsetY;
+    public float prevCursorX;
+    public float prevCursorY;
+    public boolean lmbPressed;
+    public boolean rmbPressed;
+    public boolean mmbPressed;
+    public boolean keyUpPressed;
+    public boolean keyDownPressed;
+    public boolean keyLeftPressed;
+    public boolean keyRightPressed;
 
 
     public Camera(EventManager eventManager) {
 
         this.offsetX = 0;
         this.offsetY = 0;
+        this.prevCursorX = 0;
+        this.prevCursorY = 0;
+        this.lmbPressed = false;
+        this.rmbPressed = false;
+        this.mmbPressed = false;
+        this.keyUpPressed = false;
+        this.keyDownPressed = false;
+        this.keyLeftPressed = false;
+        this.keyRightPressed = false;
 
         eventManager.addMouseListener(this);
+        eventManager.addCursorListener(this);
+        eventManager.addKeyListener(this);
 
-        return;
-    }
-
-
-    public void updatePosition() {
         return;
     }
 
 
     @Override
     public void onMouseEvent(MouseEvent event) {
-        System.out.printf("mouse action\n");
-        return;
-    }
 
+        if (event.action() == GLFW.GLFW_PRESS) {
 
-    @Override
-    public void onCursorEvent() {
-        return;
-    }
-}
+            switch (event.button()) {
 
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = true;
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = true;
+                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = true;
 
-class KeyHandler implements GLFWKeyCallbackI {
+                default -> {
+                    // do nothing
+                }
+            }
+        }
 
-    public boolean keyUpPressed;
-    // public long keyUpPressTimeNs;
-    // public long keyUpReleaseTimeNs;
-    public boolean keyDownPressed;
-    public boolean keyLeftPressed;
-    public boolean keyRightPressed;
+        else {
 
+            switch (event.button()) {
 
-    public KeyHandler() {
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = false;
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = false;
+                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = false;
 
-        this.keyUpPressed = false;
-        // this.keyUpPressTimeNs = 0;
-        // this.keyUpReleaseTimeNs = 0;
-        this.keyDownPressed = false;
-        this.keyLeftPressed = false;
-        this.keyRightPressed = false;
+                default -> {
+                    // do nothing
+                }
+            }
+        }
 
         return;
     }
 
 
     @Override
-    public void invoke(long window, int key, int scancode, int action, int mods) {
+    public void onCursorEvent(CursorEvent event) {
 
-        if (action == GLFW.GLFW_PRESS) {
+        /*
+        note:
 
-            switch (key) {
+        glfw screen coordinates are calculated from top-left to bottom right
+        opengl coordinates are bottom-left to top-right
+        deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
+        */
+
+        float deltaX = (float) event.xpos() - this.prevCursorX;
+        float deltaY = this.prevCursorY - (float) event.ypos();  // deltaY needs to be inverted so that moves up are positive
+
+        if (this.rmbPressed) {
+
+            // note: when panning using rmb we apply delta negatively to simulate moving the camera
+
+            this.offsetX -= deltaX;
+            this.offsetY -= deltaY;
+        }
+
+        else if (this.mmbPressed) {
+
+            // note: when panning using mmb we apply delta positively to simulate dragging the map
+
+            this.offsetX += deltaX;
+            this.offsetY += deltaY;
+        }
+
+        this.prevCursorX = (float) event.xpos();
+        this.prevCursorY = (float) event.ypos();
+
+        return;
+    }
+
+
+    @Override
+    public void onKeyEvent(KeyEvent event) {
+
+        System.out.printf("key press in camera\n");
+
+        if (event.action() == GLFW.GLFW_PRESS) {
+
+            switch (event.key()) {
 
                 case GLFW.GLFW_KEY_UP -> {
                     this.keyUpPressed = true;
@@ -804,9 +918,9 @@ class KeyHandler implements GLFWKeyCallbackI {
             }
         }
 
-        else if (action == GLFW.GLFW_RELEASE) {
+        else if (event.action() == GLFW.GLFW_RELEASE) {
 
-            switch (key) {
+            switch (event.key()) {
 
                 case GLFW.GLFW_KEY_UP -> {
                     this.keyUpPressed = false;
@@ -832,75 +946,10 @@ class KeyHandler implements GLFWKeyCallbackI {
 }
 
 
-class MouseCursorHandler implements GLFWCursorPosCallbackI {
-
-    public MouseCursorHandler() {
-        return;
-    }
-
-
-    @Override
-    public void invoke(long window, double xpos, double ypos) {
-        return;
-    }
-}
-
-
-class MouseButtonHandler implements GLFWMouseButtonCallbackI {
-
-    public MouseButtonHandler() {
-        return;
-    }
-
-
-    @Override
-    public void invoke(long window, int button, int action, int mods) {
-        return;
-    }
-}
-
-
 public class MainWindowGLFW {
 
     public static final long GAME_START_TIME_MS = System.currentTimeMillis();
 
-    // window members
-    // public final int screenWidth;
-    // public final int screenHeight;
-    // public final long windowId;
-
-    // camera members
-    // public float cameraX;
-    // public float cameraY;
-
-    // key handler members
-    // public boolean keyUpPressed;
-    // public long keyUpPressTimeNs;
-    // public long keyUpReleaseTimeNs;
-    // public boolean keyDownPressed;
-    // public boolean keyLeftPressed;
-    // public boolean keyRightPressed;
-
-    // mouse handler members
-    // public boolean rmbPressed;
-    // public boolean lmbPressed;
-    // public boolean mmbPressed;
-    // public float prevCursorX;
-    // public float prevCursorY;
-
-    // renderer members
-    // public final int shaderProgramId;
-    // public final int transformMatrixAddress;
-    // public final int modelMatrixAddress;
-    // public final int viewMatrixAddress;
-    // public final int projectionMatrixAddress;
-    // public final int colorUniformAddress;
-    // public final float[] floatBuffer;
-    // public final Matrix4f projectionMatrix;
-    // public final Matrix4f viewMatrix;
-    // public final GLCapabilities capabilities;
-
-    // other members
     public long startFrameTimeNs;
     public SettlersMap gameMap;
 
@@ -909,307 +958,13 @@ public class MainWindowGLFW {
     public final Camera camera;
     public final EventManager eventManager;
 
-    // public final KeyHandler keyHandler2;
-    // public final MouseButtonHandler mouseButtonHandler2;
-    // public final MouseCursorHandler mouseCursorHandler2;
-
 
     public MainWindowGLFW() throws Exception {
 
         this.eventManager = new EventManager();
         this.window = new Window(this.eventManager);
-        this.renderer = new Renderer(this.window);
+        this.renderer = new Renderer(this.window.width, this.window.height);
         this.camera = new Camera(this.eventManager);
-        // this.keyHandler2 = new KeyHandler();
-        // this.mouseButtonHandler2 = new MouseButtonHandler();
-        // this.mouseCursorHandler2 = new MouseCursorHandler();
-
-        /*
-        this.screenWidth = 800;
-        this.screenHeight = 600;
-        this.gameMap = null;
-
-        this.keyUpPressed = false;
-        this.keyUpPressTimeNs = 0;
-        this.keyUpReleaseTimeNs = 0;
-        this.keyDownPressed = false;
-        this.keyLeftPressed = false;
-        this.keyRightPressed = false;
-        this.rmbPressed = false;
-        this.lmbPressed = false;
-        this.mmbPressed = false;
-        this.prevCursorX = 0;
-        this.prevCursorY = 0;
-
-        this.floatBuffer = new float[16];
-        this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0, this.screenWidth, 0, this.screenHeight, -1, 1);
-
-        this.viewMatrix = new Matrix4f();
-        this.viewMatrix.scale(1);
-        this.viewMatrix.translate(0, 0, 0);
-
-        // init glfw
-        if (!GLFW.glfwInit()) {
-            throw new IllegalStateException("Failed to initialize GLFW.");
-        }
-
-        // set window hints
-        GLFW.glfwDefaultWindowHints();
-        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
-
-        // create window
-        this.windowId = GLFW.glfwCreateWindow(this.screenWidth, this.screenHeight, "demo window", MemoryUtil.NULL, MemoryUtil.NULL);
-
-        if (this.windowId == MemoryUtil.NULL) {
-            throw new RuntimeException("Failed to create the GLFW window.");
-        }
-
-        // make context current
-        GLFW.glfwMakeContextCurrent(this.windowId);
-
-        // enable vsync
-        GLFW.glfwSwapInterval(1);
-
-        // register keyboard handler
-        GLFW.glfwSetKeyCallback(this.windowId, this.keyHandler2);
-        GLFW.glfwSetMouseButtonCallback(this.windowId, this::mouseButtonHandler);
-        GLFW.glfwSetCursorPosCallback(this.windowId, this::mouseCursorHandler);
-
-        // make window visible
-        GLFW.glfwShowWindow(this.windowId);
-
-        // init gl capabilities for current context
-        this.capabilities = GL.createCapabilities();
-
-        // create shader program
-        // String vertexPath = MainWindowGLFW.class.getResource("vertex_shader.vert").getPath();
-        // String vertexShaderSource = Files.readString(new File(vertexPath).toPath(), StandardCharsets.UTF_8);
-        // String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
-
-        // String fragmentPath = MainWindowGLFW.class.getResource("fragment_shader.frag").getPath();
-        // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
-        // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
-
-        String vertexShaderSource = """
-        #version 330 core
-
-        layout (location = 0) in vec3 vertex_position;
-
-        uniform mat4 transform_matrix;
-        uniform mat4 projection_matrix;
-        uniform mat4 view_matrix;
-        uniform mat4 model_matrix;
-
-
-        void main() {
-
-            // todo: calculate gl_Position = projection_matrix * transform_matrix * model_matrix
-
-            // gl_Position = transform_matrix * vec4(vertex_position, 1.0);
-            gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
-        }
-        """;
-
-        String fragmentShaderSource = """
-        #version 330 core
-
-        uniform vec4 uniform_color;
-        layout (location = 0) out vec4 fragment_color;
-
-
-        void main() {
-            fragment_color = uniform_color;
-        }
-        """;
-
-        int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
-        GL20C.glShaderSource(vertexShaderId, vertexShaderSource);
-        GL20C.glCompileShader(vertexShaderId);
-
-        int vertexCompileStatus = GL30C.glGetShaderi(vertexShaderId, GL30C.GL_COMPILE_STATUS);
-        if (vertexCompileStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetShaderInfoLog(vertexShaderId);
-            throw new RuntimeException(info);
-        }
-
-        int fragmentShaderId = GL20C.glCreateShader(GL20C.GL_FRAGMENT_SHADER);
-        GL20C.glShaderSource(fragmentShaderId, fragmentShaderSource);
-        GL20C.glCompileShader(fragmentShaderId);
-
-        int fragmentCompileStatus = GL30C.glGetShaderi(fragmentShaderId, GL30C.GL_COMPILE_STATUS);
-        if (fragmentCompileStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetShaderInfoLog(fragmentShaderId);
-            throw new RuntimeException(info);
-        }
-
-        this.shaderProgramId = GL20C.glCreateProgram();
-        GL20C.glAttachShader(this.shaderProgramId, vertexShaderId);
-        GL20C.glAttachShader(this.shaderProgramId, fragmentShaderId);
-
-        GL20C.glLinkProgram(this.shaderProgramId);
-
-        int linkStatus = GL30C.glGetProgrami(this.shaderProgramId, GL30C.GL_LINK_STATUS);
-        if (linkStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetProgramInfoLog(this.shaderProgramId);
-            throw new RuntimeException(info);
-        }
-
-        GL20C.glDetachShader(this.shaderProgramId, vertexShaderId);
-        GL20C.glDetachShader(this.shaderProgramId, fragmentShaderId);
-        GL20C.glDeleteShader(vertexShaderId);
-        GL20C.glDeleteShader(fragmentShaderId);
-
-        // get uniform addresses from shader
-        this.modelMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "model_matrix");
-        this.viewMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "view_matrix");
-        this.projectionMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "projection_matrix");
-        this.transformMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "transform_matrix");
-        this.colorUniformAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
-
-        // todo: add error checking for shader uniform addresses
-        */
-
-        return;
-    }
-
-
-    public void keyHandler(long windowId, int key, int scanCode, int action, int modifier) {
-
-        /*
-        if (action == GLFW.GLFW_PRESS) {
-
-            switch (key) {
-
-                case GLFW.GLFW_KEY_UP -> {
-                    this.keyUpPressed = true;
-                    this.keyUpPressTimeNs = System.nanoTime();
-                }
-
-                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = true;
-                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = true;
-                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = true;
-
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-
-        else if (action == GLFW.GLFW_RELEASE) {
-
-            switch (key) {
-
-                case GLFW.GLFW_KEY_UP -> {
-                    this.keyUpPressed = false;
-                    this.keyUpReleaseTimeNs = System.nanoTime();
-                }
-
-                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = false;
-                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = false;
-                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = false;
-
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-
-        else {
-            // do nothing
-        }
-        */
-
-        return;
-    }
-
-
-    public void mouseButtonHandler(long window, int button, int action, int mods) {
-
-        /*
-        if (action == GLFW.GLFW_PRESS) {
-
-            switch (button) {
-
-                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = true;
-                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = true;
-                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = true;
-
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-
-        else {
-
-            switch (button) {
-
-                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = false;
-                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = false;
-                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = false;
-
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-        */
-
-        return;
-    }
-
-
-    public void mouseCursorHandler(long window, double xpos, double ypos) {
-
-        /*
-        note:
-
-        glfw screen coordinates are calculated from top-left to bottom right
-        opengl coordinates are bottom-left to top-right
-        deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
-        */
-
-        /*
-        float deltaX = (float) xpos - this.prevCursorX;
-        float deltaY = this.prevCursorY - (float) ypos;  // deltaY needs to be inverted so that moves up are positive
-
-        if (this.rmbPressed) {
-
-            // note: when panning using rmb we apply delta negatively to simulate moving the camera
-
-            this.camera.offsetX -= deltaX;
-            this.camera.offsetY -= deltaY;
-
-            // update view matrix
-            this.viewMatrix.identity();
-            this.viewMatrix.translate(this.camera.offsetX, this.camera.offsetY, 0);
-            this.viewMatrix.get(this.floatBuffer);
-
-            // upload view matrix to shader
-            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
-        }
-
-        else if (this.mmbPressed) {
-
-            // note: when panning using mmb we apply delta positively to simulate dragging the map
-
-            this.camera.offsetX += deltaX;
-            this.camera.offsetY += deltaY;
-
-            // update view matrix
-            this.viewMatrix.identity();
-            this.viewMatrix.translate(this.camera.offsetX, this.camera.offsetY, 0);
-            this.viewMatrix.get(this.floatBuffer);
-
-            // upload view matrix to shader
-            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
-        }
-
-        this.prevCursorX = (float) xpos;
-        this.prevCursorY = (float) ypos;
-        */
 
         return;
     }
@@ -1308,10 +1063,10 @@ public class MainWindowGLFW {
             this.startFrameTimeNs = endFrameTimeNs;
 
             // poll events
-            GLFW.glfwPollEvents();
+            this.window.pollEvents();
 
             // update camera position
-            this.renderer.updateCameraPosition(this.camera);
+            this.renderer.updateViewMatrix(this.camera);
 
             // clear screen
             this.renderer.clearScreen();

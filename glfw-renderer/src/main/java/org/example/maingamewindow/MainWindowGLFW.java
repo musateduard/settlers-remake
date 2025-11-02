@@ -1,35 +1,8 @@
 package org.example.maingamewindow;
 
-import go.graphics.swing.opengl.LWJGLDrawContext;
-import go.graphics.swing.sound.SwingSoundPlayer;
-import jsettlers.common.Color;
-import jsettlers.common.ai.EPlayerType;
-import jsettlers.common.images.EImageLinkType;
-import jsettlers.common.images.OriginalImageLink;
-import jsettlers.common.player.ECivilisation;
-import jsettlers.common.resources.ResourceManager;
-import jsettlers.graphics.image.SettlerImage;
-import jsettlers.graphics.map.ETextDrawPosition;
-import jsettlers.graphics.map.MapContent;
-import jsettlers.graphics.map.draw.ImageProvider;
-import jsettlers.graphics.sound.SoundManager;
-import jsettlers.logic.constants.MatchConstants;
-import jsettlers.logic.map.loading.EMapStartResources;
-import jsettlers.logic.map.loading.MapLoader;
-import jsettlers.logic.map.loading.list.DirectoryMapLister;
-import jsettlers.logic.player.InitialGameState;
-import jsettlers.logic.player.PlayerSetting;
-import jsettlers.main.swing.resources.SwingResourceProvider;
-import jsettlers.main.swing.settings.SettingsManager;
 import org.example.gamemap.SettlersMap;
-import org.example.gamesimulation.JSettlersGameGLFW;
 import org.example.gamesimulation.SettlersGame;
-import org.example.gamesimulation.TaskExecutorGLFW;
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.GLFWCursorPosCallbackI;
-import org.lwjgl.glfw.GLFWKeyCallbackI;
-import org.lwjgl.glfw.GLFWMouseButtonCallbackI;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
@@ -37,8 +10,6 @@ import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.glfw.GLFW;
-import java.io.File;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 
 
@@ -897,17 +868,11 @@ class Camera implements MouseListener, CursorListener, KeyListener {
     @Override
     public void onKeyEvent(KeyEvent event) {
 
-        System.out.printf("key press in camera\n");
-
         if (event.action() == GLFW.GLFW_PRESS) {
 
             switch (event.key()) {
 
-                case GLFW.GLFW_KEY_UP -> {
-                    this.keyUpPressed = true;
-                    // this.keyUpPressTimeNs = System.nanoTime();
-                }
-
+                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = true;
                 case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = true;
                 case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = true;
                 case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = true;
@@ -922,11 +887,7 @@ class Camera implements MouseListener, CursorListener, KeyListener {
 
             switch (event.key()) {
 
-                case GLFW.GLFW_KEY_UP -> {
-                    this.keyUpPressed = false;
-                    // this.keyUpReleaseTimeNs = System.nanoTime();
-                }
-
+                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = false;
                 case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = false;
                 case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = false;
                 case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = false;
@@ -939,6 +900,56 @@ class Camera implements MouseListener, CursorListener, KeyListener {
 
         else {
             // do nothing
+        }
+
+        return;
+    }
+
+
+    public void updateCameraPosition(long frameTimeDeltaNs) {
+
+        // todo: add separate camera class
+
+        // update based on key press
+        // update based on mouse movement while pressed
+        // how do i detect a key was pressed/released within a single frame?
+
+        float vectorX = 0.00f;
+        float vectorY = 0.00f;
+
+        if (this.keyUpPressed) {
+            vectorY -= 1.00f;
+        }
+
+        if (this.keyDownPressed) {
+            vectorY += 1.00f;
+        }
+
+        if (this.keyLeftPressed) {
+            vectorX += 1.00f;
+        }
+
+        if (this.keyRightPressed) {
+            vectorX -= 1.00f;
+        }
+
+        if (vectorX != 0 || vectorY != 0) {
+
+            final float FRAME_TIME_DELTA_S = frameTimeDeltaNs / 1_000_000_000.00f;
+            final float CAMERA_SPEED_UPS = 400.00f;  // units per second
+
+            float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+
+            float normalX = vectorX / vectorMagnitude;
+            float normalY = vectorY / vectorMagnitude;
+
+            float distance = CAMERA_SPEED_UPS * FRAME_TIME_DELTA_S;
+
+            float deltaX = normalX * distance;
+            float deltaY = normalY * distance;
+
+            this.offsetX += deltaX;
+            this.offsetY += deltaY;
         }
 
         return;
@@ -965,66 +976,6 @@ public class MainWindowGLFW {
         this.window = new Window(this.eventManager);
         this.renderer = new Renderer(this.window.width, this.window.height);
         this.camera = new Camera(this.eventManager);
-
-        return;
-    }
-
-
-    public void updateCameraPosition(long frameTimeDeltaNs) {
-
-        // todo: add separate camera class
-
-        // update based on key press
-        // update based on mouse movement while pressed
-        // how do i detect a key was pressed/released within a single frame?
-
-        /*
-        float vectorX = 0.00f;
-        float vectorY = 0.00f;
-
-        if (this.keyHandler2.keyUpPressed) {
-            vectorY -= 1.00f;
-        }
-
-        if (this.keyHandler2.keyDownPressed) {
-            vectorY += 1.00f;
-        }
-
-        if (this.keyHandler2.keyLeftPressed) {
-            vectorX += 1.00f;
-        }
-
-        if (this.keyHandler2.keyRightPressed) {
-            vectorX -= 1.00f;
-        }
-
-        if (vectorX != 0 || vectorY != 0) {
-
-            final float FRAME_TIME_DELTA_S = frameTimeDeltaNs / 1_000_000_000.00f;
-            final float CAMERA_SPEED_UPS = 400.00f;  // units per second
-
-            float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
-
-            float normalX = vectorX / vectorMagnitude;
-            float normalY = vectorY / vectorMagnitude;
-
-            float distance = CAMERA_SPEED_UPS * FRAME_TIME_DELTA_S;
-
-            float deltaX = normalX * distance;
-            float deltaY = normalY * distance;
-
-            this.camera.offsetX += deltaX;
-            this.camera.offsetY += deltaY;
-
-            // update view matrix
-            this.viewMatrix.identity();
-            this.viewMatrix.translate(this.camera.offsetX, this.camera.offsetY, 0);
-            this.viewMatrix.get(this.floatBuffer);
-
-            // upload view matrix to shader
-            GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
-        }
-        */
 
         return;
     }
@@ -1066,6 +1017,7 @@ public class MainWindowGLFW {
             this.window.pollEvents();
 
             // update camera position
+            this.camera.updateCameraPosition(frameTimeDeltaNs);
             this.renderer.updateViewMatrix(this.camera);
 
             // clear screen
@@ -1080,14 +1032,6 @@ public class MainWindowGLFW {
 
             // swap buffers
             this.window.swapBuffers();
-
-            try {
-                Thread.sleep(1);
-            }
-
-            catch (Exception exception) {
-                // do nothing
-            }
 
             continue;
         }

@@ -1,4 +1,4 @@
-package org.example.maingamewindow;
+package org.example.mainwindow;
 
 import org.example.gamemap.SettlersMap;
 import org.example.gamesimulation.SettlersGame;

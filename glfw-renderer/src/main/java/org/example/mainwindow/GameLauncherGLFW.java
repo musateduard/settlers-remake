@@ -1,4 +1,4 @@
-package org.example.maingamewindow;
+package org.example.mainwindow;
 
 
 public class GameLauncherGLFW {

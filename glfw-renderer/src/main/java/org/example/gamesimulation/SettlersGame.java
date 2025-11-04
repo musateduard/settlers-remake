@@ -29,7 +29,7 @@ class TaskPacket {
 public class SettlersGame implements Runnable {
 
     public static final int LOCKSTEP_DURATION_MS = 100;
-    public static final int TIME_SLICE_MS = 50;
+    public static final int TICK_DURATION_MS = 50;
 
     public boolean running;
     public boolean inputReady;
@@ -198,7 +198,7 @@ public class SettlersGame implements Runnable {
 
     /**
      * this function runs in a separate thread and is responsible for running the game simulation loop.
-     * the main loop runs in 2 intervals: {@link #TIME_SLICE_MS} interval and {@link #LOCKSTEP_DURATION_MS} interval
+     * the main loop runs in 2 intervals: {@link #TICK_DURATION_MS} interval and {@link #LOCKSTEP_DURATION_MS} interval
      * the loop iterates every 50ms and every 100ms it executes a lockstep.
      * the 50ms interval is used so that the network can poll twice for every lockstep interval. this gives
      * the network the opportunity to recover network packets more frequently.
@@ -208,19 +208,19 @@ public class SettlersGame implements Runnable {
     @Override
     public void run() {
 
-        // initialize nextLoopTime to current time so that inside the loop it's always scheduled at +50ms
+        // initialize nextLoopTime to current time so that when loop starts it will be scheduled at +50ms
         this.nextLoopTime = System.currentTimeMillis();
 
         while (this.running) {
 
-            this.nextLoopTime += SettlersGame.TIME_SLICE_MS;
+            // calculate current lockstep
+            this.nextLoopTime += SettlersGame.TICK_DURATION_MS;
             this.currentLockstep = this.accumulatedTime / SettlersGame.LOCKSTEP_DURATION_MS;
 
             System.out.printf("current lockstep: %d\n", this.currentLockstep);
             System.out.printf("next: %d\n", this.nextLoopTime);
 
-            this.pollPackets();
-
+            // execute tasks for current lockstep
             if (this.currentLockstep > this.lastLockstep) {
 
                 System.out.printf("executing tasks for lockstep %d\n", this.currentLockstep);
@@ -232,6 +232,9 @@ public class SettlersGame implements Runnable {
                 }
                 */
             }
+
+            // get tasks for next lockstep
+            this.pollPackets();
 
             long currentTime = System.currentTimeMillis();
             long waitTime = this.nextLoopTime - currentTime;
@@ -247,14 +250,14 @@ public class SettlersGame implements Runnable {
                 }
             }
 
-            // adjust nextLoopTime if loop took longer than TIME_SLICE_MS to execute
+            // adjust nextLoopTime if loop took longer than TICK_DURATION_MS to execute
             // this ensures that the game still runs in fixed 50ms intervals even
             // when a loop iteration took longer to complete
-            else if (waitTime < -SettlersGame.TIME_SLICE_MS) {
-                this.nextLoopTime = currentTime + SettlersGame.TIME_SLICE_MS;
+            else if (waitTime < -SettlersGame.TICK_DURATION_MS) {
+                this.nextLoopTime = currentTime + SettlersGame.TICK_DURATION_MS;
             }
 
-            this.accumulatedTime += SettlersGame.TIME_SLICE_MS;
+            this.accumulatedTime += SettlersGame.TICK_DURATION_MS;
             this.lastLockstep = this.currentLockstep;
             continue;
         }

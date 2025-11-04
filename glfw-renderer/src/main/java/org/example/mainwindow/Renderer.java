@@ -7,6 +7,7 @@ import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.example.gamemap.SettlersMap;
+import org.lwjgl.system.MemoryUtil;
 
 
 /**
@@ -23,23 +24,30 @@ public class Renderer {
     public final float[] floatBuffer;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
-    // public final GLCapabilities capabilities;
+    public final GLCapabilities glCapabilities;
+    public final String glslVersion;
 
 
-    public Renderer(int screenWidth, int screenHeight) {
+    public Renderer(Window window) {
+
+        // todo: check if window was constructed
+        // todo: add imgui initialization to renderer
+
+        if (window.windowId == MemoryUtil.NULL) {
+            throw new RuntimeException("cannot initialize opengl context before creating glfw window");
+        }
 
         this.floatBuffer = new float[16];
         this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
+        this.projectionMatrix.ortho(0, window.width, 0, window.height, -1, 1);
 
         this.viewMatrix = new Matrix4f();
         this.viewMatrix.scale(1);
         this.viewMatrix.translate(0, 0, 0);
 
-        // todo: add imgui initialization to renderer
-
         // init gl capabilities for current context
-        // this.capabilities = GL.createCapabilities();
+        this.glCapabilities = GL.createCapabilities();
+        this.glslVersion = "#version 330";
 
         // create shader program
         // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();

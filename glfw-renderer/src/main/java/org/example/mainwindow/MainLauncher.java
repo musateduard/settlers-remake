@@ -2,6 +2,8 @@ package org.example.mainwindow;
 
 import imgui.ImGui;
 import java.util.Stack;
+import imgui.gl3.ImGuiImplGl3;
+import imgui.glfw.ImGuiImplGlfw;
 import org.example.gamemap.SettlersMap;
 import org.example.gamesimulation.SettlersGame;
 
@@ -38,6 +40,39 @@ class UiStack {
 }
 
 
+class UiRenderer {
+
+    public final ImGuiImplGlfw imGuiGlfw;
+    public final ImGuiImplGl3 imGuiGl3;
+
+
+    public UiRenderer(Window window, Renderer renderer) {
+
+        // create imgui context
+        ImGui.createContext();
+
+        this.imGuiGlfw = new ImGuiImplGlfw();
+        this.imGuiGl3 = new ImGuiImplGl3();
+
+        this.imGuiGlfw.init(window.windowId, true);
+        this.imGuiGl3.init(renderer.glslVersion);
+
+        return;
+    }
+
+
+    public void cleanup() {
+
+        this.imGuiGlfw.shutdown();
+        this.imGuiGl3.shutdown();
+
+        ImGui.destroyContext();
+
+        return;
+    }
+}
+
+
 public class MainLauncher {
 
     public static final long GAME_START_TIME_MS = System.currentTimeMillis();
@@ -45,12 +80,22 @@ public class MainLauncher {
 
     public static void main(String[] args) throws Exception {
 
-        // note: window and renderer are too loosely coupled
-        // todo: make renderer member of window
+        /*
+        note:
+
+        window and renderer are too loosely coupled
+        in current setup renderer has hidden dependency on window constructing before itself
+        this is problematic because renderer and window cannot act independently of one another
+        imgui is also closely coupled with opengl renderer and cannot construct before renderer constructed
+
+        todo: pass window as argument to renderer constructor
+        todo: pass renderer as argument to gui constructor
+        */
 
         EventManager eventManager = new EventManager();
         Window window = new Window(eventManager);
-        Renderer renderer = new Renderer(window.width, window.height);
+        Renderer renderer = new Renderer(window);
+        UiRenderer uiRenderer = new UiRenderer(window, renderer);
         Camera camera = new Camera(eventManager);
 
         // create map instance
@@ -112,8 +157,8 @@ public class MainLauncher {
             renderer.renderTeamObjects();
 
             // render ui
-            window.imGuiGl3.newFrame();
-            window.imGuiGlfw.newFrame();
+            uiRenderer.imGuiGl3.newFrame();
+            uiRenderer.imGuiGlfw.newFrame();
             ImGui.newFrame();
 
             ImGui.begin("title1");
@@ -121,7 +166,7 @@ public class MainLauncher {
             ImGui.end();
 
             ImGui.render();
-            window.imGuiGl3.renderDrawData(ImGui.getDrawData());
+            uiRenderer.imGuiGl3.renderDrawData(ImGui.getDrawData());
             renderer.renderGui();
 
             // swap buffers
@@ -136,6 +181,7 @@ public class MainLauncher {
 
         System.out.printf("closing game\n");
 
+        uiRenderer.cleanup();
         window.cleanup();
 
         return;

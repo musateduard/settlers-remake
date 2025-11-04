@@ -23,7 +23,7 @@ public class Renderer {
     public final float[] floatBuffer;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
-    public final GLCapabilities capabilities;
+    // public final GLCapabilities capabilities;
 
 
     public Renderer(int screenWidth, int screenHeight) {
@@ -36,8 +36,10 @@ public class Renderer {
         this.viewMatrix.scale(1);
         this.viewMatrix.translate(0, 0, 0);
 
+        // todo: add imgui initialization to renderer
+
         // init gl capabilities for current context
-        this.capabilities = GL.createCapabilities();
+        // this.capabilities = GL.createCapabilities();
 
         // create shader program
         // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
@@ -49,36 +51,36 @@ public class Renderer {
         // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
 
         String vertexShaderSource = """
-            #version 330 core
-            
-            layout (location = 0) in vec3 vertex_position;
-            
-            uniform mat4 transform_matrix;
-            uniform mat4 projection_matrix;
-            uniform mat4 view_matrix;
-            uniform mat4 model_matrix;
-            
-            
-            void main() {
-            
-                // todo: calculate gl_Position = projection_matrix * transform_matrix * model_matrix
-            
-                // gl_Position = transform_matrix * vec4(vertex_position, 1.0);
-                gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
-            }
-            """;
+        #version 330 core
+        
+        layout (location = 0) in vec3 vertex_position;
+        
+        uniform mat4 transform_matrix;
+        uniform mat4 projection_matrix;
+        uniform mat4 view_matrix;
+        uniform mat4 model_matrix;
+        
+        
+        void main() {
+        
+            // todo: calculate gl_Position = projection_matrix * transform_matrix * model_matrix
+        
+            // gl_Position = transform_matrix * vec4(vertex_position, 1.0);
+            gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
+        }
+        """;
 
         String fragmentShaderSource = """
-            #version 330 core
-            
-            uniform vec4 uniform_color;
-            layout (location = 0) out vec4 fragment_color;
-            
-            
-            void main() {
-                fragment_color = uniform_color;
-            }
-            """;
+        #version 330 core
+        
+        uniform vec4 uniform_color;
+        layout (location = 0) out vec4 fragment_color;
+        
+        
+        void main() {
+            fragment_color = uniform_color;
+        }
+        """;
 
         int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
         GL20C.glShaderSource(vertexShaderId, vertexShaderSource);

@@ -1,7 +1,41 @@
 package org.example.mainwindow;
 
+import imgui.ImGui;
+import java.util.Stack;
 import org.example.gamemap.SettlersMap;
 import org.example.gamesimulation.SettlersGame;
+
+
+class UiLayer {
+
+    public UiLayer() {
+
+        // contains all ui elements for current overlay
+
+        return;
+    }
+}
+
+
+class UiStack {
+
+    public final Stack<UiLayer> layerList;
+
+
+    public UiStack() {
+
+        // contains methods to navigate from one menu to another
+        // this means destructing/constructing new ui stacks
+
+        this.layerList = new Stack<>();
+
+        // construct to main menu
+        // add background image
+        // add buttons
+
+        return;
+    }
+}
 
 
 public class MainLauncher {
@@ -10,6 +44,9 @@ public class MainLauncher {
 
 
     public static void main(String[] args) throws Exception {
+
+        // note: window and renderer are too loosely coupled
+        // todo: make renderer member of window
 
         EventManager eventManager = new EventManager();
         Window window = new Window(eventManager);
@@ -68,11 +105,23 @@ public class MainLauncher {
             // clear screen
             renderer.clearScreen();
 
-            // render game state
+            // render game scene
             renderer.renderMapTerrain(gameMap);
             renderer.renderStaticObjects();
             renderer.renderNonStaticObjects();
             renderer.renderTeamObjects();
+
+            // render ui
+            window.imGuiGl3.newFrame();
+            window.imGuiGlfw.newFrame();
+            ImGui.newFrame();
+
+            ImGui.begin("title1");
+            ImGui.button("button1");
+            ImGui.end();
+
+            ImGui.render();
+            window.imGuiGl3.renderDrawData(ImGui.getDrawData());
             renderer.renderGui();
 
             // swap buffers

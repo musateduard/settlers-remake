@@ -18,7 +18,7 @@ String[] variants = new String[] {
     "natives-windows",
     "natives-windows-x86",
     "natives-windows-arm64",
-};
+}
 
 String[] modules = new String[] {
     "lwjgl",
@@ -31,6 +31,7 @@ String[] modules = new String[] {
 dependencies {
 
     String lwjglVersion = rootProject.ext.lwjglVersion
+    String imguiVersion = "1.90.0"
 
     for (String module : modules) {
         implementation "org.lwjgl:${module}:${lwjglVersion}"
@@ -40,6 +41,11 @@ dependencies {
         }
     }
 
+    implementation "org.joml:joml:1.9.17"
+    implementation "io.github.spair:imgui-java-binding:${imguiVersion}"
+    implementation "io.github.spair:imgui-java-lwjgl3:${imguiVersion}"
+    implementation "io.github.spair:imgui-java-natives-windows:${imguiVersion}"
+
     implementation project(":go.graphics")
     implementation project(":go.graphics.swing")
     implementation project(":jsettlers.logic")
@@ -47,8 +53,6 @@ dependencies {
     implementation project(":jsettlers.common")
     implementation project(":jsettlers.graphics")
     implementation project(":jsettlers.main.swing")
-
-    implementation "org.joml:joml:1.9.17"
 
     testImplementation platform("org.junit:junit-bom:5.10.0")
     testImplementation "org.junit.jupiter:junit-jupiter"

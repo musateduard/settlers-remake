@@ -1,9 +1,6 @@
 package org.example.mainwindow;
 
-import imgui.ImGui;
 import java.util.Stack;
-import imgui.gl3.ImGuiImplGl3;
-import imgui.glfw.ImGuiImplGlfw;
 import org.example.gamemap.SettlersMap;
 import org.example.gamesimulation.SettlersGame;
 
@@ -40,39 +37,6 @@ class UiStack {
 }
 
 
-class UiRenderer {
-
-    public final ImGuiImplGlfw imGuiGlfw;
-    public final ImGuiImplGl3 imGuiGl3;
-
-
-    public UiRenderer(Window window, Renderer renderer) {
-
-        // create imgui context
-        ImGui.createContext();
-
-        this.imGuiGlfw = new ImGuiImplGlfw();
-        this.imGuiGl3 = new ImGuiImplGl3();
-
-        this.imGuiGlfw.init(window.windowId, true);
-        this.imGuiGl3.init(renderer.glslVersion);
-
-        return;
-    }
-
-
-    public void cleanup() {
-
-        this.imGuiGlfw.shutdown();
-        this.imGuiGl3.shutdown();
-
-        ImGui.destroyContext();
-
-        return;
-    }
-}
-
-
 public class MainLauncher {
 
     public static final long GAME_START_TIME_MS = System.currentTimeMillis();
@@ -95,7 +59,7 @@ public class MainLauncher {
         EventManager eventManager = new EventManager();
         Window window = new Window(eventManager);
         Renderer renderer = new Renderer(window);
-        UiRenderer uiRenderer = new UiRenderer(window, renderer);
+        GuiRenderer guiRenderer = new GuiRenderer(window, renderer);
         Camera camera = new Camera(eventManager);
 
         // create map instance
@@ -156,18 +120,8 @@ public class MainLauncher {
             renderer.renderNonStaticObjects();
             renderer.renderTeamObjects();
 
-            // render ui
-            uiRenderer.imGuiGl3.newFrame();
-            uiRenderer.imGuiGlfw.newFrame();
-            ImGui.newFrame();
-
-            ImGui.begin("title1");
-            ImGui.button("button1");
-            ImGui.end();
-
-            ImGui.render();
-            uiRenderer.imGuiGl3.renderDrawData(ImGui.getDrawData());
-            renderer.renderGui();
+            // render ui stack
+            guiRenderer.renderGuiStack();
 
             // swap buffers
             window.swapBuffers();
@@ -181,7 +135,7 @@ public class MainLauncher {
 
         System.out.printf("closing game\n");
 
-        uiRenderer.cleanup();
+        guiRenderer.cleanup();
         window.cleanup();
 
         return;

@@ -6,6 +6,7 @@ import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiCond;
+import imgui.flag.ImGuiStyleVar;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import org.lwjgl.system.MemoryUtil;
@@ -52,7 +53,7 @@ public class GuiRenderer {
     }
 
 
-    public void renderGuiStack() {
+    public void renderGuiStack(int width, int height) {
 
         this.imguiGlfw.newFrame();
         this.imguiOpengl.newFrame();
@@ -71,7 +72,7 @@ public class GuiRenderer {
 
         // set window size and position
         ImGui.setNextWindowPos(0, 0, ImGuiCond.Always);
-        ImGui.setNextWindowSize(800, 600, ImGuiCond.Always);
+        ImGui.setNextWindowSize(width, height, ImGuiCond.Always);
 
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font
@@ -79,6 +80,8 @@ public class GuiRenderer {
         ImGui.begin("main menu window", NoCollapse | NoTitleBar | NoResize | NoMove);  // for debug
 
         // draw buttons
+        ImGui.pushStyleVar(ImGuiStyleVar.ButtonTextAlign, 0.50f, 0.49f);
+
         ImGui.setCursorPos(80, 20); boolean tutorial = ImGui.button("Tutorial", 172, 32);
         ImGui.setCursorPos(80, 60); boolean campaign = ImGui.button("Campaign", 172, 32);
         ImGui.setCursorPos(80, 100); boolean missionCdCampaign = ImGui.button("Mission CD Campaign", 172, 32);
@@ -92,6 +95,8 @@ public class GuiRenderer {
         ImGui.setCursorPos(80, 440); boolean tipsTricks = ImGui.button("Tips & Tricks", 172, 32);
         ImGui.setCursorPos(80, 480); boolean credits = ImGui.button("Credits", 172, 32);
         ImGui.setCursorPos(80, 540); boolean exitGame = ImGui.button("Exit Game", 172, 32);
+
+        ImGui.popStyleVar();
 
         // set button actions
         if (tutorial) {

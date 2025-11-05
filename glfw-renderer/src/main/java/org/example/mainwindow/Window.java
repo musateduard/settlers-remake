@@ -1,5 +1,6 @@
 package org.example.mainwindow;
 
+import imgui.ImGui;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.system.MemoryUtil;
@@ -45,47 +46,47 @@ public class Window {
         GLFW.glfwSwapInterval(1);
 
         // register keyboard handler
-        GLFW.glfwSetKeyCallback(
-
-            this.windowId,
-
-            (long windowId, int key, int scanCode, int action, int modifier) -> {
-
-                KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifier);
-                this.eventManager.emitKeyEvent(event);
-
-                return;
-            }
-        );
-
-        GLFW.glfwSetCursorPosCallback(
-
-            this.windowId,
-
-            (long window, double xpos, double ypos) -> {
-
-                CursorEvent event = new CursorEvent(window, xpos, ypos);
-                this.eventManager.emitCursorEvent(event);
-
-                return;
-            }
-        );
-
-        GLFW.glfwSetMouseButtonCallback(
-
-            this.windowId,
-
-            (long window, int button, int action, int mods) -> {
-
-                MouseEvent event = new MouseEvent(window, button, action, mods);
-                this.eventManager.emitMouseEvent(event);
-
-                return;
-            }
-        );
+        GLFW.glfwSetKeyCallback(this.windowId, this::keyCallback);
+        GLFW.glfwSetCursorPosCallback(this.windowId, this::cursorCallback);
+        GLFW.glfwSetMouseButtonCallback(this.windowId, this::mouseCallback);
 
         // make window visible
         GLFW.glfwShowWindow(this.windowId);
+
+        return;
+    }
+
+
+    public void keyCallback(long windowId, int key, int scanCode, int action, int modifier) {
+
+        KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifier);
+        this.eventManager.emitKeyEvent(event);
+
+        return;
+    }
+
+
+    public void mouseCallback(long window, int button, int action, int mods) {
+
+        if (ImGui.getIO().getWantCaptureMouse()) {
+            return;
+        }
+
+        MouseEvent event = new MouseEvent(window, button, action, mods);
+        this.eventManager.emitMouseEvent(event);
+
+        return;
+    }
+
+
+    public void cursorCallback(long window, double xpos, double ypos) {
+
+        if (ImGui.getIO().getWantCaptureMouse()) {
+            return;
+        }
+
+        CursorEvent event = new CursorEvent(window, xpos, ypos);
+        this.eventManager.emitCursorEvent(event);
 
         return;
     }

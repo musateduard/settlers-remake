@@ -13,7 +13,7 @@ import org.lwjgl.system.MemoryUtil;
 /**
  * this class handles all low level rendering functions related to opengl.
  */
-public class Renderer {
+public class Renderer implements ResizeListener {
 
     public final int shaderProgramId;
     public final int transformMatrixAddress;
@@ -28,7 +28,7 @@ public class Renderer {
     public final String glslVersion;
 
 
-    public Renderer(Window window) {
+    public Renderer(Window window, EventManager eventManager) {
 
         // todo: check if window was constructed
         // todo: add imgui initialization to renderer
@@ -40,6 +40,8 @@ public class Renderer {
         this.floatBuffer = new float[16];
         this.projectionMatrix = new Matrix4f();
         this.projectionMatrix.ortho(0, window.width, 0, window.height, -1, 1);
+
+        // todo: update projection matrix on window resize
 
         this.viewMatrix = new Matrix4f();
         this.viewMatrix.scale(1);
@@ -135,6 +137,23 @@ public class Renderer {
         this.colorUniformAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
 
         // todo: add error checking for shader uniform addresses
+
+        // register event listener
+        eventManager.addResizeListener(this);
+
+        return;
+    }
+
+
+    @Override
+    public void onResizeEvent(ResizeEvent event) {
+
+        // todo: fix projection matrix when resizing window
+
+        this.projectionMatrix.identity();
+        this.projectionMatrix.ortho(0, event.width(), 0, event.height(), -1, 1);
+        this.projectionMatrix.get(this.floatBuffer);
+        GL30C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
 
         return;
     }

@@ -8,8 +8,8 @@ import org.lwjgl.system.MemoryUtil;
 
 public class Window {
 
-    public final int width;
-    public final int height;
+    public int width;
+    public int height;
     public final long windowId;
     public final EventManager eventManager;
 
@@ -28,7 +28,7 @@ public class Window {
         // set window hints
         GLFW.glfwDefaultWindowHints();
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
+        GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -49,6 +49,7 @@ public class Window {
         GLFW.glfwSetKeyCallback(this.windowId, this::keyCallback);
         GLFW.glfwSetCursorPosCallback(this.windowId, this::cursorCallback);
         GLFW.glfwSetMouseButtonCallback(this.windowId, this::mouseCallback);
+        GLFW.glfwSetWindowSizeCallback(this.windowId, this::resizeCallback);
 
         // make window visible
         GLFW.glfwShowWindow(this.windowId);
@@ -60,7 +61,7 @@ public class Window {
     public void keyCallback(long windowId, int key, int scanCode, int action, int modifier) {
 
         KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifier);
-        this.eventManager.emitKeyEvent(event);
+        this.eventManager.dispatchKeyEvent(event);
 
         return;
     }
@@ -73,7 +74,7 @@ public class Window {
         }
 
         MouseEvent event = new MouseEvent(window, button, action, mods);
-        this.eventManager.emitMouseEvent(event);
+        this.eventManager.dispatchMouseEvent(event);
 
         return;
     }
@@ -86,7 +87,19 @@ public class Window {
         }
 
         CursorEvent event = new CursorEvent(window, xpos, ypos);
-        this.eventManager.emitCursorEvent(event);
+        this.eventManager.dispatchCursorEvent(event);
+
+        return;
+    }
+
+
+    public void resizeCallback(long windowId, int width, int height) {
+
+        this.width = width;
+        this.height = height;
+
+        ResizeEvent event = new ResizeEvent(windowId, width, height);
+        this.eventManager.dispatchResizeEvent(event);
 
         return;
     }

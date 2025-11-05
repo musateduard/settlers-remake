@@ -28,10 +28,10 @@ String[] modules = new String[] {
     "lwjgl-vma",
 }
 
-dependencies {
+String lwjglVersion = rootProject.ext.lwjglVersion
+String imguiVersion = "1.90.0"
 
-    String lwjglVersion = rootProject.ext.lwjglVersion
-    String imguiVersion = "1.90.0"
+dependencies {
 
     for (String module : modules) {
         implementation "org.lwjgl:${module}:${lwjglVersion}"

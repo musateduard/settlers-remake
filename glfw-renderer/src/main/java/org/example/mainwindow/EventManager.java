@@ -8,6 +8,7 @@ public class EventManager {
     public final ArrayList<MouseListener> mouseListenerList;
     public final ArrayList<CursorListener> cursorListenerList;
     public final ArrayList<KeyListener> keyListenerList;
+    public final ArrayList<ResizeListener> resizeListenerList;
 
 
     public EventManager() {
@@ -15,6 +16,7 @@ public class EventManager {
         this.mouseListenerList = new ArrayList<>();
         this.cursorListenerList = new ArrayList<>();
         this.keyListenerList = new ArrayList<>();
+        this.resizeListenerList = new ArrayList<>();
 
         return;
     }
@@ -38,7 +40,13 @@ public class EventManager {
     }
 
 
-    public void emitMouseEvent(MouseEvent event) {
+    public void addResizeListener(ResizeListener listener) {
+        this.resizeListenerList.add(listener);
+        return;
+    }
+
+
+    public void dispatchMouseEvent(MouseEvent event) {
 
         for (MouseListener item : this.mouseListenerList) {
             item.onMouseEvent(event);
@@ -48,7 +56,7 @@ public class EventManager {
     }
 
 
-    public void emitCursorEvent(CursorEvent event) {
+    public void dispatchCursorEvent(CursorEvent event) {
 
         for (CursorListener item : this.cursorListenerList) {
             item.onCursorEvent(event);
@@ -58,10 +66,20 @@ public class EventManager {
     }
 
 
-    public void emitKeyEvent(KeyEvent event) {
+    public void dispatchKeyEvent(KeyEvent event) {
 
         for (KeyListener item : this.keyListenerList) {
             item.onKeyEvent(event);
+        }
+
+        return;
+    }
+
+
+    public void dispatchResizeEvent(ResizeEvent event) {
+
+        for (ResizeListener item : this.resizeListenerList) {
+            item.onResizeEvent(event);
         }
 
         return;

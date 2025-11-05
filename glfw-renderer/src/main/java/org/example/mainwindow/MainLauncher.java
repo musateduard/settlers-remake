@@ -58,7 +58,7 @@ public class MainLauncher {
 
         EventManager eventManager = new EventManager();
         Window window = new Window(eventManager);
-        Renderer renderer = new Renderer(window);
+        Renderer renderer = new Renderer(window, eventManager);
         GuiRenderer guiRenderer = new GuiRenderer(window, renderer);
         Camera camera = new Camera(eventManager);
 
@@ -121,7 +121,7 @@ public class MainLauncher {
             renderer.renderTeamObjects();
 
             // render ui stack
-            guiRenderer.renderGuiStack();
+            guiRenderer.renderGuiStack(window.width, window.height);
 
             // swap buffers
             window.swapBuffers();

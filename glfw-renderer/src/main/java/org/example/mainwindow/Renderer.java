@@ -2,9 +2,7 @@ package org.example.mainwindow;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
-import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.GL20C;
-import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.example.gamemap.SettlersMap;
 import org.lwjgl.system.MemoryUtil;
@@ -15,8 +13,8 @@ import org.lwjgl.system.MemoryUtil;
  */
 public class Renderer implements ResizeListener {
 
+    public final int frameBufferObjectId;
     public final int shaderProgramId;
-    public final int transformMatrixAddress;
     public final int modelMatrixAddress;
     public final int viewMatrixAddress;
     public final int projectionMatrixAddress;
@@ -30,19 +28,16 @@ public class Renderer implements ResizeListener {
 
     public Renderer(Window window, EventManager eventManager) {
 
-        // todo: check if window was constructed
-        // todo: add imgui initialization to renderer
-
         if (window.windowId == MemoryUtil.NULL) {
             throw new RuntimeException("cannot initialize opengl context before creating glfw window");
         }
 
+        // set projection matrix
         this.floatBuffer = new float[16];
         this.projectionMatrix = new Matrix4f();
         this.projectionMatrix.ortho(0, window.width, 0, window.height, -1, 1);
 
-        // todo: update projection matrix on window resize
-
+        // set view matrix
         this.viewMatrix = new Matrix4f();
         this.viewMatrix.scale(1);
         this.viewMatrix.translate(0, 0, 0);
@@ -50,6 +45,28 @@ public class Renderer implements ResizeListener {
         // init gl capabilities for current context
         this.glCapabilities = GL.createCapabilities();
         this.glslVersion = "#version 330";
+
+        // create frame buffer object
+        this.frameBufferObjectId = GL33C.glGenFramebuffers();
+
+        int frameBufferStatus = GL33C.glCheckFramebufferStatus(GL33C.GL_FRAMEBUFFER);
+
+        if (frameBufferStatus != GL33C.GL_FRAMEBUFFER_COMPLETE) {
+            throw new RuntimeException("failed to create frame buffer object");
+        }
+
+        // bind frame buffer
+        GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, this.frameBufferObjectId);
+
+        // todo: declare and bind texture to buffer between these calls
+
+        // create texture object
+        int canvasTextureId = GL33C.glGenTextures();
+
+        // todo: finish declaring canvas texture object
+
+        // unbind frame buffer
+        GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, 0);
 
         // create shader program
         // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
@@ -92,51 +109,67 @@ public class Renderer implements ResizeListener {
         }
         """;
 
-        int vertexShaderId = GL20C.glCreateShader(GL20C.GL_VERTEX_SHADER);
-        GL20C.glShaderSource(vertexShaderId, vertexShaderSource);
-        GL20C.glCompileShader(vertexShaderId);
+        int vertexShaderId = GL33C.glCreateShader(GL33C.GL_VERTEX_SHADER);
+        GL33C.glShaderSource(vertexShaderId, vertexShaderSource);
+        GL33C.glCompileShader(vertexShaderId);
 
-        int vertexCompileStatus = GL30C.glGetShaderi(vertexShaderId, GL30C.GL_COMPILE_STATUS);
-        if (vertexCompileStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetShaderInfoLog(vertexShaderId);
-            throw new RuntimeException(info);
+        int vertexCompileStatus = GL33C.glGetShaderi(vertexShaderId, GL33C.GL_COMPILE_STATUS);
+        String vertexCompileInfo = GL33C.glGetShaderInfoLog(vertexShaderId);
+
+        if (vertexCompileStatus != GL33C.GL_TRUE) {
+            throw new RuntimeException(vertexCompileInfo);
         }
 
-        int fragmentShaderId = GL20C.glCreateShader(GL20C.GL_FRAGMENT_SHADER);
-        GL20C.glShaderSource(fragmentShaderId, fragmentShaderSource);
-        GL20C.glCompileShader(fragmentShaderId);
+        int fragmentShaderId = GL33C.glCreateShader(GL33C.GL_FRAGMENT_SHADER);
+        GL33C.glShaderSource(fragmentShaderId, fragmentShaderSource);
+        GL33C.glCompileShader(fragmentShaderId);
 
-        int fragmentCompileStatus = GL30C.glGetShaderi(fragmentShaderId, GL30C.GL_COMPILE_STATUS);
-        if (fragmentCompileStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetShaderInfoLog(fragmentShaderId);
-            throw new RuntimeException(info);
+        int fragmentCompileStatus = GL33C.glGetShaderi(fragmentShaderId, GL33C.GL_COMPILE_STATUS);
+        String fragmentCompileInfo = GL33C.glGetShaderInfoLog(fragmentShaderId);
+
+        if (fragmentCompileStatus != GL33C.GL_TRUE) {
+            throw new RuntimeException(fragmentCompileInfo);
         }
 
-        this.shaderProgramId = GL20C.glCreateProgram();
-        GL20C.glAttachShader(this.shaderProgramId, vertexShaderId);
-        GL20C.glAttachShader(this.shaderProgramId, fragmentShaderId);
+        this.shaderProgramId = GL33C.glCreateProgram();
+        GL33C.glAttachShader(this.shaderProgramId, vertexShaderId);
+        GL33C.glAttachShader(this.shaderProgramId, fragmentShaderId);
 
-        GL20C.glLinkProgram(this.shaderProgramId);
+        GL33C.glLinkProgram(this.shaderProgramId);
 
-        int linkStatus = GL30C.glGetProgrami(this.shaderProgramId, GL30C.GL_LINK_STATUS);
-        if (linkStatus != GL30C.GL_TRUE) {
-            String info = GL30C.glGetProgramInfoLog(this.shaderProgramId);
-            throw new RuntimeException(info);
+        int linkStatus = GL33C.glGetProgrami(this.shaderProgramId, GL33C.GL_LINK_STATUS);
+        String linkInfo = GL33C.glGetProgramInfoLog(this.shaderProgramId);
+
+        if (linkStatus != GL33C.GL_TRUE) {
+            throw new RuntimeException(linkInfo);
         }
 
-        GL20C.glDetachShader(this.shaderProgramId, vertexShaderId);
-        GL20C.glDetachShader(this.shaderProgramId, fragmentShaderId);
-        GL20C.glDeleteShader(vertexShaderId);
-        GL20C.glDeleteShader(fragmentShaderId);
+        GL33C.glDetachShader(this.shaderProgramId, vertexShaderId);
+        GL33C.glDetachShader(this.shaderProgramId, fragmentShaderId);
+        GL33C.glDeleteShader(vertexShaderId);
+        GL33C.glDeleteShader(fragmentShaderId);
 
         // get uniform addresses from shader
-        this.modelMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "model_matrix");
-        this.viewMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "view_matrix");
-        this.projectionMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "projection_matrix");
-        this.transformMatrixAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "transform_matrix");
-        this.colorUniformAddress = GL30C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
+        this.modelMatrixAddress = GL33C.glGetUniformLocation(this.shaderProgramId, "model_matrix");
+        this.viewMatrixAddress = GL33C.glGetUniformLocation(this.shaderProgramId, "view_matrix");
+        this.projectionMatrixAddress = GL33C.glGetUniformLocation(this.shaderProgramId, "projection_matrix");
+        this.colorUniformAddress = GL33C.glGetUniformLocation(this.shaderProgramId, "uniform_color");
 
-        // todo: add error checking for shader uniform addresses
+        if (this.modelMatrixAddress == -1) {
+            throw new RuntimeException("invalid modelMatrixAddress value: %d".formatted(this.modelMatrixAddress));
+        }
+
+        if (this.viewMatrixAddress == -1) {
+            throw new RuntimeException("invalid viewMatrixAddress value: %d".formatted(this.viewMatrixAddress));
+        }
+
+        if (this.projectionMatrixAddress == -1) {
+            throw new RuntimeException("invalid projectionMatrixAddress value: %d".formatted(this.projectionMatrixAddress));
+        }
+
+        if (this.colorUniformAddress == -1) {
+            throw new RuntimeException("invalid colorUniformAddress value: %d".formatted(this.colorUniformAddress));
+        }
 
         // register event listener
         eventManager.addResizeListener(this);
@@ -148,12 +181,14 @@ public class Renderer implements ResizeListener {
     @Override
     public void onResizeEvent(ResizeEvent event) {
 
-        // todo: fix projection matrix when resizing window
+        /*
+        note:
 
-        this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(0, event.width(), 0, event.height(), -1, 1);
-        this.projectionMatrix.get(this.floatBuffer);
-        GL30C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
+        on resize projection matrix width and height should be set to
+        correspond to the internal frame buffer object size, not the screen size
+        */
+
+        this.updateProjectionMatrix(event.width(), event.height());
 
         return;
     }
@@ -170,10 +205,26 @@ public class Renderer implements ResizeListener {
         float blue = (float) (Math.sin(currentTimeDeltaS + 4.00 * Math.PI / 3.00) * saturation + (1.00f - saturation));
 
         // set clear color
-        GL11C.glClearColor(red, green, blue, 1.00f);
+        // GL33C.glClearColor(red, green, blue, 1.00f);
+        GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
 
         // clear screen
-        GL11C.glClear(GL11C.GL_COLOR_BUFFER_BIT | GL11C.GL_DEPTH_BUFFER_BIT);
+        GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT | GL33C.GL_DEPTH_BUFFER_BIT);
+
+        return;
+    }
+
+
+    public void updateProjectionMatrix(int width, int height) {
+
+        GL33C.glUseProgram(this.shaderProgramId);
+        GL33C.glViewport(0, 0, width, height);
+
+        this.projectionMatrix.identity();
+        this.projectionMatrix.ortho(0, width, 0, height, -1, 1);
+        this.projectionMatrix.get(this.floatBuffer);
+
+        GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
 
         return;
     }
@@ -181,9 +232,13 @@ public class Renderer implements ResizeListener {
 
     public void updateViewMatrix(Camera cameraView) {
 
+        GL33C.glUseProgram(this.shaderProgramId);
+
         this.viewMatrix.identity();
         this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);
         this.viewMatrix.get(this.floatBuffer);
+
+        GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
 
         return;
     }
@@ -207,36 +262,36 @@ public class Renderer implements ResizeListener {
         };
 
         // create and bind vao
-        int vaoId = GL30C.glGenVertexArrays();
-        GL30C.glBindVertexArray(vaoId);
+        int vaoId = GL33C.glGenVertexArrays();
+        GL33C.glBindVertexArray(vaoId);
 
         // create and bind vbo
-        int vboId = GL30C.glGenBuffers();
-        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, vboId);
+        int vboId = GL33C.glGenBuffers();
+        GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vboId);
 
         // upload vertex buffer to gpu
-        GL30C.glBufferData(GL30C.GL_ARRAY_BUFFER, mapVertexBuffer, GL30C.GL_STATIC_DRAW);
+        GL33C.glBufferData(GL33C.GL_ARRAY_BUFFER, mapVertexBuffer, GL33C.GL_STATIC_DRAW);
 
         // set vao properties for current vbo
-        GL30C.glVertexAttribPointer(0, 3, GL30C.GL_FLOAT, false, 0, 0);
+        GL33C.glVertexAttribPointer(0, 3, GL33C.GL_FLOAT, false, 0, 0);
 
         // set start index for current vao
-        GL30C.glEnableVertexAttribArray(0);
+        GL33C.glEnableVertexAttribArray(0);
 
         // unbind vbo and vao
-        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, 0);
-        GL30C.glBindVertexArray(0);
+        GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, 0);
+        GL33C.glBindVertexArray(0);
 
         // activate shader
-        GL30C.glUseProgram(this.shaderProgramId);
+        GL33C.glUseProgram(this.shaderProgramId);
 
         // upload projection matrix
-        this.projectionMatrix.get(this.floatBuffer);
-        GL30C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
+        // this.projectionMatrix.get(this.floatBuffer);
+        // GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
 
         // upload view matrix
-        this.viewMatrix.get(this.floatBuffer);
-        GL30C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
+        // this.viewMatrix.get(this.floatBuffer);
+        // GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
 
         // todo: add modelMatrix to gameMap object
 
@@ -246,22 +301,22 @@ public class Renderer implements ResizeListener {
         modelMatrix.scale(100, 100, 1);
 
         modelMatrix.get(this.floatBuffer);
-        GL30C.glUniformMatrix4fv(this.modelMatrixAddress, false, this.floatBuffer);
+        GL33C.glUniformMatrix4fv(this.modelMatrixAddress, false, this.floatBuffer);
 
         // set color uniform
-        GL30C.glUniform4f(this.colorUniformAddress, 0.00f, 0.50f, 0.50f, 1.00f);
+        GL33C.glUniform4f(this.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
 
         // bind vao and vbo
-        GL30C.glBindVertexArray(vaoId);
-        GL30C.glEnableVertexAttribArray(0);
+        GL33C.glBindVertexArray(vaoId);
+        GL33C.glEnableVertexAttribArray(0);
 
         // draw buffer
-        GL30C.glDrawArrays(GL11C.GL_TRIANGLE_FAN, 0, 4);
+        GL33C.glDrawArrays(GL33C.GL_TRIANGLE_FAN, 0, 4);
 
         // cleanup
-        GL30C.glDisableVertexAttribArray(0);
-        GL30C.glBindVertexArray(0);
-        GL30C.glUseProgram(0);
+        GL33C.glDisableVertexAttribArray(0);
+        GL33C.glBindVertexArray(0);
+        GL33C.glUseProgram(0);
 
         return;
     }
@@ -282,7 +337,21 @@ public class Renderer implements ResizeListener {
     }
 
 
-    public void renderGui() {
+    public void renderGameScene(long frameTimeDeltaNs, Window window, Camera camera, SettlersMap gameMap) {
+
+        // update projection matrix
+        this.updateProjectionMatrix(window.width, window.height);
+
+        // update view matrix
+        camera.updateCameraPosition(frameTimeDeltaNs);
+        this.updateViewMatrix(camera);
+
+        // render game scene
+        this.renderMapTerrain(gameMap);
+        this.renderStaticObjects();
+        this.renderNonStaticObjects();
+        this.renderTeamObjects();
+
         return;
     }
 
@@ -452,25 +521,25 @@ public class Renderer implements ResizeListener {
         };
 
         // create and bind vao
-        int vaoId = GL30C.glGenVertexArrays();
-        GL30C.glBindVertexArray(vaoId);
+        int vaoId = GL33C.glGenVertexArrays();
+        GL33C.glBindVertexArray(vaoId);
 
         // create and bind vbo
-        int vboId = GL30C.glGenBuffers();
-        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, vboId);
+        int vboId = GL33C.glGenBuffers();
+        GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vboId);
 
         // upload vertex buffer to gpu
-        GL30C.glBufferData(GL30C.GL_ARRAY_BUFFER, vertexList, GL30C.GL_STATIC_DRAW);
+        GL33C.glBufferData(GL33C.GL_ARRAY_BUFFER, vertexList, GL33C.GL_STATIC_DRAW);
 
         // set vao properties for current vbo
-        GL30C.glVertexAttribPointer(0, 3, GL30C.GL_FLOAT, false, 0, 0);
+        GL33C.glVertexAttribPointer(0, 3, GL33C.GL_FLOAT, false, 0, 0);
 
         // set start index for current vao
-        GL30C.glEnableVertexAttribArray(0);
+        GL33C.glEnableVertexAttribArray(0);
 
         // unbind vbo and vao
-        GL30C.glBindBuffer(GL30C.GL_ARRAY_BUFFER, 0);
-        GL30C.glBindVertexArray(0);
+        GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, 0);
+        GL33C.glBindVertexArray(0);
 
         // allocate transform matrix buffers outside of render loop
         Matrix4f modelMatrix = new Matrix4f();
@@ -531,27 +600,27 @@ public class Renderer implements ResizeListener {
 
             // draw using shader
             // activate shader
-            GL30C.glUseProgram(this.shaderProgramId);
+            GL33C.glUseProgram(this.shaderProgramId);
 
             // set transform matrix uniform
             transformMatrix.get(transformMatrixArray);
 
-            GL30C.glUniformMatrix4fv(this.transformMatrixAddress, false, transformMatrixArray);
+            GL33C.glUniformMatrix4fv(this.transformMatrixAddress, false, transformMatrixArray);
 
             // set color uniform
-            GL30C.glUniform4f(this.colorUniformAddress, 1.00f, 0.00f, 0.00f, 1.00f);
+            GL33C.glUniform4f(this.colorUniformAddress, 1.00f, 0.00f, 0.00f, 1.00f);
 
             // bind vao and vbo
-            GL30C.glBindVertexArray(vaoId);
-            GL30C.glEnableVertexAttribArray(0);
+            GL33C.glBindVertexArray(vaoId);
+            GL33C.glEnableVertexAttribArray(0);
 
             // draw buffer
-            GL30C.glDrawArrays(GL11C.GL_QUADS, 0, 4);
+            GL33C.glDrawArrays(GL11C.GL_QUADS, 0, 4);
 
             // cleanup
-            GL30C.glDisableVertexAttribArray(0);
-            GL30C.glBindVertexArray(0);
-            GL30C.glUseProgram(0);
+            GL33C.glDisableVertexAttribArray(0);
+            GL33C.glBindVertexArray(0);
+            GL33C.glUseProgram(0);
 
             // swap buffers
             GLFW.glfwSwapBuffers(this.window.windowId);

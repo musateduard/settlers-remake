@@ -4,17 +4,21 @@ import imgui.ImGui;
 import imgui.ImFont;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
-import imgui.flag.ImGuiCol;
-import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiStyleVar;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static imgui.flag.ImGuiCol.Text;
+import static imgui.flag.ImGuiCol.Button;
+import static imgui.flag.ImGuiCol.WindowBg;
+import static imgui.flag.ImGuiCol.ButtonActive;
+import static imgui.flag.ImGuiCol.ButtonHovered;
 import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
 import static imgui.flag.ImGuiWindowFlags.NoCollapse;
 import static imgui.flag.ImGuiWindowFlags.NoTitleBar;
+import static org.lwjgl.system.MemoryUtil.NULL;
+import static imgui.flag.ImGuiCond.Always;
 
 
 public class GuiRenderer {
@@ -65,18 +69,18 @@ public class GuiRenderer {
         // set window transparency
         ImGuiStyle style = ImGui.getStyle();
 
-        style.setColor(ImGuiCol.WindowBg, 0, 0, 0, 50);
-        style.setColor(ImGuiCol.Button,        144, 128, 56, 255);
-        style.setColor(ImGuiCol.ButtonActive,  132, 117, 49, 255);
-        style.setColor(ImGuiCol.ButtonHovered, 138, 123, 52, 255);
+        style.setColor(WindowBg, 0, 0, 0, 50);
+        style.setColor(Button,        144, 128, 56, 255);
+        style.setColor(ButtonActive,  132, 117, 49, 255);
+        style.setColor(ButtonHovered, 138, 123, 52, 255);
 
         // set text color
-        style.setColor(ImGuiCol.Text, 0, 12, 64, 255);
+        style.setColor(Text, 0, 12, 64, 255);
 
         // set window size and position
         final double currentAspectRatio = (float) width / height;
-        ImGui.setNextWindowPos(0, 0, ImGuiCond.Always);
-        ImGui.setNextWindowSize(800, 600, ImGuiCond.Always);
+        ImGui.setNextWindowPos(0, 0, Always);
+        ImGui.setNextWindowSize(800, 600, Always);
 
         /*
         note:

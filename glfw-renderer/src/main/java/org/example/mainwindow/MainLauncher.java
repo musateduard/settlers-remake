@@ -107,18 +107,11 @@ public class MainLauncher {
             // poll events
             window.pollEvents();
 
-            // update camera position
-            camera.updateCameraPosition(frameTimeDeltaNs);
-            renderer.updateViewMatrix(camera);
-
             // clear screen
             renderer.clearScreen();
 
             // render game scene
-            renderer.renderMapTerrain(gameMap);
-            renderer.renderStaticObjects();
-            renderer.renderNonStaticObjects();
-            renderer.renderTeamObjects();
+            renderer.renderGameScene(frameTimeDeltaNs, window, camera, gameMap);
 
             // render ui stack
             guiRenderer.renderGuiStack(window.width, window.height);

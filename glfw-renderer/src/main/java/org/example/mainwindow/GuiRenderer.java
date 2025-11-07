@@ -9,8 +9,8 @@ import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiStyleVar;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
-import org.lwjgl.system.MemoryUtil;
 
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
 import static imgui.flag.ImGuiWindowFlags.NoCollapse;
@@ -19,6 +19,7 @@ import static imgui.flag.ImGuiWindowFlags.NoTitleBar;
 
 public class GuiRenderer {
 
+    public final double idealAspectRatio;
     public final ImGuiImplGlfw imguiGlfw;
     public final ImGuiImplGl3 imguiOpengl;
     public final ImFont menuFont;
@@ -26,7 +27,9 @@ public class GuiRenderer {
 
     public GuiRenderer(Window window, Renderer renderer) {
 
-        if (window.windowId == MemoryUtil.NULL) {
+        this.idealAspectRatio = 4.00f / 3.00f;
+
+        if (window.windowId == NULL) {
             throw new RuntimeException("cannot initialize hui renderer before creating glfw window");
         }
 
@@ -71,8 +74,42 @@ public class GuiRenderer {
         style.setColor(ImGuiCol.Text, 0, 12, 64, 255);
 
         // set window size and position
+        final double currentAspectRatio = (float) width / height;
         ImGui.setNextWindowPos(0, 0, ImGuiCond.Always);
-        ImGui.setNextWindowSize(width, height, ImGuiCond.Always);
+        ImGui.setNextWindowSize(800, 600, ImGuiCond.Always);
+
+        /*
+        note:
+
+        gui size should be fixed to 800 x 600 and instead drawn to an internal frame buffer object
+        the frame buffer object then gets drawn to the screen with the correct position and aspect ratio
+        */
+
+        /*
+        // calculate based on height
+        if (currentAspectRatio >= this.idealAspectRatio) {
+
+            int menuWidth = (int) (height * this.idealAspectRatio);
+            int menuHeight = height;
+            int menuX = (width - menuWidth) / 2;
+            int menuY = 0;
+
+            ImGui.setNextWindowPos(menuX, menuY, ImGuiCond.Always);
+            ImGui.setNextWindowSize(menuWidth, menuHeight, ImGuiCond.Always);
+        }
+
+        // calculate based on width
+        else {
+
+            int menuWidth = width;
+            int menuHeight = (int) (width / this.idealAspectRatio);
+            int menuX = 0;
+            int menuY = (height - menuHeight) / 2;
+
+            ImGui.setNextWindowPos(menuX, menuY, ImGuiCond.Always);
+            ImGui.setNextWindowSize(menuWidth, menuHeight, ImGuiCond.Always);
+        }
+        */
 
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font

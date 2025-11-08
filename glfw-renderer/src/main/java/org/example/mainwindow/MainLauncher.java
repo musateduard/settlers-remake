@@ -107,6 +107,10 @@ public class MainLauncher {
             // poll events
             window.pollEvents();
 
+            // activate frame buffer
+            // note: frame buffer needs to be active for the entire render pipeline (this means both scene and ui)
+            renderer.activateFrameBuffer();
+
             // clear screen
             renderer.clearScreen();
 
@@ -114,7 +118,8 @@ public class MainLauncher {
             renderer.renderGameScene(frameTimeDeltaNs, window, camera, gameMap);
 
             // render ui stack
-            guiRenderer.renderGuiStack(window.width, window.height);
+            // note: ui stack has variable size and position depending on game state: main menu or in game
+            guiRenderer.renderGuiStack(800, 600);
 
             // swap buffers
             window.swapBuffers();
@@ -129,6 +134,7 @@ public class MainLauncher {
         System.out.printf("closing game\n");
 
         guiRenderer.cleanup();
+        renderer.cleanup();
         window.cleanup();
 
         return;

@@ -1,32 +1,63 @@
 package org.example.mainwindow;
 
+import java.util.Arrays;
+import java.nio.IntBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
+import org.lwjgl.opengl.KHRDebug;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GLCapabilities;
 import org.example.gamemap.SettlersMap;
 
-import static org.lwjgl.opengl.GL33C.GL_FLOAT;
-import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL33C.GL_RGB;
 import static org.lwjgl.opengl.GL33C.GL_TRUE;
+import static org.lwjgl.opengl.GL33C.GL_FLOAT;
 import static org.lwjgl.opengl.GL33C.GL_LINEAR;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
+import static org.lwjgl.opengl.GL33C.GL_DONT_CARE;
+import static org.lwjgl.opengl.GL33C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL33C.GL_LINK_STATUS;
-import static org.lwjgl.opengl.GL33C.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL33C.GL_COMPILE_STATUS;
-import static org.lwjgl.opengl.GL33C.GL_FRAGMENT_SHADER;
+import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL33C.GL_RENDERBUFFER;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH24_STENCIL8;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH_STENCIL_ATTACHMENT;
-import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER_COMPLETE;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL33C.GL_COLOR_ATTACHMENT0;
+import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
+import static org.lwjgl.opengl.GL33C.GL_CONTEXT_FLAGS;
+import static org.lwjgl.opengl.GL33C.GL_VERTEX_SHADER;
 import static org.lwjgl.opengl.GL33C.GL_UNSIGNED_BYTE;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL33C.GL_COMPILE_STATUS;
+import static org.lwjgl.opengl.GL33C.GL_FRAGMENT_SHADER;
+import static org.lwjgl.opengl.GL33C.GL_DEPTH24_STENCIL8;
+import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL33C.GL_COLOR_ATTACHMENT0;
+import static org.lwjgl.opengl.GL33C.GL_STENCIL_BUFFER_BIT;
+import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MIN_FILTER;
+import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MAG_FILTER;
+import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER_COMPLETE;
+import static org.lwjgl.opengl.GL33C.GL_DEPTH_STENCIL_ATTACHMENT;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_OUTPUT_SYNCHRONOUS;
+import static org.lwjgl.opengl.KHRDebug.GL_CONTEXT_FLAG_DEBUG_BIT;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_OUTPUT;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_HIGH;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_LOW;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_MEDIUM;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_API;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_APPLICATION;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_OTHER;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_SHADER_COMPILER;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_THIRD_PARTY;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_WINDOW_SYSTEM;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_ERROR;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_MARKER;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_OTHER;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PERFORMANCE;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_POP_GROUP;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PORTABILITY;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PUSH_GROUP;
+import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
@@ -58,7 +89,7 @@ public class Renderer implements ResizeListener {
     public final GLCapabilities glCapabilities;
     public final String glslVersion;
     public final int canvasVbo;
-    // public final int canvasVao;
+    public final int canvasVao;
     // public final int renderVbo;
     // public final int renderVao;
 
@@ -82,6 +113,25 @@ public class Renderer implements ResizeListener {
         // init gl capabilities for current context
         this.glCapabilities = GL.createCapabilities();
         this.glslVersion = "#version 330";
+
+        // enable debug output
+        int[] flags = new int[32];
+        GL33C.glGetIntegerv(GL_CONTEXT_FLAGS, flags);
+
+        if (Arrays.stream(flags).anyMatch(item -> item == GL_CONTEXT_FLAG_DEBUG_BIT)) {
+
+            System.out.printf("debug output enabled\n");
+
+            GL33C.glEnable(GL_DEBUG_OUTPUT);
+            GL33C.glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            KHRDebug.glDebugMessageCallback(this::debugCallback, NULL);
+            KHRDebug.glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, (IntBuffer) null, true);
+        }
+
+        int openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
+        }
 
         // create frame buffer object
         this.frameBufferObjectId = GL33C.glGenFramebuffers();
@@ -116,8 +166,9 @@ public class Renderer implements ResizeListener {
         // unbind frame buffer
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        if (GL33C.glGetError() != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(GL33C.glGetError()));
+        openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
         }
 
         // create canvas shader program
@@ -163,9 +214,34 @@ public class Renderer implements ResizeListener {
         // note: createVao currently only handles vaos with 1 single attribute per vertex
         // canvasVertexBuffer has 2 attributes per vertex: vertex coordinates and uv coordinates
         // todo: implement createVao for variable nr of attributes per vertex
+        // note: vao and vbo should ideally be set up in 1 go
+        // todo: implement VertexBuffer class that handles both vbo and vao
 
         this.canvasVbo = this.createVbo(canvasVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-        // this.canvasVao = this.createVao(this.canvasVbo, GL_ARRAY_BUFFER);
+
+        // bind canvas vbo
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.canvasVbo);
+
+        // upload vbo to gpu
+        GL33C.glBufferData(GL_ARRAY_BUFFER, canvasVertexBuffer, GL_STATIC_DRAW);  // note: not necessary since createVbo() already uploads buffer to gpu
+
+        // create and bind canvas vao
+        this.canvasVao = GL33C.glGenVertexArrays();
+        GL33C.glBindVertexArray(this.canvasVao);
+
+        // define position attribute of canvas buffer
+        GL33C.glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * 4, 0);
+        GL33C.glEnableVertexAttribArray(0);
+
+        // define uv attribute of canvas buffer
+        GL33C.glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * 4, 3 * 4);
+        GL33C.glEnableVertexAttribArray(1);
+
+        // unbind canvas vao
+        GL33C.glBindVertexArray(0);
+
+        // unbind canvas vbo
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // create render shader program
         // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
@@ -232,14 +308,57 @@ public class Renderer implements ResizeListener {
             throw new RuntimeException("invalid colorUniformAddress value: %d".formatted(this.colorUniformAddress));
         }
 
-        if (GL33C.glGetError() != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(GL33C.glGetError()));
+        openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
         }
 
         // register event listener
         eventManager.addResizeListener(this);
 
         return;
+    }
+
+
+    public void debugCallback(int source, int type, int id, int severity, int length, long message, long userParam) {
+
+        String sourceString;
+        switch (source) {
+            case GL_DEBUG_SOURCE_API -> sourceString = "GL_DEBUG_SOURCE_API";
+            case GL_DEBUG_SOURCE_WINDOW_SYSTEM -> sourceString = "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
+            case GL_DEBUG_SOURCE_SHADER_COMPILER -> sourceString = "GL_DEBUG_SOURCE_SHADER_COMPILER";
+            case GL_DEBUG_SOURCE_THIRD_PARTY -> sourceString = "GL_DEBUG_SOURCE_THIRD_PARTY";
+            case GL_DEBUG_SOURCE_APPLICATION -> sourceString = "GL_DEBUG_SOURCE_APPLICATION";
+            case GL_DEBUG_SOURCE_OTHER -> sourceString = "GL_DEBUG_SOURCE_OTHER";
+            default -> sourceString = "";
+        }
+
+        String typeString;
+        switch (type) {
+            case GL_DEBUG_TYPE_ERROR -> typeString = "GL_DEBUG_TYPE_ERROR";
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
+            case GL_DEBUG_TYPE_PORTABILITY -> typeString = "GL_DEBUG_TYPE_PORTABILITY";
+            case GL_DEBUG_TYPE_PERFORMANCE -> typeString = "GL_DEBUG_TYPE_PERFORMANCE";
+            case GL_DEBUG_TYPE_MARKER -> typeString = "GL_DEBUG_TYPE_MARKER";
+            case GL_DEBUG_TYPE_PUSH_GROUP -> typeString = "GL_DEBUG_TYPE_PUSH_GROUP";
+            case GL_DEBUG_TYPE_POP_GROUP -> typeString = "GL_DEBUG_TYPE_POP_GROUP";
+            case GL_DEBUG_TYPE_OTHER -> typeString = "GL_DEBUG_TYPE_OTHER";
+            default -> typeString = "";
+        }
+
+        String severityString;
+        switch (severity) {
+            case GL_DEBUG_SEVERITY_HIGH -> severityString = "GL_DEBUG_SEVERITY_HIGH";
+            case GL_DEBUG_SEVERITY_MEDIUM -> severityString = "GL_DEBUG_SEVERITY_MEDIUM";
+            case GL_DEBUG_SEVERITY_LOW -> severityString = "GL_DEBUG_SEVERITY_LOW";
+            case GL_DEBUG_SEVERITY_NOTIFICATION -> severityString = "GL_DEBUG_SEVERITY_NOTIFICATION";
+            default -> severityString = "";
+        }
+
+        String messageString = MemoryUtil.memUTF8(message);
+
+        throw new RuntimeException("%s %s %s %s".formatted(sourceString, typeString, severityString, messageString));
     }
 
 
@@ -301,8 +420,9 @@ public class Renderer implements ResizeListener {
         // unbind vbo
         GL33C.glBindBuffer(bindingTarget, 0);
 
-        if (GL33C.glGetError() != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(GL33C.glGetError()));
+        int openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
         }
 
         return vboId;
@@ -314,6 +434,10 @@ public class Renderer implements ResizeListener {
         int attributeIndex, int attributeSize,
         int attributeDataType, boolean normalized,
         int attributeStride, int pointerOffset) {
+
+        // note: this function currently works only for vertex buffers with 1 attribute per vertex
+        // note: it also only works for vbos that are fully initialized
+        // note: this function will fail if the bound vbo is not already uploaded to the gpu
 
         // bind vbo
         GL33C.glBindBuffer(vboBindTarget, vboId);
@@ -334,8 +458,9 @@ public class Renderer implements ResizeListener {
         // unbind vbo
         GL33C.glBindBuffer(vboBindTarget, 0);
 
-        if (GL33C.glGetError() != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(GL33C.glGetError()));
+        int openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
         }
 
         return vaoId;
@@ -382,7 +507,7 @@ public class Renderer implements ResizeListener {
         GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
 
         // clear screen
-        GL33C.glClear(GL33C.GL_COLOR_BUFFER_BIT | GL33C.GL_DEPTH_BUFFER_BIT);
+        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         return;
     }

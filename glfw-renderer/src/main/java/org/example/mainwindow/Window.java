@@ -10,6 +10,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_DONT_CARE;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
 import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -42,6 +43,7 @@ public class Window {
         GLFW.glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
         GLFW.glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        GLFW.glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  // note: GLFW_OPENGL_DEBUG_CONTEXT needs to be conditional
 
         // create window
         this.windowId = GLFW.glfwCreateWindow(this.width, this.height, "demo window", NULL, NULL);

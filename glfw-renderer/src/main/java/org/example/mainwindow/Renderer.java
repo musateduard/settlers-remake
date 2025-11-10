@@ -64,23 +64,12 @@ import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
-class MeshDescriptor {
-
-    public MeshDescriptor() {
-        return;
-    }
-}
-
-
 /**
  * this class handles all low level rendering functions related to opengl.
  */
 public class Renderer implements ResizeListener {
 
-    public final int canvasFrameBufferId;
-    public final int canvasTextureId;
-    public final int depthStencilBufferId;
-    public final int canvasShaderId;
+    public final FrameBuffer canvasBuffer;
     public final int renderShaderId;
     public final int modelMatrixAddress;
     public final int viewMatrixAddress;
@@ -91,8 +80,6 @@ public class Renderer implements ResizeListener {
     public final Matrix4f viewMatrix;
     public final GLCapabilities glCapabilities;
     public final String glslVersion;
-    public final int canvasVbo;
-    public final int canvasVao;
     // public final int renderVbo;
     // public final int renderVao;
 
@@ -133,128 +120,13 @@ public class Renderer implements ResizeListener {
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
+            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
-        // create canvas frame buffer object
-        this.canvasFrameBufferId = GL33C.glGenFramebuffers();
-
-        // bind canvas frame buffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasFrameBufferId);
-
-        // create texture object for color buffer
-        this.canvasTextureId = GL33C.glGenTextures();
-
-        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasTextureId);
-        GL33C.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        GL33C.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL33C.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        GL33C.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.canvasTextureId, 0);
-
-        // create depth stencil buffer
-        this.depthStencilBufferId = GL33C.glGenRenderbuffers();
-
-        GL33C.glBindRenderbuffer(GL_RENDERBUFFER, this.depthStencilBufferId);
-        GL33C.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 800, 600);
-        GL33C.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, this.depthStencilBufferId);
-        GL33C.glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-        // check frame buffer status
-        int frameBufferResult = GL33C.glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-        if (frameBufferResult != GL_FRAMEBUFFER_COMPLETE) {
-            throw new RuntimeException("failed to create frame buffer object");
-        }
-
-        // unbind frame buffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        openglError = GL33C.glGetError();
-        if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
-        }
-
-        // create canvas shader program
-        String canvasVertexShaderSource = """
-        #version 330 core
-        
-        layout (location = 0) in vec2 vertex_coordinate;
-        layout (location = 1) in vec2 texture_offset;
-        
-        out vec2 texture_coordinate;
-        
-        
-        void main() {
-            gl_Position = vec4(vertex_coordinate.x, vertex_coordinate.y, 0.0, 1.0);
-            texture_coordinate = texture_offset;
-        }
-        """;
-
-        String canvasFragmentShaderSource = """
-        #version 330 core
-        
-        in vec2 texture_coordinate;
-        uniform sampler2D screen_texture;
-        
-        out vec4 fragment_color;
-        
-        
-        void main() {
-            fragment_color = texture(screen_texture, texture_coordinate);
-        }
-        """;
-
-        this.canvasShaderId = this.createShaderProgram(canvasVertexShaderSource, canvasFragmentShaderSource);
-
-        // create canvas vbo and vao
-        float[] canvasVertexBuffer = {
-            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
-            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
-             1.00f, -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
-             1.00f,  1.00f, 0.00f, 1.00f, 1.00f,  // top right
-        };
-
-        // note: createVao currently only handles vaos with 1 single attribute per vertex
-        // canvasVertexBuffer has 2 attributes per vertex: vertex coordinates and uv coordinates
-        // todo: implement createVao for variable nr of attributes per vertex
-        // note: vao and vbo should ideally be set up in 1 go
-        // todo: implement VertexBuffer class that handles both vbo and vao
-
-        this.canvasVbo = this.createVbo(canvasVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-
-        // bind canvas vbo
-        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.canvasVbo);
-
-        // upload vbo to gpu
-        GL33C.glBufferData(GL_ARRAY_BUFFER, canvasVertexBuffer, GL_STATIC_DRAW);  // note: not necessary since createVbo() already uploads buffer to gpu
-
-        // create and bind canvas vao
-        this.canvasVao = GL33C.glGenVertexArrays();
-        GL33C.glBindVertexArray(this.canvasVao);
-
-        // define position attribute of canvas buffer
-        GL33C.glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * 4, 0);
-        GL33C.glEnableVertexAttribArray(0);
-
-        // define uv attribute of canvas buffer
-        GL33C.glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * 4, 3 * 4);
-        GL33C.glEnableVertexAttribArray(1);
-
-        // unbind canvas vao
-        GL33C.glBindVertexArray(0);
-
-        // unbind canvas vbo
-        GL33C.glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // create canvas frame buffer
+        this.canvasBuffer = new FrameBuffer();
 
         // create render shader program
-        // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
-        // String vertexShaderSource = Files.readString(new File(vertexPath).toPath(), StandardCharsets.UTF_8);
-        // String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
-
-        // String fragmentPath = Renderer.class.getResource("fragment_shader.frag").getPath();
-        // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
-        // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
-
         String vertexShaderSource = """
         #version 330 core
         
@@ -287,6 +159,14 @@ public class Renderer implements ResizeListener {
         }
         """;
 
+        // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
+        // String vertexShaderSource = Files.readString(new File(vertexPath).toPath(), StandardCharsets.UTF_8);
+        // String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
+
+        // String fragmentPath = Renderer.class.getResource("fragment_shader.frag").getPath();
+        // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
+        // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
+
         this.renderShaderId = this.createShaderProgram(vertexShaderSource, fragmentShaderSource);
 
         // get uniform addresses from shader
@@ -313,7 +193,7 @@ public class Renderer implements ResizeListener {
 
         openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
+            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
         // register event listener
@@ -425,7 +305,7 @@ public class Renderer implements ResizeListener {
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
+            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
         return vboId;
@@ -463,36 +343,57 @@ public class Renderer implements ResizeListener {
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
+            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
         return vaoId;
     }
 
 
-    public void activateFrameBuffer(int width, int height) {
-
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasFrameBufferId);
-        // GL33C.glViewport(0, 0, 800, 600);  // this seems to have no effect
-
+    public void activateFrameBuffer() {
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasBuffer.frameBufferId);
         return;
     }
 
 
     public void activateMainBuffer(int screenWidth, int screenHeight) {
 
+        float idealAspectRatio = 4.00f / 3.00f;
+        float currentAspectRatio = (float) screenWidth / screenHeight;
+
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL33C.glViewport(0, 0, screenWidth, screenHeight);
+
+        // calculate viewport based on height
+        if (currentAspectRatio >= idealAspectRatio) {
+
+            int canvasWidth = (int) (screenHeight * idealAspectRatio);
+            int canvasHeight = screenHeight;
+            int canvasX = (screenWidth - canvasWidth) / 2;
+            int canvasY = 0;
+
+            GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
+        }
+
+        // calculate viewport based on width
+        else {
+
+            int canvasWidth = screenWidth;
+            int canvasHeight = (int) (screenWidth / idealAspectRatio);
+            int canvasX = 0;
+            int canvasY = (screenHeight - canvasHeight) / 2;
+
+            GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
+        }
 
         GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         GL33C.glDisable(GL_DEPTH_TEST);
 
-        GL33C.glUseProgram(this.canvasShaderId);
+        GL33C.glUseProgram(this.canvasBuffer.shaderId);
         GL33C.glActiveTexture(GL_TEXTURE0);
-        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasTextureId);
-        GL33C.glBindVertexArray(this.canvasVao);
+        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasBuffer.textureId);
+        GL33C.glBindVertexArray(this.canvasBuffer.canvasVaoId);
         GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         GL33C.glEnable(GL_DEPTH_TEST);
@@ -659,12 +560,13 @@ public class Renderer implements ResizeListener {
 
         // todo: delete vbo and vao
 
-        GL33C.glDeleteFramebuffers(this.canvasFrameBufferId);
-        GL33C.glDeleteTextures(this.canvasTextureId);
-        GL33C.glDeleteRenderbuffers(this.depthStencilBufferId);
+        GL33C.glDeleteFramebuffers(this.canvasBuffer.frameBufferId);
+        GL33C.glDeleteTextures(this.canvasBuffer.textureId);
+        GL33C.glDeleteRenderbuffers(this.canvasBuffer.depthStencilBufferId);
 
-        if (GL33C.glGetError() != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d\n".formatted(GL33C.glGetError()));
+        int openglError = GL33C.glGetError();
+        if (openglError != GL_NO_ERROR) {
+            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
         return;

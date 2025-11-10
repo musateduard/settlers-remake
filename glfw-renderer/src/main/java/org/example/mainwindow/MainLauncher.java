@@ -109,7 +109,7 @@ public class MainLauncher {
 
             // activate frame buffer
             // note: frame buffer needs to be active for the entire render pipeline (this means both scene and ui)
-            renderer.activateFrameBuffer();
+            renderer.activateFrameBuffer(window.width, window.height);
 
             // clear screen
             renderer.clearScreen();
@@ -119,7 +119,9 @@ public class MainLauncher {
 
             // render ui stack
             // note: ui stack has variable size and position depending on game state: main menu or in game
-            guiRenderer.renderGuiStack(800, 600);
+            guiRenderer.renderGuiStack(800, 600, window, renderer);
+
+            renderer.activateMainBuffer(window.width, window.height);
 
             // swap buffers
             window.swapBuffers();

@@ -15,8 +15,10 @@ import static org.lwjgl.opengl.GL33C.GL_TRUE;
 import static org.lwjgl.opengl.GL33C.GL_FLOAT;
 import static org.lwjgl.opengl.GL33C.GL_LINEAR;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
+import static org.lwjgl.opengl.GL33C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL33C.GL_DONT_CARE;
 import static org.lwjgl.opengl.GL33C.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL33C.GL_LINK_STATUS;
 import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
@@ -25,6 +27,7 @@ import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL33C.GL_CONTEXT_FLAGS;
 import static org.lwjgl.opengl.GL33C.GL_VERTEX_SHADER;
 import static org.lwjgl.opengl.GL33C.GL_UNSIGNED_BYTE;
+import static org.lwjgl.opengl.GL33C.GL_TRIANGLE_STRIP;
 import static org.lwjgl.opengl.GL33C.GL_COMPILE_STATUS;
 import static org.lwjgl.opengl.GL33C.GL_FRAGMENT_SHADER;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH24_STENCIL8;
@@ -74,8 +77,8 @@ class MeshDescriptor {
  */
 public class Renderer implements ResizeListener {
 
-    public final int frameBufferObjectId;
-    public final int colorBufferTextureId;
+    public final int canvasFrameBufferId;
+    public final int canvasTextureId;
     public final int depthStencilBufferId;
     public final int canvasShaderId;
     public final int renderShaderId;
@@ -133,20 +136,20 @@ public class Renderer implements ResizeListener {
             throw new RuntimeException("opengl error occurred %d\n".formatted(openglError));
         }
 
-        // create frame buffer object
-        this.frameBufferObjectId = GL33C.glGenFramebuffers();
+        // create canvas frame buffer object
+        this.canvasFrameBufferId = GL33C.glGenFramebuffers();
 
-        // bind frame buffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.frameBufferObjectId);
+        // bind canvas frame buffer
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasFrameBufferId);
 
-        // create color buffer texture object
-        this.colorBufferTextureId = GL33C.glGenTextures();
+        // create texture object for color buffer
+        this.canvasTextureId = GL33C.glGenTextures();
 
-        GL33C.glBindTexture(GL_TEXTURE_2D, this.colorBufferTextureId);
+        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasTextureId);
         GL33C.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 600, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         GL33C.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         GL33C.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        GL33C.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.colorBufferTextureId, 0);
+        GL33C.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this.canvasTextureId, 0);
 
         // create depth stencil buffer
         this.depthStencilBufferId = GL33C.glGenRenderbuffers();
@@ -205,10 +208,10 @@ public class Renderer implements ResizeListener {
 
         // create canvas vbo and vao
         float[] canvasVertexBuffer = {
-            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // Bottom-Left
-            1.00f, -1.00f, 0.00f, 1.00f, 0.00f,  // Bottom-Right
-            1.00f, 1.00f, 0.00f, 1.00f, 1.00f,  // Top-Right
-            -1.00f, 1.00f, 0.00f, 0.00f, 1.00f,  // Top-Left
+            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
+            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
+             1.00f, -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
+             1.00f,  1.00f, 0.00f, 1.00f, 1.00f,  // top right
         };
 
         // note: createVao currently only handles vaos with 1 single attribute per vertex
@@ -467,10 +470,32 @@ public class Renderer implements ResizeListener {
     }
 
 
-    public void activateFrameBuffer() {
+    public void activateFrameBuffer(int width, int height) {
 
-        // GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.frameBufferObjectId);
-        // GL33C.glViewport(0, 0, 800, 600);
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasFrameBufferId);
+        // GL33C.glViewport(0, 0, 800, 600);  // this seems to have no effect
+
+        return;
+    }
+
+
+    public void activateMainBuffer(int screenWidth, int screenHeight) {
+
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        GL33C.glViewport(0, 0, screenWidth, screenHeight);
+
+        GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);
+        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        GL33C.glDisable(GL_DEPTH_TEST);
+
+        GL33C.glUseProgram(this.canvasShaderId);
+        GL33C.glActiveTexture(GL_TEXTURE0);
+        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasTextureId);
+        GL33C.glBindVertexArray(this.canvasVao);
+        GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        GL33C.glEnable(GL_DEPTH_TEST);
 
         return;
     }
@@ -513,16 +538,19 @@ public class Renderer implements ResizeListener {
     }
 
 
-    public void updateProjectionMatrix(int width, int height) {
+    public void updateProjectionMatrix(int screenWidth, int screenHeight) {
 
+        // update projection matrix
         GL33C.glUseProgram(this.renderShaderId);
-        GL33C.glViewport(0, 0, width, height);
 
         this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(0, width, 0, height, -1, 1);
+        this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
         this.projectionMatrix.get(this.floatBuffer);
 
         GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
+
+        // update viewport size and position
+        GL33C.glViewport(0, 0, screenWidth, screenHeight);
 
         return;
     }
@@ -631,8 +659,8 @@ public class Renderer implements ResizeListener {
 
         // todo: delete vbo and vao
 
-        GL33C.glDeleteFramebuffers(this.frameBufferObjectId);
-        GL33C.glDeleteTextures(this.colorBufferTextureId);
+        GL33C.glDeleteFramebuffers(this.canvasFrameBufferId);
+        GL33C.glDeleteTextures(this.canvasTextureId);
         GL33C.glDeleteRenderbuffers(this.depthStencilBufferId);
 
         if (GL33C.glGetError() != GL_NO_ERROR) {

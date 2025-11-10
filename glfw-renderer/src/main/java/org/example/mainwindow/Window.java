@@ -2,8 +2,12 @@ package org.example.mainwindow;
 
 import imgui.ImGui;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
+
+import java.awt.Point;
+import java.nio.DoubleBuffer;
 
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
@@ -119,6 +123,19 @@ public class Window {
         this.eventManager.dispatchResizeEvent(event);
 
         return;
+    }
+
+
+    public Point getCursorPosition() {
+
+        DoubleBuffer screenX = BufferUtils.createDoubleBuffer(1);
+        DoubleBuffer screenY = BufferUtils.createDoubleBuffer(1);
+
+        GLFW.glfwGetCursorPos(this.windowId, screenX, screenY);
+
+        Point position = new Point((int) screenX.get(0), (int) screenY.get(0));
+
+        return position;
     }
 
 

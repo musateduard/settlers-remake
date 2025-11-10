@@ -5,8 +5,8 @@ import imgui.ImFont;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
 import imgui.flag.ImGuiStyleVar;
-import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
+import imgui.gl3.ImGuiImplGl3;
 
 import static imgui.flag.ImGuiCol.Text;
 import static imgui.flag.ImGuiCol.Button;
@@ -17,6 +17,7 @@ import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
 import static imgui.flag.ImGuiWindowFlags.NoCollapse;
 import static imgui.flag.ImGuiWindowFlags.NoTitleBar;
+import static imgui.flag.ImGuiWindowFlags.NoBringToFrontOnFocus;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static imgui.flag.ImGuiCond.Always;
 
@@ -60,7 +61,7 @@ public class GuiRenderer {
     }
 
 
-    public void renderGuiStack(int width, int height) {
+    public void renderGuiStack(int width, int height, Window window, Renderer renderer) {
 
         this.imguiGlfw.newFrame();
         this.imguiOpengl.newFrame();
@@ -79,7 +80,7 @@ public class GuiRenderer {
 
         // set window size and position
         final double currentAspectRatio = (float) width / height;
-        ImGui.setNextWindowPos(0, 0, Always);
+        ImGui.setNextWindowPos(0, window.height - 600, Always);
         ImGui.setNextWindowSize(800, 600, Always);
 
         /*
@@ -118,7 +119,7 @@ public class GuiRenderer {
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font
         // ImGui.begin("main menu window", NoBackground | NoDecoration);  // for release
-        ImGui.begin("main menu window", NoCollapse | NoTitleBar | NoResize | NoMove);  // for debug
+        ImGui.begin("main menu window", NoCollapse | NoTitleBar | NoResize | NoMove | NoBringToFrontOnFocus);  // for debug
 
         // draw buttons
         ImGui.pushStyleVar(ImGuiStyleVar.ButtonTextAlign, 0.50f, 0.49f);
@@ -153,6 +154,12 @@ public class GuiRenderer {
 
         ImGui.end();
         ImGui.popFont();  // pop font
+
+        // draw debug info
+        ImGui.begin("debug info");
+        ImGui.text("window width %d".formatted(window.width));
+        ImGui.text("window height %d".formatted(window.height));
+        ImGui.end();
 
         ImGui.render();
         this.imguiOpengl.renderDrawData(ImGui.getDrawData());

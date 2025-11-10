@@ -7,6 +7,7 @@ import imgui.ImGuiStyle;
 import imgui.flag.ImGuiStyleVar;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.gl3.ImGuiImplGl3;
+import java.awt.Point;
 
 import static imgui.flag.ImGuiCol.Text;
 import static imgui.flag.ImGuiCol.Button;
@@ -65,6 +66,20 @@ public class GuiRenderer {
 
         this.imguiGlfw.newFrame();
         this.imguiOpengl.newFrame();
+
+        // scale input based on canvas size
+        Point cursor = window.getCursorPosition();
+        float scaleX = 800.00f / window.width;
+        float scaleY = 600.00f / window.height;
+        float scaledX = scaleX * cursor.x;
+        float scaledY = scaleY * cursor.y;
+
+        ImGuiIO input = ImGui.getIO();
+
+        // todo: fix window size position and input
+        // input.setDisplayFramebufferScale(22, 33);
+        // input.setMousePos(scaledX, scaledY);
+
         ImGui.newFrame();
 
         // set window transparency
@@ -82,39 +97,6 @@ public class GuiRenderer {
         final double currentAspectRatio = (float) width / height;
         ImGui.setNextWindowPos(0, window.height - 600, Always);
         ImGui.setNextWindowSize(800, 600, Always);
-
-        /*
-        note:
-
-        gui size should be fixed to 800 x 600 and instead drawn to an internal frame buffer object
-        the frame buffer object then gets drawn to the screen with the correct position and aspect ratio
-        */
-
-        /*
-        // calculate based on height
-        if (currentAspectRatio >= this.idealAspectRatio) {
-
-            int menuWidth = (int) (height * this.idealAspectRatio);
-            int menuHeight = height;
-            int menuX = (width - menuWidth) / 2;
-            int menuY = 0;
-
-            ImGui.setNextWindowPos(menuX, menuY, ImGuiCond.Always);
-            ImGui.setNextWindowSize(menuWidth, menuHeight, ImGuiCond.Always);
-        }
-
-        // calculate based on width
-        else {
-
-            int menuWidth = width;
-            int menuHeight = (int) (width / this.idealAspectRatio);
-            int menuX = 0;
-            int menuY = (height - menuHeight) / 2;
-
-            ImGui.setNextWindowPos(menuX, menuY, ImGuiCond.Always);
-            ImGui.setNextWindowSize(menuWidth, menuHeight, ImGuiCond.Always);
-        }
-        */
 
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font
@@ -159,6 +141,10 @@ public class GuiRenderer {
         ImGui.begin("debug info");
         ImGui.text("window width %d".formatted(window.width));
         ImGui.text("window height %d".formatted(window.height));
+        ImGui.text("cursor x %d".formatted(cursor.x));
+        ImGui.text("cursor y %d".formatted(cursor.y));
+        ImGui.text("canvas cursor x %d".formatted((int) scaledX));
+        ImGui.text("canvas cursor y %d".formatted((int) scaledY));
         ImGui.end();
 
         ImGui.render();

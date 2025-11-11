@@ -5,9 +5,8 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
-
-import java.awt.Point;
 import java.nio.DoubleBuffer;
+import java.awt.Point;
 
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;

@@ -109,7 +109,7 @@ public class MainLauncher {
 
             // activate frame buffer
             // note: frame buffer needs to be active for the entire render pipeline (this means both scene and ui)
-            renderer.activateFrameBuffer();
+            renderer.activateCanvasBuffer();
 
             // clear screen
             renderer.clearScreen();

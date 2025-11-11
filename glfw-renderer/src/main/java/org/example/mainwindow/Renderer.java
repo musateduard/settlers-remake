@@ -10,57 +10,20 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GLCapabilities;
 import org.example.gamemap.SettlersMap;
 
-import static org.lwjgl.opengl.GL33C.GL_RGB;
-import static org.lwjgl.opengl.GL33C.GL_TRUE;
 import static org.lwjgl.opengl.GL33C.GL_FLOAT;
-import static org.lwjgl.opengl.GL33C.GL_LINEAR;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 import static org.lwjgl.opengl.GL33C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL33C.GL_DONT_CARE;
 import static org.lwjgl.opengl.GL33C.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
-import static org.lwjgl.opengl.GL33C.GL_LINK_STATUS;
 import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
-import static org.lwjgl.opengl.GL33C.GL_RENDERBUFFER;
 import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL33C.GL_CONTEXT_FLAGS;
-import static org.lwjgl.opengl.GL33C.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL33C.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL33C.GL_TRIANGLE_STRIP;
-import static org.lwjgl.opengl.GL33C.GL_COMPILE_STATUS;
-import static org.lwjgl.opengl.GL33C.GL_FRAGMENT_SHADER;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH24_STENCIL8;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL33C.GL_COLOR_ATTACHMENT0;
 import static org.lwjgl.opengl.GL33C.GL_STENCIL_BUFFER_BIT;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MIN_FILTER;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_MAG_FILTER;
-import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER_COMPLETE;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH_STENCIL_ATTACHMENT;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_OUTPUT_SYNCHRONOUS;
-import static org.lwjgl.opengl.KHRDebug.GL_CONTEXT_FLAG_DEBUG_BIT;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_OUTPUT;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_HIGH;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_LOW;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_MEDIUM;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_API;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_APPLICATION;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_OTHER;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_SHADER_COMPILER;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_THIRD_PARTY;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_SOURCE_WINDOW_SYSTEM;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_ERROR;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_MARKER;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_OTHER;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PERFORMANCE;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_POP_GROUP;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PORTABILITY;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_PUSH_GROUP;
-import static org.lwjgl.opengl.KHRDebug.GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
@@ -70,7 +33,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Renderer implements ResizeListener {
 
     public final FrameBuffer canvasBuffer;
-    public final int renderShaderId;
+    public final ShaderProgram renderShader;
     public final int modelMatrixAddress;
     public final int viewMatrixAddress;
     public final int projectionMatrixAddress;
@@ -108,12 +71,12 @@ public class Renderer implements ResizeListener {
         int[] flags = new int[32];
         GL33C.glGetIntegerv(GL_CONTEXT_FLAGS, flags);
 
-        if (Arrays.stream(flags).anyMatch(item -> item == GL_CONTEXT_FLAG_DEBUG_BIT)) {
+        if (Arrays.stream(flags).anyMatch(item -> item == KHRDebug.GL_CONTEXT_FLAG_DEBUG_BIT)) {
 
             System.out.printf("debug output enabled\n");
 
-            GL33C.glEnable(GL_DEBUG_OUTPUT);
-            GL33C.glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            GL33C.glEnable(KHRDebug.GL_DEBUG_OUTPUT);
+            GL33C.glEnable(KHRDebug.GL_DEBUG_OUTPUT_SYNCHRONOUS);
             KHRDebug.glDebugMessageCallback(this::debugCallback, NULL);
             KHRDebug.glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, (IntBuffer) null, true);
         }
@@ -167,13 +130,13 @@ public class Renderer implements ResizeListener {
         // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
         // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
 
-        this.renderShaderId = this.createShaderProgram(vertexShaderSource, fragmentShaderSource);
+        this.renderShader = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
 
         // get uniform addresses from shader
-        this.modelMatrixAddress = GL33C.glGetUniformLocation(this.renderShaderId, "model_matrix");
-        this.viewMatrixAddress = GL33C.glGetUniformLocation(this.renderShaderId, "view_matrix");
-        this.projectionMatrixAddress = GL33C.glGetUniformLocation(this.renderShaderId, "projection_matrix");
-        this.colorUniformAddress = GL33C.glGetUniformLocation(this.renderShaderId, "uniform_color");
+        this.modelMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "model_matrix");
+        this.viewMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "view_matrix");
+        this.projectionMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "projection_matrix");
+        this.colorUniformAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "uniform_color");
 
         if (this.modelMatrixAddress == -1) {
             throw new RuntimeException("invalid modelMatrixAddress value: %d".formatted(this.modelMatrixAddress));
@@ -207,87 +170,41 @@ public class Renderer implements ResizeListener {
 
         String sourceString;
         switch (source) {
-            case GL_DEBUG_SOURCE_API -> sourceString = "GL_DEBUG_SOURCE_API";
-            case GL_DEBUG_SOURCE_WINDOW_SYSTEM -> sourceString = "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
-            case GL_DEBUG_SOURCE_SHADER_COMPILER -> sourceString = "GL_DEBUG_SOURCE_SHADER_COMPILER";
-            case GL_DEBUG_SOURCE_THIRD_PARTY -> sourceString = "GL_DEBUG_SOURCE_THIRD_PARTY";
-            case GL_DEBUG_SOURCE_APPLICATION -> sourceString = "GL_DEBUG_SOURCE_APPLICATION";
-            case GL_DEBUG_SOURCE_OTHER -> sourceString = "GL_DEBUG_SOURCE_OTHER";
+            case KHRDebug.GL_DEBUG_SOURCE_API -> sourceString = "GL_DEBUG_SOURCE_API";
+            case KHRDebug.GL_DEBUG_SOURCE_WINDOW_SYSTEM -> sourceString = "GL_DEBUG_SOURCE_WINDOW_SYSTEM";
+            case KHRDebug.GL_DEBUG_SOURCE_SHADER_COMPILER -> sourceString = "GL_DEBUG_SOURCE_SHADER_COMPILER";
+            case KHRDebug.GL_DEBUG_SOURCE_THIRD_PARTY -> sourceString = "GL_DEBUG_SOURCE_THIRD_PARTY";
+            case KHRDebug.GL_DEBUG_SOURCE_APPLICATION -> sourceString = "GL_DEBUG_SOURCE_APPLICATION";
+            case KHRDebug.GL_DEBUG_SOURCE_OTHER -> sourceString = "GL_DEBUG_SOURCE_OTHER";
             default -> sourceString = "";
         }
 
         String typeString;
         switch (type) {
-            case GL_DEBUG_TYPE_ERROR -> typeString = "GL_DEBUG_TYPE_ERROR";
-            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
-            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
-            case GL_DEBUG_TYPE_PORTABILITY -> typeString = "GL_DEBUG_TYPE_PORTABILITY";
-            case GL_DEBUG_TYPE_PERFORMANCE -> typeString = "GL_DEBUG_TYPE_PERFORMANCE";
-            case GL_DEBUG_TYPE_MARKER -> typeString = "GL_DEBUG_TYPE_MARKER";
-            case GL_DEBUG_TYPE_PUSH_GROUP -> typeString = "GL_DEBUG_TYPE_PUSH_GROUP";
-            case GL_DEBUG_TYPE_POP_GROUP -> typeString = "GL_DEBUG_TYPE_POP_GROUP";
-            case GL_DEBUG_TYPE_OTHER -> typeString = "GL_DEBUG_TYPE_OTHER";
+            case KHRDebug.GL_DEBUG_TYPE_ERROR -> typeString = "GL_DEBUG_TYPE_ERROR";
+            case KHRDebug.GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR";
+            case KHRDebug.GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR -> typeString = "GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR";
+            case KHRDebug.GL_DEBUG_TYPE_PORTABILITY -> typeString = "GL_DEBUG_TYPE_PORTABILITY";
+            case KHRDebug.GL_DEBUG_TYPE_PERFORMANCE -> typeString = "GL_DEBUG_TYPE_PERFORMANCE";
+            case KHRDebug.GL_DEBUG_TYPE_MARKER -> typeString = "GL_DEBUG_TYPE_MARKER";
+            case KHRDebug.GL_DEBUG_TYPE_PUSH_GROUP -> typeString = "GL_DEBUG_TYPE_PUSH_GROUP";
+            case KHRDebug.GL_DEBUG_TYPE_POP_GROUP -> typeString = "GL_DEBUG_TYPE_POP_GROUP";
+            case KHRDebug.GL_DEBUG_TYPE_OTHER -> typeString = "GL_DEBUG_TYPE_OTHER";
             default -> typeString = "";
         }
 
         String severityString;
         switch (severity) {
-            case GL_DEBUG_SEVERITY_HIGH -> severityString = "GL_DEBUG_SEVERITY_HIGH";
-            case GL_DEBUG_SEVERITY_MEDIUM -> severityString = "GL_DEBUG_SEVERITY_MEDIUM";
-            case GL_DEBUG_SEVERITY_LOW -> severityString = "GL_DEBUG_SEVERITY_LOW";
-            case GL_DEBUG_SEVERITY_NOTIFICATION -> severityString = "GL_DEBUG_SEVERITY_NOTIFICATION";
+            case KHRDebug.GL_DEBUG_SEVERITY_HIGH -> severityString = "GL_DEBUG_SEVERITY_HIGH";
+            case KHRDebug.GL_DEBUG_SEVERITY_MEDIUM -> severityString = "GL_DEBUG_SEVERITY_MEDIUM";
+            case KHRDebug.GL_DEBUG_SEVERITY_LOW -> severityString = "GL_DEBUG_SEVERITY_LOW";
+            case KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION -> severityString = "GL_DEBUG_SEVERITY_NOTIFICATION";
             default -> severityString = "";
         }
 
         String messageString = MemoryUtil.memUTF8(message);
 
         throw new RuntimeException("%s %s %s %s".formatted(sourceString, typeString, severityString, messageString));
-    }
-
-
-    public int createShaderProgram(String vertexShaderSource, String fragmentShaderSource) {
-
-        int vertexShaderId = GL33C.glCreateShader(GL_VERTEX_SHADER);
-        GL33C.glShaderSource(vertexShaderId, vertexShaderSource);
-        GL33C.glCompileShader(vertexShaderId);
-
-        int vertexCompileStatus = GL33C.glGetShaderi(vertexShaderId, GL_COMPILE_STATUS);
-        String vertexCompileInfo = GL33C.glGetShaderInfoLog(vertexShaderId);
-
-        if (vertexCompileStatus != GL_TRUE) {
-            throw new RuntimeException(vertexCompileInfo);
-        }
-
-        int fragmentShaderId = GL33C.glCreateShader(GL_FRAGMENT_SHADER);
-        GL33C.glShaderSource(fragmentShaderId, fragmentShaderSource);
-        GL33C.glCompileShader(fragmentShaderId);
-
-        int fragmentCompileStatus = GL33C.glGetShaderi(fragmentShaderId, GL_COMPILE_STATUS);
-        String fragmentCompileInfo = GL33C.glGetShaderInfoLog(fragmentShaderId);
-
-        if (fragmentCompileStatus != GL_TRUE) {
-            throw new RuntimeException(fragmentCompileInfo);
-        }
-
-        int shaderId = GL33C.glCreateProgram();
-        GL33C.glAttachShader(shaderId, vertexShaderId);
-        GL33C.glAttachShader(shaderId, fragmentShaderId);
-
-        GL33C.glLinkProgram(shaderId);
-
-        int linkStatus = GL33C.glGetProgrami(shaderId, GL_LINK_STATUS);
-        String linkInfo = GL33C.glGetProgramInfoLog(shaderId);
-
-        if (linkStatus != GL_TRUE) {
-            throw new RuntimeException(linkInfo);
-        }
-
-        GL33C.glDetachShader(shaderId, vertexShaderId);
-        GL33C.glDetachShader(shaderId, fragmentShaderId);
-        GL33C.glDeleteShader(vertexShaderId);
-        GL33C.glDeleteShader(fragmentShaderId);
-
-        return shaderId;
     }
 
 
@@ -350,7 +267,7 @@ public class Renderer implements ResizeListener {
     }
 
 
-    public void activateFrameBuffer() {
+    public void activateCanvasBuffer() {
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasBuffer.frameBufferId);
         return;
     }
@@ -358,39 +275,25 @@ public class Renderer implements ResizeListener {
 
     public void activateMainBuffer(int screenWidth, int screenHeight) {
 
-        float idealAspectRatio = 4.00f / 3.00f;
+        float idealAspectRatio = 800.00f / 600.00f;
         float currentAspectRatio = (float) screenWidth / screenHeight;
+        boolean isWideScreen = currentAspectRatio >= idealAspectRatio;
+
+        int canvasWidth =  isWideScreen ? (int) (screenHeight * idealAspectRatio) : screenWidth;
+        int canvasHeight = isWideScreen ? screenHeight                            : (int) (screenWidth / idealAspectRatio);
+        int canvasX =      isWideScreen ? (screenWidth - canvasWidth) / 2         : 0;
+        int canvasY =      isWideScreen ? 0                                       : (screenHeight - canvasHeight) / 2;
 
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        // calculate viewport based on height
-        if (currentAspectRatio >= idealAspectRatio) {
-
-            int canvasWidth = (int) (screenHeight * idealAspectRatio);
-            int canvasHeight = screenHeight;
-            int canvasX = (screenWidth - canvasWidth) / 2;
-            int canvasY = 0;
-
-            GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
-        }
-
-        // calculate viewport based on width
-        else {
-
-            int canvasWidth = screenWidth;
-            int canvasHeight = (int) (screenWidth / idealAspectRatio);
-            int canvasX = 0;
-            int canvasY = (screenHeight - canvasHeight) / 2;
-
-            GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
-        }
+        GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
 
         GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         GL33C.glDisable(GL_DEPTH_TEST);
 
-        GL33C.glUseProgram(this.canvasBuffer.shaderId);
+        this.canvasBuffer.shaderProgram.activateShader();
+
         GL33C.glActiveTexture(GL_TEXTURE0);
         GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasBuffer.textureId);
         GL33C.glBindVertexArray(this.canvasBuffer.canvasVaoId);
@@ -442,7 +345,7 @@ public class Renderer implements ResizeListener {
     public void updateProjectionMatrix(int screenWidth, int screenHeight) {
 
         // update projection matrix
-        GL33C.glUseProgram(this.renderShaderId);
+        this.renderShader.activateShader();
 
         this.projectionMatrix.identity();
         this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
@@ -459,7 +362,7 @@ public class Renderer implements ResizeListener {
 
     public void updateViewMatrix(Camera cameraView) {
 
-        GL33C.glUseProgram(this.renderShaderId);
+        this.renderShader.activateShader();
 
         this.viewMatrix.identity();
         this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);

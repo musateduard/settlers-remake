@@ -11,7 +11,7 @@ public class FrameBuffer {
     public final int frameBufferId;
     public final int textureId;
     public final int depthStencilBufferId;
-    public final int shaderId;
+    public final ShaderProgram shaderProgram;
     public final int canvasVboId;
     public final int canvasVaoId;
 
@@ -60,7 +60,7 @@ public class FrameBuffer {
         }
 
         // create canvas shader program
-        String canvasVertexShaderSource = """
+        String canvasVertexSource = """
         #version 330 core
 
         layout (location = 0) in vec2 vertex_coordinate;
@@ -75,7 +75,7 @@ public class FrameBuffer {
         }
         """;
 
-        String canvasFragmentShaderSource = """
+        String canvasFragmentSource = """
         #version 330 core
 
         in vec2 texture_coordinate;
@@ -89,7 +89,7 @@ public class FrameBuffer {
         }
         """;
 
-        this.shaderId = this.createShaderProgram(canvasVertexShaderSource, canvasFragmentShaderSource);
+        this.shaderProgram = new ShaderProgram(canvasVertexSource, canvasFragmentSource);
 
         // create canvas vbo and vao
         float[] canvasVertexBuffer = {
@@ -99,7 +99,7 @@ public class FrameBuffer {
             1.00f,  1.00f, 0.00f, 1.00f, 1.00f,  // top right
         };
 
-        // create and bind vbo
+        // create and bind canvas vbo
         this.canvasVboId = GL33C.glGenBuffers();
         GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, this.canvasVboId);
 
@@ -131,51 +131,5 @@ public class FrameBuffer {
         }
 
         return;
-    }
-
-
-    public int createShaderProgram(String vertexShaderSource, String fragmentShaderSource) {
-
-        int vertexShaderId = GL33C.glCreateShader(GL33C.GL_VERTEX_SHADER);
-        GL33C.glShaderSource(vertexShaderId, vertexShaderSource);
-        GL33C.glCompileShader(vertexShaderId);
-
-        int vertexCompileStatus = GL33C.glGetShaderi(vertexShaderId, GL33C.GL_COMPILE_STATUS);
-        String vertexCompileInfo = GL33C.glGetShaderInfoLog(vertexShaderId);
-
-        if (vertexCompileStatus != GL33C.GL_TRUE) {
-            throw new RuntimeException(vertexCompileInfo);
-        }
-
-        int fragmentShaderId = GL33C.glCreateShader(GL33C.GL_FRAGMENT_SHADER);
-        GL33C.glShaderSource(fragmentShaderId, fragmentShaderSource);
-        GL33C.glCompileShader(fragmentShaderId);
-
-        int fragmentCompileStatus = GL33C.glGetShaderi(fragmentShaderId, GL33C.GL_COMPILE_STATUS);
-        String fragmentCompileInfo = GL33C.glGetShaderInfoLog(fragmentShaderId);
-
-        if (fragmentCompileStatus != GL33C.GL_TRUE) {
-            throw new RuntimeException(fragmentCompileInfo);
-        }
-
-        int shaderId = GL33C.glCreateProgram();
-        GL33C.glAttachShader(shaderId, vertexShaderId);
-        GL33C.glAttachShader(shaderId, fragmentShaderId);
-
-        GL33C.glLinkProgram(shaderId);
-
-        int linkStatus = GL33C.glGetProgrami(shaderId, GL33C.GL_LINK_STATUS);
-        String linkInfo = GL33C.glGetProgramInfoLog(shaderId);
-
-        if (linkStatus != GL33C.GL_TRUE) {
-            throw new RuntimeException(linkInfo);
-        }
-
-        GL33C.glDetachShader(shaderId, vertexShaderId);
-        GL33C.glDetachShader(shaderId, fragmentShaderId);
-        GL33C.glDeleteShader(vertexShaderId);
-        GL33C.glDeleteShader(fragmentShaderId);
-
-        return shaderId;
     }
 }

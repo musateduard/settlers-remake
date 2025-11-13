@@ -119,7 +119,7 @@ public class MainLauncher {
 
             // render ui stack
             // note: ui stack has variable size and position depending on game state: main menu or in game
-            guiRenderer.renderGuiStack(800, 600, window, renderer);
+            guiRenderer.renderGuiStack(window, renderer);
 
             renderer.activateMainBuffer(window.width, window.height);
 

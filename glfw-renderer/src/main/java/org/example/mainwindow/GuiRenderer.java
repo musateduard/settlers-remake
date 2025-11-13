@@ -4,22 +4,19 @@ import imgui.ImGui;
 import imgui.ImFont;
 import imgui.ImGuiIO;
 import imgui.ImGuiStyle;
+import imgui.flag.ImGuiCol;
+import imgui.flag.ImGuiCond;
+import imgui.flag.ImGuiMouseButton;
 import imgui.flag.ImGuiStyleVar;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.gl3.ImGuiImplGl3;
 
-import static imgui.flag.ImGuiCol.Text;
-import static imgui.flag.ImGuiCol.Button;
-import static imgui.flag.ImGuiCol.WindowBg;
-import static imgui.flag.ImGuiCol.ButtonActive;
-import static imgui.flag.ImGuiCol.ButtonHovered;
 import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
 import static imgui.flag.ImGuiWindowFlags.NoCollapse;
 import static imgui.flag.ImGuiWindowFlags.NoTitleBar;
 import static imgui.flag.ImGuiWindowFlags.NoBringToFrontOnFocus;
 import static org.lwjgl.system.MemoryUtil.NULL;
-import static imgui.flag.ImGuiCond.Always;
 
 
 public class GuiRenderer {
@@ -61,7 +58,7 @@ public class GuiRenderer {
     }
 
 
-    public void renderGuiStack(int width, int height, Window window, Renderer renderer) {
+    public void renderGuiStack(Window window, Renderer renderer) {
 
         // init new glfw frame
         this.glfwBackend.newFrame();
@@ -82,8 +79,6 @@ public class GuiRenderer {
         // note: getMousePos returns incorrect values
         // note: getCursorPosition returns accurate cursor position using glfw
 
-        // int mouseX = (int) input.getMousePosX();
-        // int mouseY = (int) input.getMousePosY();
         int mouseX = window.getCursorPosition().x;
         int mouseY = window.getCursorPosition().y;
 
@@ -96,30 +91,43 @@ public class GuiRenderer {
         float canvasCursorX = (mouseX - canvasX) / canvasCursorScale;
         float canvasCursorY = (mouseY - canvasY) / canvasCursorScale;
 
-        // note: cursor only has problems when moving cursor fast and pressing lmb
-        // possible solution with AddMousePosEvent() or AddMouseButtonEvent()
-        // maybe check if mouse is pressed and dispatch mouse button event?
-        // todo: fix window input
+        /*
+        note:
 
+        cursor only has problems when moving cursor fast and pressing lmb
+        possible solution with AddMousePosEvent() or AddMouseButtonEvent()
+        maybe check if mouse is pressed and dispatch mouse button event?
+        imgui window is still mapped to top left corner of screen
+        this causes input to sometimes be dispatched to the "real" window instead of the one scaled to the frame buffer
+
+        todo: fix window input when moving cursor fast and dragging
+        todo: test input handling with glfw and imgui in c++
+        */
+
+        // when rendering to canvas frame buffer
         input.setDisplaySize(800, 600);
+        input.setDisplayFramebufferScale(1.00f, 1.00f);
         input.addMousePosEvent(canvasCursorX, canvasCursorY);
+
+        // when rendering to main buffer
+        // input.setDisplaySize(800, 600);
+        // input.setDisplayFramebufferScale(canvasCursorScale, canvasCursorScale);
 
         // init new imgui frame
         ImGui.newFrame();
 
         // set window transparency
-        style.setColor(WindowBg, 0, 0, 0, 50);
-        style.setColor(Button,        144, 128, 56, 255);
-        style.setColor(ButtonActive,  132, 117, 49, 255);
-        style.setColor(ButtonHovered, 138, 123, 52, 255);
+        style.setColor(ImGuiCol.WindowBg, 0, 0, 0, 50);
+        style.setColor(ImGuiCol.Button,        144, 128, 56, 255);
+        style.setColor(ImGuiCol.ButtonActive,  132, 117, 49, 255);
+        style.setColor(ImGuiCol.ButtonHovered, 138, 123, 52, 255);
 
         // set text color
-        style.setColor(Text, 0, 12, 64, 255);
+        style.setColor(ImGuiCol.Text, 0, 12, 64, 255);
 
         // set window size and position
-        // ImGui.setNextWindowPos(0, window.height - 600, Always);
-        ImGui.setNextWindowPos(0, 0, Always);
-        ImGui.setNextWindowSize(800, 600, Always);
+        ImGui.setNextWindowPos(0, 0, ImGuiCond.Always);
+        ImGui.setNextWindowSize(800, 600, ImGuiCond.Always);
 
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font
@@ -169,7 +177,7 @@ public class GuiRenderer {
         ImGui.text("cursor y %d".formatted(mouseY));
         ImGui.text("canvas cursor x %d".formatted((int) canvasCursorX));
         ImGui.text("canvas cursor y %d".formatted((int) canvasCursorY));
-        ImGui.text("lmb down %s".formatted(input.getMouseDown()[0]));
+        ImGui.text("LMB down %s".formatted(input.getMouseDown(ImGuiMouseButton.Left)));
         ImGui.end();
 
         ImGui.render();

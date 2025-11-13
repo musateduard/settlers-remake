@@ -127,14 +127,16 @@ public class Window {
 
     public Point getCursorPosition() {
 
-        DoubleBuffer screenX = BufferUtils.createDoubleBuffer(1);
-        DoubleBuffer screenY = BufferUtils.createDoubleBuffer(1);
+        // note: this function heap allocates during rendering pipeline
 
-        GLFW.glfwGetCursorPos(this.windowId, screenX, screenY);
+        DoubleBuffer offsetX = BufferUtils.createDoubleBuffer(1);
+        DoubleBuffer offsetY = BufferUtils.createDoubleBuffer(1);
 
-        Point position = new Point((int) screenX.get(0), (int) screenY.get(0));
+        GLFW.glfwGetCursorPos(this.windowId, offsetX, offsetY);
 
-        return position;
+        Point cursor = new Point((int) offsetX.get(0), (int) offsetY.get(0));
+
+        return cursor;
     }
 
 

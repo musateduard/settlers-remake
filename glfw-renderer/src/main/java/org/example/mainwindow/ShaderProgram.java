@@ -16,7 +16,7 @@ public class ShaderProgram {
         this.fragmentShaderSource = fragmentSource;
 
         int vertexShaderId = GL33C.glCreateShader(GL33C.GL_VERTEX_SHADER);
-        GL33C.glShaderSource(vertexShaderId, vertexSource);
+        GL33C.glShaderSource(vertexShaderId, this.vertexShaderSource);
         GL33C.glCompileShader(vertexShaderId);
 
         int vertexCompileStatus = GL33C.glGetShaderi(vertexShaderId, GL33C.GL_COMPILE_STATUS);
@@ -27,7 +27,7 @@ public class ShaderProgram {
         }
 
         int fragmentShaderId = GL33C.glCreateShader(GL33C.GL_FRAGMENT_SHADER);
-        GL33C.glShaderSource(fragmentShaderId, fragmentSource);
+        GL33C.glShaderSource(fragmentShaderId, this.fragmentShaderSource);
         GL33C.glCompileShader(fragmentShaderId);
 
         int fragmentCompileStatus = GL33C.glGetShaderi(fragmentShaderId, GL33C.GL_COMPILE_STATUS);

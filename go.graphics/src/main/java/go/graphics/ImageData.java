@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
+
 public class ImageData {
 
 	private ShortBuffer data16;
@@ -12,96 +13,131 @@ public class ImageData {
 	private final int width;
 	private final int height;
 
-	public ImageData(int width, int height) {
-		this(ByteBuffer.allocateDirect(width*height*4)
-				.order(ByteOrder.nativeOrder())
-				.asIntBuffer(),
-				width,
-				height);
+
+	public ImageData(int imageWidth, int imageHeight) {
+
+        this(
+            ByteBuffer.allocateDirect(imageWidth * imageHeight * 4)
+                .order(ByteOrder.nativeOrder())
+                .asIntBuffer(),
+            imageWidth,
+            imageHeight
+        );
+
+        return;
 	}
 
-	private ImageData(IntBuffer data, int width, int height) {
-		this.data32 = data;
-		this.width = width;
-		this.height = height;
+
+	private ImageData(IntBuffer data, int imageWidth, int imageHeight) {
+
+        this.data32 = data;
+		this.width = imageWidth;
+		this.height = imageHeight;
+
+        return;
 	}
+
 
 	public ShortBuffer getReadData16() {
-		convertTo16();
-		return data16;
+        this.convertTo16();
+		return this.data16;
 	}
+
 
 	public IntBuffer getReadData32() {
-		convertTo32();
-		return data32;
+        this.convertTo32();
+		return this.data32;
 	}
+
 
 	public IntBuffer getWriteData32() {
-		convertTo32();
-		return data32;
+        this.convertTo32();
+		return this.data32;
 	}
+
 
 	private void convertTo16() {
-		data16 = ByteBuffer.allocateDirect(width*height*2).order(ByteOrder.nativeOrder()).asShortBuffer();
 
-		while(data32.hasRemaining()) {
-			int color = data32.get();
-			int c1 = ((color>>24));
-			int c2 = ((color>>16));
-			int c3 = ((color>>8));
-			int c4 = (color&0xFF);
+        this.data16 = ByteBuffer.allocateDirect(this.width * this.height * 2).order(ByteOrder.nativeOrder()).asShortBuffer();
 
-			data16.put((short) (cnv8to4(c1) << 12 | cnv8to4(c2) << 8 | cnv8to4(c3) << 4 | cnv8to4(c4)));
+		while (this.data32.hasRemaining()) {
+
+			int color = this.data32.get();
+			int c1 = ((color >> 24));
+			int c2 = ((color >> 16));
+			int c3 = ((color >> 8));
+			int c4 = (color & 0xFF);
+
+            this.data16.put((short) (this.cnv8to4(c1) << 12 | this.cnv8to4(c2) << 8 | this.cnv8to4(c3) << 4 | this.cnv8to4(c4)));
 		}
-		data32.rewind();
-		data16.rewind();
+
+		this.data32.rewind();
+		this.data16.rewind();
+
+        return;
 	}
+
 
 	protected final int cnv8to4(int c8bit) {
-		int unsigned = c8bit&0xFF;
-		return (int) (unsigned/255f*15f);
+		int unsigned = c8bit & 0xFF;
+		return (int) (unsigned / 255f * 15f);
 	}
+
 
 	private void convertTo32() {
-		if(data32 != null) return;
 
-		data32 = ByteBuffer.allocateDirect(width*height*4).order(ByteOrder.nativeOrder()).asIntBuffer();
+        if (this.data32 != null) {
+            return;
+        }
 
-		while(data16.hasRemaining()) {
-			data32.put(Color.convertTo32Bit(data16.get()));
+        this.data32 = ByteBuffer.allocateDirect(this.width * this.height * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+
+		while (this.data16.hasRemaining()) {
+            this.data32.put(Color.convertTo32Bit(this.data16.get()));
 		}
-		data32.rewind();
-		data16 = null;
+
+		this.data32.rewind();
+		this.data16 = null;
+
+        return;
 	}
+
 
 	public int getWidth() {
-		return width;
+		return this.width;
 	}
+
 
 	public int getHeight() {
-		return height;
+		return this.height;
 	}
 
+
 	public ImageData convert(int newWidth, int newHeight) {
-		if(width == newWidth && height == newHeight) {
+
+		if (this.width == newWidth && this.height == newHeight) {
 			return this;
 		}
 
 		ImageData newImage = new ImageData(newWidth, newHeight);
 		IntBuffer newData = newImage.getWriteData32();
-		IntBuffer oldData = getReadData32();
+		IntBuffer oldData = this.getReadData32();
 
-		for(int y = 0; y < newHeight; y++) {
-			for(int x = 0; x < newWidth; x++) {
-				int ox = (int) (x*width/(float)newWidth);
-				int oy = (int) (y*height/(float)newHeight);
+		for (int newY = 0; newY < newHeight; newY++) {
 
-				newData.put(oldData.get(ox+oy*width));
+			for (int newX = 0; newX < newWidth; newX++) {
+
+				int offsetX = (int) (newX * this.width / (float) newWidth);
+				int offsetY = (int) (newY * this.height / (float) newHeight);
+
+				newData.put(oldData.get(offsetX + offsetY * this.width));
 			}
 		}
+
 		newData.rewind();
 		return newImage;
 	}
+
 
 	public static ImageData of(IntBuffer data, int width, int height) {
 		return new ImageData(data, width, height);

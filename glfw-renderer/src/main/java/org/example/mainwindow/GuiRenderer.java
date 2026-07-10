@@ -32,7 +32,7 @@ public class GuiRenderer {
         this.idealAspectRatio = 800.00f / 600.00f;
 
         if (window.windowId == NULL) {
-            throw new RuntimeException("cannot initialize hui renderer before creating glfw window");
+            throw new RuntimeException("cannot initialize gui renderer before creating glfw window");
         }
 
         // create imgui context

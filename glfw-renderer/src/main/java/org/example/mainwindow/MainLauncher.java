@@ -76,7 +76,7 @@ public class MainLauncher {
         // this.renderGameFrame();
         // this.renderTestFrame();
 
-        long startFrameTimeNs = System.nanoTime();
+        long lastFrameTime = System.nanoTime();
 
         while (window.shouldClose() == false) {
 
@@ -100,9 +100,9 @@ public class MainLauncher {
             // todo: implement this method using just the map terrain first, then add other types of objects to simulation/rendering
 
             // calculate frame time
-            long endFrameTimeNs = System.nanoTime();
-            long frameTimeDeltaNs = endFrameTimeNs - startFrameTimeNs;
-            startFrameTimeNs = endFrameTimeNs;
+            long currentFrameTime = System.nanoTime();
+            long frameDuration = currentFrameTime - lastFrameTime;
+            lastFrameTime = currentFrameTime;
 
             // poll events
             window.pollEvents();
@@ -115,7 +115,7 @@ public class MainLauncher {
             renderer.clearScreen();
 
             // render game scene
-            renderer.renderGameScene(frameTimeDeltaNs, window, camera, gameMap);
+            renderer.renderGameScene(frameDuration, window, camera, gameMap);
 
             // render ui stack
             // note: ui stack has variable size and position depending on game state: main menu or in game

@@ -16,55 +16,77 @@
 package jsettlers.graphics.image.reader;
 
 import java.io.File;
-
+import java.util.Arrays;
 import jsettlers.common.Color;
 
-import static java.util.Arrays.stream;
 
 public enum DatFileType {
-	RGB555(".7c003e01f.dat", new byte[]{
-		(byte) 0x7c,
-		0x00,
-		0x00,
-		(byte) 0xe0,
-		0x03,}),
-	RGB565(".f8007e01f.dat", new byte[]{
-		(byte) 0xf8,
-		0x00,
-		0x00,
-		(byte) 0xe0,
-		0x07,}),;
+
+	RGB555(
+        ".7c003e01f.dat",
+        new byte[] {
+            (byte) 0x7c, 0x00, 0x00,
+            (byte) 0xe0, 0x03,
+        }
+    ),
+
+	RGB565(
+        ".f8007e01f.dat",
+        new byte[] {
+            (byte) 0xf8, 0x00, 0x00,
+            (byte) 0xe0, 0x07,
+        }
+    );
 
 	private final String fileSuffix;
 	private final byte[] startMagic;
 
+
 	DatFileType(String fileSuffix, byte[] startMagic) {
-		this.fileSuffix = fileSuffix;
+
+        this.fileSuffix = fileSuffix;
 		this.startMagic = startMagic;
+
+        return;
 	}
+
 
 	public String getFileSuffix() {
-		return fileSuffix;
+		return this.fileSuffix;
 	}
 
+
 	public byte[] getFileStartMagic() {
-		return startMagic;
+		return this.startMagic;
 	}
+
 
 	/**
 	 * Converts a color in the current format to a RGBA8 color.
 	 */
 	public int convertTo8888(int color) {
-		if (this == RGB555) {
+
+		if (this == DatFileType.RGB555) {
 			color = Color.convert555to8888(color);
-		} else if (this == RGB565) {
+		}
+
+        else if (this == DatFileType.RGB565) {
 			color = Color.convert565to8888(color);
 		}
+
 		return color;
 	}
 
+
 	public static DatFileType getForPath(File path) {
-		return stream(values()).filter(v -> path.getName().endsWith(v.fileSuffix)).findFirst()
-							   .orElseThrow(() -> new IllegalArgumentException("Could not determine type of " + path.getName()));
+
+        DatFileType fileType = Arrays.stream(DatFileType.values())
+            .filter(type -> path.getName().endsWith(type.fileSuffix))
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalArgumentException("Could not determine type of " + path.getName())
+            );
+
+		return fileType;
 	}
 }

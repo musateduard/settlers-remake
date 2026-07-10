@@ -136,47 +136,54 @@ public class ByteReader {
 		}
 	}
 
+
 	/**
-	 * Reads an int with 32 bit from the stram.
+	 * Reads an int with 32 bit from the stream.
 	 *
 	 * @return The int's value.
-	 * @throws IOException
-	 *             If an IO error occured.
+     *
+	 * @throws IOException If an IO error occurred.
 	 */
 	public int read32() throws IOException {
-		assertCacheHolds(4);
+
+		this.assertCacheHolds(4);
 
 		byte byte0 = this.cache[this.cachePosition++];
 		byte byte1 = this.cache[this.cachePosition++];
 		byte byte2 = this.cache[this.cachePosition++];
 		byte byte3 = this.cache[this.cachePosition++];
 
-		int value =
-				(0xff & byte0) | ((0xff & byte1) << 8)
-						| ((0xff & byte2) << 16)
-						| ((0xff & byte3) << 24);
+		int value = (0xff & byte0) |
+            ((0xff & byte1) << 8) |
+            ((0xff & byte2) << 16) |
+            ((0xff & byte3) << 24);
+
 		return value;
 	}
+
 
 	/**
 	 * Assumes to read the given data.
 	 *
-	 * @param toRead
-	 *            The array that the read bytes should be like.
-	 * @throws IOException
-	 *             If the read data does not match the given data.
+	 * @param toRead The array that the read bytes should be like.
+     *
+	 * @throws IOException If the read data does not match the given data.
 	 */
 	public void assumeToRead(byte[] toRead) throws IOException {
-		assertCacheHolds(toRead.length);
 
-		for (int i = 0; i < toRead.length; i++) {
+		this.assertCacheHolds(toRead.length);
+
+		for (int index = 0; index < toRead.length; index++) {
+
 			byte read = this.cache[this.cachePosition++];
-			if (read != toRead[i]) {
-				throw new IOException("IO error: expected to read " + toRead[i]
-						+ " but got " + read + " (i=" + i + ")");
+            if (read != toRead[index]) {
+				throw new IOException("IO error: expected to read " + toRead[index] + " but got " + read + " (index=" + index + ")");
 			}
 		}
+
+        return;
 	}
+
 
 	/**
 	 * Reads a signed 16 bit value.

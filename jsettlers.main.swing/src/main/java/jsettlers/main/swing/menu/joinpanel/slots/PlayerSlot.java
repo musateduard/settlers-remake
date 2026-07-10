@@ -342,11 +342,24 @@ public class PlayerSlot {
 		this.informGameAboutChanges = informOther;
 	}
 
-	private static Image getReadyButtonImage(int file, int seq, int imagenumber, boolean imageIsForEnabledState) {
-		BufferedImage readyImage = ((SingleImage) ImageProvider.getInstance().getSettlerSequence(file, seq).getImage(imagenumber, null)).convertToBufferedImage();
+
+	private static Image getReadyButtonImage(
+        int fileIndex,
+        int sequenceIndex,
+        int imageIndex,
+        boolean imageIsForEnabledState) {
+
+        BufferedImage readyImage = ((SingleImage) ImageProvider.getInstance()
+            .getSettlerSequence(fileIndex, sequenceIndex)
+            .getImage(imageIndex, null))
+            .convertToBufferedImage();
+
 		if (!imageIsForEnabledState) {
 			readyImage = JSettlersSwingUtil.createDisabledImage(readyImage);
 		}
-		return readyImage.getScaledInstance(READY_BUTTON_WIDTH, READY_BUTTON_HEIGHT, Image.SCALE_SMOOTH);
+
+        Image result = readyImage.getScaledInstance(PlayerSlot.READY_BUTTON_WIDTH, PlayerSlot.READY_BUTTON_HEIGHT, Image.SCALE_SMOOTH);
+
+		return result;
 	}
 }

@@ -22,6 +22,7 @@ import jsettlers.graphics.image.reader.translator.HeaderType;
 import jsettlers.graphics.image.reader.translator.DatBitmapTranslator;
 import go.graphics.ImageData;
 
+
 /**
  * This class is capable of reading an image from the given stram.
  *
@@ -43,11 +44,12 @@ public final class DatBitmapReader<T extends Image> {
 	 * @throws IOException
 	 *             If an io error occurred.
 	 */
-	// private DatBitmapReader(DatBitmapTranslator<T> translator, ByteReader
+	// private DatBitmapReader(DatBitmapTranslator<Type> translator, ByteReader
 	// reader)
 	// throws IOException {
 	// this.data = uncompressImage(reader, translator);
 	// }
+
 
 	/**
 	 * Assumes that there is an iamge starting at the beginning of reader, and reads its contents and creates the image from the stream of compressed
@@ -78,30 +80,38 @@ public final class DatBitmapReader<T extends Image> {
 	 *
 	 * @param reader
 	 * @param translator
-	 * @param
+	 * @param metadata
+     *
 	 * @return The short array given, or null if the short array was not big enough.
-	 * @throws IOException
+	 *
+     * @throws IOException
 	 */
-	public static <T extends Image> void readImageHeader(ByteReader reader,
-														 DatBitmapTranslator<T> translator,
-														 ImageMetadata metadata) throws IOException {
+	public static <T extends Image> void readImageHeader(
+        ByteReader reader,
+        DatBitmapTranslator<T> translator,
+        ImageMetadata metadata) throws IOException {
+
 		HeaderType headerType = translator.getHeaderType();
 
 		if (headerType == HeaderType.DISPLACED) {
-			reader.assumeToRead(new byte[] {
-					0x0c, 0, 0, 0
-			});
+			reader.assumeToRead(new byte[] { 0x0c, 0, 0, 0 });
 		}
+
 		metadata.width = reader.read16();
 		metadata.height = reader.read16();
+
 		if (headerType == HeaderType.DISPLACED) {
 			metadata.offsetX = reader.read16signed();
 			metadata.offsetY = reader.read16signed();
-		} else if (headerType == HeaderType.GUI) {
+		}
+
+        else if (headerType == HeaderType.GUI) {
 			// mysterious bytes
 			reader.read16();
 			reader.read16();
-		} else {
+		}
+
+        else {
 			// mysterious bytes?
 			reader.read16();
 		}
@@ -110,55 +120,69 @@ public final class DatBitmapReader<T extends Image> {
 			// uneven position => padding.
 			reader.read8();
 		}
+
+        return;
 	}
+
 
 	/**
 	 * Reads the compressed data.
 	 *
 	 * @param reader
 	 * @param translator
+     *
 	 * @return
-	 * @throws IOException
+	 *
+     * @throws IOException
 	 */
-	public static <T extends Image> void readCompressedData(
-			ByteReader reader, DatBitmapTranslator<T> translator, int width,
-			int height, ImageArrayProvider array) throws IOException {
-		int transparent = translator.getTransparentColor();
-		// TODO: buffer the buffer but be thread safe!
-		int[] lineBuffer = new int[width];
+	public static <Type extends Image> void readCompressedData(
+        ByteReader reader,
+        DatBitmapTranslator<Type> translator,
+        int width,
+        int height,
+        ImageArrayProvider array) throws IOException {
 
+		// TODO: buffer the buffer but be thread safe!
+
+		int transparent = translator.getTransparentColor();
+		int[] lineBuffer = new int[width];
 
 		array.startImage(width, height);
 
-		for (int i = 0; i < height; i++) {
-			boolean newLine = false;
+		for (int lineIndex = 0; lineIndex < height; lineIndex++) {
 
-			int x = 0;
-			while (!newLine) {
-				int currentMeta = reader.read16();
+			boolean endOfLine = false;
 
-				int sequenceLength = currentMeta & 0xff;
-				int skip = (currentMeta & 0x7f00) >> 8;
-				newLine = (currentMeta & 0x8000) != 0;
+            int pixelIndex = 0;
+			while (!endOfLine) {
 
-				int skipend = x + skip;
-				while (x < skipend) {
-					lineBuffer[x] = transparent;
-					x++;
+				int controlBlock = reader.read16();
+
+				int readCount = controlBlock & 0xff;
+				int skipCount = (controlBlock & 0x7f00) >> 8;
+				endOfLine = (controlBlock & 0x8000) != 0;
+
+				int skipEnd = pixelIndex + skipCount;
+				while (pixelIndex < skipEnd) {
+					lineBuffer[pixelIndex] = transparent;
+					pixelIndex++;
 				}
 
-				int readPartEnd = x + sequenceLength;
-				while (x < readPartEnd) {
-					lineBuffer[x] = translator.readUntransparentColor(reader);
-					x++;
+				int readPartEnd = pixelIndex + readCount;
+				while (pixelIndex < readPartEnd) {
+					lineBuffer[pixelIndex] = translator.readUntransparentColor(reader);
+					pixelIndex++;
 				}
 			}
 
-			array.writeLine(lineBuffer, x);
+			array.writeLine(lineBuffer, pixelIndex);
 		}
+
+        return;
 	}
 
-	// private void fillRestOfLine(DatBitmapTranslator<T> translator,
+
+	// private void fillRestOfLine(DatBitmapTranslator<Type> translator,
 	// short[] pixels, int x, int y) {
 	// int currentx = x;
 	// while (currentx < this.width) {
@@ -169,7 +193,7 @@ public final class DatBitmapReader<T extends Image> {
 	// }
 	//
 	// private int readPixels(ByteReader reader,
-	// DatBitmapTranslator<T> translator, short[] pixels, int x, int y,
+	// DatBitmapTranslator<Type> translator, short[] pixels, int x, int y,
 	// int sequenceLength) throws IOException {
 	// for (int i = 0; i < sequenceLength; i++) {
 	// int currentx = i + x;
@@ -183,7 +207,7 @@ public final class DatBitmapReader<T extends Image> {
 	// return x;
 	// }
 
-	// private int skipGivenBytes(DatBitmapTranslator<T> translator, int x, int
+	// private int skipGivenBytes(DatBitmapTranslator<Type> translator, int x, int
 	// skip) {
 	// for (int i = 0; i < skip; i++) {
 	// int currentx = i + x;
@@ -222,32 +246,45 @@ public final class DatBitmapReader<T extends Image> {
 	// return this.offsetY;
 	// }
 
+
 	/**
 	 * Gets an image form the reader.
 	 *
-	 * @param <T>
-	 *            The image type.
-	 * @param translator
-	 *            A translator for the given type.
-	 * @param reader
-	 *            The reader to read from.
-	 * @return The read image.
-	 * @throws IOException
-	 *             If an read error occurred.
+	 * @param <T> The image type.
+	 * @param translator A translator for the given type.
+	 * @param reader The reader to read from.
+	 *
+     * @return The read image.
+	 *
+     * @throws IOException If a read error occurred.
 	 */
 	public static <T extends Image> T getImage(
-			DatBitmapTranslator<T> translator, AdvancedDatFileReader reader, long position, String name)
-			throws IOException {
+        DatBitmapTranslator<T> translator,
+        AdvancedDatFileReader reader,
+        long position,
+        String name) throws IOException {
+
 		ImageMetadata metadata = new ImageMetadata();
 		long dataPos = reader.readImageHeader(translator, metadata, position);
-		return translator.createImage(metadata, () -> {
-			IntArrayWriter array = new IntArrayWriter();
-			try {
-				reader.readCompressedData(translator, metadata, array, dataPos);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			return ImageData.of(array.getArray(), metadata.width, metadata.height);
-		}, name);
+
+        return translator.createImage(
+            metadata,
+
+            () -> {
+                IntArrayWriter array = new IntArrayWriter();
+
+                try {
+                    reader.readCompressedData(translator, metadata, array, dataPos);
+                }
+
+                catch (IOException exception) {
+                    exception.printStackTrace();
+                }
+
+                return ImageData.of(array.getArray(), metadata.width, metadata.height);
+            },
+
+            name
+        );
 	}
 }

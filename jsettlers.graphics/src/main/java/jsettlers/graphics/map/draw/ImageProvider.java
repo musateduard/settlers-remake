@@ -115,22 +115,28 @@ public final class ImageProvider {
 		getInstance().startPreloading();
 	}
 
+
 	/**
 	 * Tries to get a file content.
 	 *
-	 * @param file
-	 * 		The file number to search for.
-	 * @return The content as set or <code> null </code>
+	 * @param file The file number to search for.
+     *
+	 * @return The content as set or {@code null}
 	 */
 	public synchronized DatFileReader getFileReader(int file) {
-		Integer integer = file;
-		DatFileReader set = this.readers.get(integer);
-		if (set == null) {
-			set = createFileReader(file);
-			this.readers.put(integer, set);
+
+		Integer fileIndex = file;
+		DatFileReader fileReader = this.readers.get(fileIndex);
+
+        // add file reader to reader list if not already loaded
+        if (fileReader == null) {
+			fileReader = this.createFileReader(file);
+			this.readers.put(fileIndex, fileReader);
 		}
-		return set;
+
+		return fileReader;
 	}
+
 
 	public synchronized DatFileSet getFileSet(int file) {
 		return getFileReader(file);
@@ -272,60 +278,76 @@ public final class ImageProvider {
 		}
 	}
 
+
 	/**
-	 * Gets an settler sequence.
+	 * Gets a settler sequence.
 	 *
-	 * @param file
-	 * 		The file of the sequence.
-	 * @param sequenceNumber
-	 * 		The number of the sequence in the file.
-	 * @return The settler sequence.
+	 * @param file The file of the sequence.
+	 * @param sequenceNumber The number of the sequence in the file.
+	 *
+     * @return The settler sequence.
 	 */
 	public Sequence<? extends Image> getSettlerSequence(int file, int sequenceNumber) {
-		DatFileSet set = getFileSet(file);
-		if (set != null && set.getSettlers().size() > sequenceNumber) {
-			return set.getSettlers().get(sequenceNumber);
-		} else {
+
+		DatFileSet fileSet = this.getFileSet(file);
+
+		if (fileSet != null && fileSet.getSettlers().size() > sequenceNumber) {
+			return fileSet.getSettlers().get(sequenceNumber);
+		}
+
+        else {
 			return ArraySequence.getNullSequence();
 		}
 	}
 
+
 	/**
-	 * marks all loaded images as invalid. TODO: ensure that they get deleted
+	 * marks all loaded images as invalid.
+     * TODO: ensure that they get deleted
 	 */
 	public void invalidateAll() {
-		readers.clear();
+
+        this.readers.clear();
 		Background.invalidateTexture();
+
+        return;
 	}
 
+
 	private File findFileInPaths(String fileName) {
-		for (File currentFile : lookupPath.listFiles()) {
-			if (currentFile.isFile() && currentFile.canRead() &&
-					currentFile.getName().equalsIgnoreCase(fileName)) {
+
+		for (File currentFile : this.lookupPath.listFiles()) {
+			if (currentFile.isFile() && currentFile.canRead() && currentFile.getName().equalsIgnoreCase(fileName)) {
 				return currentFile;
 			}
 		}
+
 		return null;
 	}
 
+
 	private DatFileReader createFileReader(int fileIndex) {
+
 		String numberString = String.format(Locale.ENGLISH, "%02d", fileIndex);
-		DatFileReader reader = EMPTY_DAT_FILE;
+		DatFileReader reader = ImageProvider.EMPTY_DAT_FILE;
+
 		for (DatFileType type : DatFileType.values()) {
-			String fileName = FILE_PREFIX + numberString + type.getFileSuffix();
 
-			File file = findFileInPaths(fileName);
-
+			String fileName = ImageProvider.FILE_PREFIX + numberString + type.getFileSuffix();
+			File file = this.findFileInPaths(fileName);
 			ShadowMapping shadowMapping = ShadowMapping.getMappingFor(fileIndex);
 
 			if (file != null) {
-				reader = new AdvancedDatFileReader(file, type, gfxFolderMapping.getDatFileMapping(fileIndex), shadowMapping, "F" + fileIndex);
+				reader = new AdvancedDatFileReader(file, type, this.gfxFolderMapping.getDatFileMapping(fileIndex), shadowMapping, "F" + fileIndex);
 				break;
 			}
 		}
 
-		return CustomGraphicsInterceptor.prependCustomGraphics(fileIndex, reader, this);
+        DatFileReader fileReader = CustomGraphicsInterceptor.prependCustomGraphics(fileIndex, reader, this);
+
+		return fileReader;
 	}
+
 
 	/**
 	 * Starts preloading the images, if lookup paths have been set.

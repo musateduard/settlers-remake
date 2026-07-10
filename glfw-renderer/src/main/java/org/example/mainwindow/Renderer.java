@@ -1,7 +1,19 @@
 package org.example.mainwindow;
 
+import java.io.File;
 import java.util.Arrays;
 import java.nio.IntBuffer;
+
+import go.graphics.swing.opengl.LWJGLDrawContext;
+import jsettlers.common.Color;
+import jsettlers.common.images.EImageLinkType;
+import jsettlers.common.images.OriginalImageLink;
+import jsettlers.common.resources.ResourceManager;
+import jsettlers.graphics.image.SettlerImage;
+import jsettlers.graphics.map.draw.ImageProvider;
+import jsettlers.graphics.sound.SoundManager;
+import jsettlers.main.swing.resources.SwingResourceProvider;
+import jsettlers.main.swing.settings.SettingsManager;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
@@ -471,6 +483,41 @@ public class Renderer implements ResizeListener {
         if (openglError != GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
+
+        return;
+    }
+
+
+    public void drawBuilding() {
+
+        ResourceManager.setProvider(new SwingResourceProvider());
+
+        try {
+            SettingsManager.setup();
+        }
+
+        catch (Exception exception) {
+            System.out.println("error occurred");
+        }
+
+        SettingsManager settings = SettingsManager.getInstance();
+
+        settings.setSettlersFolder(new File("C:\\games\\Settlers 3 Ultimate"));
+
+        ImageProvider.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\GFX"), "745006780412758287");
+        SoundManager.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\SND"));
+
+        // note: Image is an abstract class; you need to use SettlerImage or SingleImage
+
+        // LWJGLDrawContext context = new LWJGLDrawContext(this.glCapabilities, false, 1.00f);
+        SettlerImage testImage = (SettlerImage) ImageProvider.getInstance().getImage(new OriginalImageLink(EImageLinkType.SETTLER, 33, 11, 0));
+
+        // context.updateViewMatrix(0, 0, 0, 1, 1, 1);
+        // context.updateProjectionMatrix(800, 600);
+
+        // note: you need a LWJGLDrawContext context in order to draw sprites using SettlerImage
+
+        // testImage.drawAt(context, 100, 100, 0, Color.CYAN, 1.00f);
 
         return;
     }

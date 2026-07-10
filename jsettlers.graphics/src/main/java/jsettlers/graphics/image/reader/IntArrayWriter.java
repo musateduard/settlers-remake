@@ -19,36 +19,48 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
+
 public class IntArrayWriter implements ImageArrayProvider {
+
 	private static final short TRANSPARENT = 0;
 	private IntBuffer array;
 	private int width;
 	private int line;
 
+
 	@Override
 	public void startImage(int width, int height) throws IOException {
+
 		if (width == 0 && height == 0) {
-			array = ByteBuffer.allocateDirect(4).asIntBuffer();
+			this.array = ByteBuffer.allocateDirect(4).asIntBuffer();
 		}
+
 		this.width = width;
-		array = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+		this.array = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder()).asIntBuffer();
+
+        return;
 	}
+
 
 	@Override
-	public void writeLine(int[] data, int linelength) throws IOException {
-		int offset = line * width;
-		for (int i = 0; i < linelength; i++) {
-			array.put(offset + i, data[i]);
-		}
-		for (int i = linelength; i < width; i++) {
-			array.put(offset + i, TRANSPARENT);
+	public void writeLine(int[] data, int lineLength) throws IOException {
+
+		int offset = this.line * this.width;
+
+        for (int index = 0; index < lineLength; index++) {
+            this.array.put(offset + index, data[index]);
 		}
 
-		line++;
+		for (int lineIndex = lineLength; lineIndex < this.width; lineIndex++) {
+            this.array.put(offset + lineIndex, TRANSPARENT);
+		}
+
+        this.line++;
+        return;
 	}
+
 
 	public IntBuffer getArray() {
-		return array;
+		return this.array;
 	}
-
 }

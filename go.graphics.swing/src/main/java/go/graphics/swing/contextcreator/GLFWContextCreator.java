@@ -36,6 +36,16 @@ import go.graphics.event.command.EModifier;
 import go.graphics.event.interpreter.AbstractEventConverter;
 import go.graphics.swing.ContextContainer;
 
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MAJOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CONTEXT_VERSION_MINOR;
+import static org.lwjgl.glfw.GLFW.GLFW_DONT_CARE;
+import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
+import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_DEBUG_CONTEXT;
+import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
+import static org.lwjgl.glfw.GLFW.GLFW_STENCIL_BITS;
+import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
+import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
+
 
 public class GLFWContextCreator extends AsyncContextCreator {
 
@@ -93,10 +103,8 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 	public void async_init() {
 
-		if (this.debug) {
-            GLFWErrorCallback ec = GLFWErrorCallback.createPrint(System.err);
-			GLFW.glfwSetErrorCallback(ec);
-		}
+        GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err);
+        GLFW.glfwSetErrorCallback(callback);
 
 		if (GLFW.glfwInit() == false) {
             throw new Error("glfwInit() failed!");
@@ -107,6 +115,11 @@ public class GLFWContextCreator extends AsyncContextCreator {
 		synchronized (this.windowLock) {
 
             this.glfwWindowId = GLFW.glfwCreateWindow(this.width, this.height, "lwjgl-offscreen", 0, 0);
+
+            if (this.glfwWindowId == 0) {
+                throw new RuntimeException("failed to create glfw window");
+            }
+
             this.setupContext();
 
             try {
@@ -125,8 +138,14 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 	protected void configureWindow() {
 
-		GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_DEBUG_CONTEXT, this.debug ? GLFW.GLFW_TRUE : GLFW.GLFW_DONT_CARE);
-		GLFW.glfwWindowHint(GLFW.GLFW_STENCIL_BITS, 1);
+        // set window hints
+        GLFW.glfwDefaultWindowHints();
+        // GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // set GLFW_VISIBLE false to hide window
+        GLFW.glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        GLFW.glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        GLFW.glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        GLFW.glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, this.debug ? GLFW_TRUE : GLFW_DONT_CARE);
+        GLFW.glfwWindowHint(GLFW_STENCIL_BITS, GLFW_DONT_CARE);
 
         return;
 	}

@@ -76,14 +76,14 @@ public class WGLContextCreator extends JAWTContextCreator {
 
 	@Override
 	public void stop() {
-		WGL.wglDeleteContext(this.context);
+		WGL.wglDeleteContext(null, this.context);
         return;
 	}
 
 
 	@Override
 	protected void swapBuffers() {
-		GDI32.SwapBuffers(this.windowDrawable);
+		GDI32.SwapBuffers(null, this.windowDrawable);
         return;
 	}
 
@@ -92,11 +92,11 @@ public class WGLContextCreator extends JAWTContextCreator {
 	public void makeCurrent(boolean draw) {
 
         if (draw) {
-			WGL.wglMakeCurrent(this.windowDrawable, this.context);
+			WGL.wglMakeCurrent(null, this.windowDrawable, this.context);
 		}
 
         else {
-			WGL.wglMakeCurrent(0, 0);
+			WGL.wglMakeCurrent(null, 0, 0);
 		}
 
         return;
@@ -113,27 +113,27 @@ public class WGLContextCreator extends JAWTContextCreator {
 		pfd.cStencilBits((byte) 1);
 		pfd.cDepthBits((byte) 24);
 
-		int pixel_format = GDI32.ChoosePixelFormat(this.windowDrawable, pfd);
+		int pixel_format = GDI32.ChoosePixelFormat(null, this.windowDrawable, pfd);
 
         if (pixel_format == 0) {
             this.error("Could not find pixel format!");
         }
 
-		GDI32.SetPixelFormat(this.windowDrawable, pixel_format, pfd);
+		GDI32.SetPixelFormat(null, this.windowDrawable, pixel_format, pfd);
 
 		pfd.free();
 
 		if (this.context != 0) {
-			WGL.wglDeleteContext(this.context);
+			WGL.wglDeleteContext(null, this.context);
 		}
 
-		this.context = WGL.wglCreateContext(this.windowDrawable);
-		WGL.wglMakeCurrent(this.windowDrawable, this.context);
+		this.context = WGL.wglCreateContext(null, this.windowDrawable);
+		WGL.wglMakeCurrent(null, this.windowDrawable, this.context);
 		WGLCapabilities caps = GL.createCapabilitiesWGL();
 
         if (caps.WGL_ARB_create_context && caps.WGL_ARB_create_context_profile) {
 
-			WGL.wglDeleteContext(this.context);
+			WGL.wglDeleteContext(null, this.context);
             this.context = 0;
 
 			int index = 0;
@@ -143,7 +143,7 @@ public class WGLContextCreator extends JAWTContextCreator {
 		}
 
         else if (this.debug) {
-			WGL.wglDeleteContext(this.context);
+			WGL.wglDeleteContext(null, this.context);
             this.error("WGL could not create a debug context!");
 		}
 

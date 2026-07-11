@@ -3,13 +3,13 @@ plugins {
 }
 
 group = "org.example"
-version = "unspecified"
+version = "1.0.0"
 
 repositories {
     mavenCentral()
 }
 
-String[] variants = new String[] {
+List<String> platformList = [
     "natives-linux",
     "natives-linux-arm32",
     "natives-linux-arm64",
@@ -18,27 +18,28 @@ String[] variants = new String[] {
     "natives-windows",
     "natives-windows-x86",
     "natives-windows-arm64",
-}
-
-String[] modules = new String[] {
-    "lwjgl",
-    "lwjgl-opengl",
-    "lwjgl-openal",
-    "lwjgl-glfw",
-    "lwjgl-vma",
-}
+]
 
 String lwjglVersion = rootProject.ext.lwjglVersion
 String imguiVersion = "1.90.0"
 
 dependencies {
 
-    for (String module : modules) {
-        implementation "org.lwjgl:${module}:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-opengl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-openal:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-glfw:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-vma:${lwjglVersion}"
 
-        for (String variant : variants) {
-            runtimeOnly "org.lwjgl:${module}:${lwjglVersion}:${variant}"
-        }
+    for (String platform : platformList) {
+
+        runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-opengl:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-openal:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-glfw:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-vma:${lwjglVersion}:${platform}"
+
+        continue
     }
 
     implementation "org.joml:joml:1.9.17"

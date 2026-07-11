@@ -607,7 +607,6 @@ public class VulkanUtils {
 				.pVulkanFunctions(VmaVulkanFunctions.calloc(stack).set(instance, device))
 				.physicalDevice(physicalDevice)
 				.instance(instance)
-				.frameInUseCount(1)
 				.device(device);
 
 		PointerBuffer allocatorBfr = stack.callocPointer(1);

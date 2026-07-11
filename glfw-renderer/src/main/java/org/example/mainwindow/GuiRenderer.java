@@ -10,6 +10,8 @@ import imgui.flag.ImGuiMouseButton;
 import imgui.flag.ImGuiStyleVar;
 import imgui.glfw.ImGuiImplGlfw;
 import imgui.gl3.ImGuiImplGl3;
+import imgui.internal.ImGuiContext;
+import org.lwjgl.glfw.GLFW;
 
 import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
@@ -51,7 +53,7 @@ public class GuiRenderer {
         this.glfwBackend = new ImGuiImplGlfw();
         this.openglBackend = new ImGuiImplGl3();
 
-        this.glfwBackend.init(window.windowId, true);
+        this.glfwBackend.init(window.windowId, false);
         this.openglBackend.init(renderer.glslVersion);
 
         return;
@@ -69,6 +71,7 @@ public class GuiRenderer {
         // get imgui state structures
         ImGuiIO input = ImGui.getIO();
         ImGuiStyle style = ImGui.getStyle();
+        ImGuiContext context = ImGui.getCurrentContext();
 
         // scale input based on canvas size
         int screenWidth = (int) input.getDisplaySizeX();
@@ -98,16 +101,29 @@ public class GuiRenderer {
         possible solution with AddMousePosEvent() or AddMouseButtonEvent()
         maybe check if mouse is pressed and dispatch mouse button event?
         imgui window is still mapped to top left corner of screen
-        this causes input to sometimes be dispatched to the "real" window instead of the one scaled to the frame buffer
+        this causes input to sometimes be dispatched to the "real" window instead of the one scaled to the framebuffer
 
-        todo: fix window input when moving cursor fast and dragging
-        todo: test input handling with glfw and imgui in c++
+        fix:
+        in order to prevent this behavior you need to disable imgui from processing inputs itself
+        ImGui_ImplGlfw_InitForOpenGL(window.window_id, false);
+
+        this means you need to add input events to the imgui backend manually
+        input.AddMouseButtonEvent(ImGuiMouseButton_Left, true);
+        input.AddMouseButtonEvent(ImGuiMouseButton_Left, false);
         */
 
         // when rendering to canvas frame buffer
-        input.setDisplaySize(800, 600);
+        input.setDisplaySize(800.00f, 600.00f);
         input.setDisplayFramebufferScale(1.00f, 1.00f);
         input.addMousePosEvent(canvasCursorX, canvasCursorY);
+
+        if (GLFW.glfwGetMouseButton(window.windowId, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
+            input.addMouseButtonEvent(ImGuiMouseButton.Left, true);
+        }
+
+        else {
+            input.addMouseButtonEvent(ImGuiMouseButton.Left, false);
+        }
 
         // when rendering to main buffer
         // input.setDisplaySize(800, 600);
@@ -178,6 +194,7 @@ public class GuiRenderer {
         ImGui.text("canvas cursor x %d".formatted((int) canvasCursorX));
         ImGui.text("canvas cursor y %d".formatted((int) canvasCursorY));
         ImGui.text("LMB down %s".formatted(input.getMouseDown(ImGuiMouseButton.Left)));
+        // ImGui.text("input queue size %d", event_queue_size);
         ImGui.end();
 
         ImGui.render();

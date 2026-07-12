@@ -10,7 +10,6 @@ import jsettlers.graphics.map.ETextDrawPosition;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.sound.SoundManager;
-import jsettlers.logic.constants.MatchConstants;
 import jsettlers.logic.map.loading.EMapStartResources;
 import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.map.loading.list.DirectoryMapLister;
@@ -73,14 +72,16 @@ public class MainLauncher {
 
         offlineGame.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
 
-        MatchConstants.init(offlineGame.networkConnector.getGameClock(), randomSeed);
-        MatchConstants.clock().setTaskExecutor(taskExecutor);
-
         JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) offlineGame.start();
         SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
+        ImageProvider.getInstance().startPreloading();
 
         // note: MapContent can only be instantiated after GameRunner.mainGrid is properly loaded
         while (runner.getMainGrid() == null) {
+            Thread.sleep(100);
+        }
+
+        while (runner.isStartupFinished() == false) {
             Thread.sleep(100);
         }
 

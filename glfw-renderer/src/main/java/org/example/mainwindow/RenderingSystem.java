@@ -34,7 +34,7 @@ public class RenderingSystem {
     public static void drawFrame(long frameDuration, Application application, UserInterface userInterface, Camera camera, SettlersMap gameMap) {
 
         // activate canvas framebuffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.renderer.canvas.frameBufferId);
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.renderer.canvas.framebufferId);
         GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
@@ -44,20 +44,20 @@ public class RenderingSystem {
         // draw ui
         drawUI(application, userInterface);
 
-        Rectangle canvas = application.renderer.canvas.viewport;
+        Rectangle viewport = application.renderer.viewport;
 
         // activate screen buffer
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL33C.glViewport(canvas.x, canvas.y, canvas.width, canvas.height);
+        GL33C.glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
         GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);  // magenta
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // draw canvas to screen with aspect ratio
         GL33C.glDisable(GL_DEPTH_TEST);
-        GL33C.glUseProgram(application.renderer.canvas.shaderProgram.shaderId);
+        GL33C.glUseProgram(application.renderer.screenShader.id);
         GL33C.glActiveTexture(GL_TEXTURE0);
         GL33C.glBindTexture(GL_TEXTURE_2D, application.renderer.canvas.textureId);
-        GL33C.glBindVertexArray(application.renderer.canvas.canvasVaoId);
+        GL33C.glBindVertexArray(application.renderer.viewportVAOId);
         GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         GL33C.glEnable(GL_DEPTH_TEST);
 

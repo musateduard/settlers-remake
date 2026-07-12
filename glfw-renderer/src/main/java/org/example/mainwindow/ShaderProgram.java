@@ -5,7 +5,7 @@ import org.lwjgl.opengl.GL33C;
 
 public class ShaderProgram {
 
-    public final int shaderId;
+    public final int id;
     public final String vertexShaderSource;
     public final String fragmentShaderSource;
 
@@ -37,21 +37,21 @@ public class ShaderProgram {
             throw new RuntimeException(fragmentCompileInfo);
         }
 
-        this.shaderId = GL33C.glCreateProgram();
+        this.id = GL33C.glCreateProgram();
 
-        GL33C.glAttachShader(this.shaderId, vertexShaderId);
-        GL33C.glAttachShader(this.shaderId, fragmentShaderId);
-        GL33C.glLinkProgram(this.shaderId);
+        GL33C.glAttachShader(this.id, vertexShaderId);
+        GL33C.glAttachShader(this.id, fragmentShaderId);
+        GL33C.glLinkProgram(this.id);
 
-        int linkStatus = GL33C.glGetProgrami(this.shaderId, GL33C.GL_LINK_STATUS);
-        String linkInfo = GL33C.glGetProgramInfoLog(this.shaderId);
+        int linkStatus = GL33C.glGetProgrami(this.id, GL33C.GL_LINK_STATUS);
+        String linkInfo = GL33C.glGetProgramInfoLog(this.id);
 
         if (linkStatus != GL33C.GL_TRUE) {
             throw new RuntimeException(linkInfo);
         }
 
-        GL33C.glDetachShader(this.shaderId, vertexShaderId);
-        GL33C.glDetachShader(this.shaderId, fragmentShaderId);
+        GL33C.glDetachShader(this.id, vertexShaderId);
+        GL33C.glDetachShader(this.id, fragmentShaderId);
         GL33C.glDeleteShader(vertexShaderId);
         GL33C.glDeleteShader(fragmentShaderId);
 
@@ -59,8 +59,8 @@ public class ShaderProgram {
     }
 
 
-    public void activateShader() {
-        GL33C.glUseProgram(this.shaderId);
+    public void activate() {
+        GL33C.glUseProgram(this.id);
         return;
     }
 }

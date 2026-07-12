@@ -3,6 +3,7 @@ package org.example.mainwindow;
 import java.io.File;
 import java.util.Arrays;
 import java.nio.IntBuffer;
+import java.awt.Rectangle;
 
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
@@ -34,36 +35,24 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 public class Renderer {
 
-    public final FrameBuffer canvas;
-    public final ShaderProgram renderShader;
-    public final int modelMatrixAddress;
-    public final int viewMatrixAddress;
-    public final int projectionMatrixAddress;
-    public final int colorUniformAddress;
-    public final float[] floatBuffer;
-    public final Matrix4f projectionMatrix;
-    public final Matrix4f viewMatrix;
+    public final Rectangle viewport;
+    public final Framebuffer canvas;
+    public final ShaderProgram screenShader;
+    public final int viewportVBOId;
+    public final int viewportVAOId;
     public final GLCapabilities capabilities;
     public final String glslVersion;
-    // public final int renderVbo;
-    // public final int renderVao;
 
 
     public Renderer(Window window) {
 
+        int width = 800;
+        int height = 600;
+        this.viewport = new Rectangle(0, 0, width, height);
+
         if (window.handle == NULL) {
             throw new RuntimeException("cannot initialize opengl context before creating glfw window");
         }
-
-        // set projection matrix
-        this.floatBuffer = new float[16];
-        this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0, window.width, 0, window.height, -1, 1);
-
-        // set view matrix
-        this.viewMatrix = new Matrix4f();
-        this.viewMatrix.scale(1);
-        this.viewMatrix.translate(0, 0, 0);
 
         // init gl capabilities for current context
         this.capabilities = GL.createCapabilities();
@@ -89,38 +78,35 @@ public class Renderer {
         }
 
         // create canvas frame buffer
-        this.canvas = new FrameBuffer();
+        this.canvas = new Framebuffer();
 
-        // create render shader program
+        // create render shader program (projects canvas texture to screen)
         String vertexShaderSource = """
         #version 330 core
-        
-        layout (location = 0) in vec3 vertex_position;
-        
-        uniform mat4 transform_matrix;
-        uniform mat4 projection_matrix;
-        uniform mat4 view_matrix;
-        uniform mat4 model_matrix;
-        
-        
+
+        layout (location = 0) in vec2 vertex_coordinate;
+        layout (location = 1) in vec2 texture_offset;
+
+        out vec2 texture_coordinate;
+
+
         void main() {
-        
-            // todo: calculate gl_Position = projection_matrix * transform_matrix * model_matrix
-        
-            // gl_Position = transform_matrix * vec4(vertex_position, 1.0);
-            gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
+            gl_Position = vec4(vertex_coordinate.x, vertex_coordinate.y, 0.0, 1.0);
+            texture_coordinate = texture_offset;
         }
         """;
 
         String fragmentShaderSource = """
         #version 330 core
-        
-        uniform vec4 uniform_color;
-        layout (location = 0) out vec4 fragment_color;
-        
-        
+
+        in vec2 texture_coordinate;
+        uniform sampler2D screen_texture;
+
+        out vec4 fragment_color;
+
+
         void main() {
-            fragment_color = uniform_color;
+            fragment_color = texture(screen_texture, texture_coordinate);
         }
         """;
 
@@ -132,29 +118,41 @@ public class Renderer {
         // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
         // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
 
-        this.renderShader = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
+        this.screenShader = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
 
-        // get uniform addresses from shader
-        this.modelMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "model_matrix");
-        this.viewMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "view_matrix");
-        this.projectionMatrixAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "projection_matrix");
-        this.colorUniformAddress = GL33C.glGetUniformLocation(this.renderShader.shaderId, "uniform_color");
+        // create viewport vbo and vao (full-screen quad in ndc)
+        int sizeOfFloat = 4;
+        float[] viewportVertexBuffer = {
+            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
+            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
+            1.00f,  -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
+            1.00f,   1.00f, 0.00f, 1.00f, 1.00f,  // top right
+        };
 
-        if (this.modelMatrixAddress == -1) {
-            throw new RuntimeException("invalid modelMatrixAddress value: %d".formatted(this.modelMatrixAddress));
-        }
+        // create viewport vbo and vao
+        this.viewportVBOId = GL33C.glGenBuffers();
+        this.viewportVAOId = GL33C.glGenVertexArrays();
 
-        if (this.viewMatrixAddress == -1) {
-            throw new RuntimeException("invalid viewMatrixAddress value: %d".formatted(this.viewMatrixAddress));
-        }
+        // bind viewport vbo
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.viewportVBOId);
 
-        if (this.projectionMatrixAddress == -1) {
-            throw new RuntimeException("invalid projectionMatrixAddress value: %d".formatted(this.projectionMatrixAddress));
-        }
+        // upload vbo to gpu
+        GL33C.glBufferData(GL_ARRAY_BUFFER, viewportVertexBuffer, GL_STATIC_DRAW);
 
-        if (this.colorUniformAddress == -1) {
-            throw new RuntimeException("invalid colorUniformAddress value: %d".formatted(this.colorUniformAddress));
-        }
+        // bind viewport vao
+        GL33C.glBindVertexArray(this.viewportVAOId);
+
+        // define position attribute of viewport buffer
+        GL33C.glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * sizeOfFloat, 0);
+        GL33C.glEnableVertexAttribArray(0);
+
+        // define uv attribute of viewport buffer
+        GL33C.glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * sizeOfFloat, 3 * sizeOfFloat);
+        GL33C.glEnableVertexAttribArray(1);
+
+        // unbind viewport buffers
+        GL33C.glBindVertexArray(0);
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
@@ -341,39 +339,9 @@ public class Renderer {
     */
 
 
-    public void updateProjectionMatrix(int screenWidth, int screenHeight) {
-
-        // update projection matrix
-        this.renderShader.activateShader();
-
-        this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
-        this.projectionMatrix.get(this.floatBuffer);
-
-        GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
-
-        // update viewport size and position
-        GL33C.glViewport(0, 0, screenWidth, screenHeight);
-
-        return;
-    }
-
-
-    public void updateViewMatrix(Camera cameraView) {
-
-        this.renderShader.activateShader();
-
-        this.viewMatrix.identity();
-        this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);
-        this.viewMatrix.get(this.floatBuffer);
-
-        GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
-
-        return;
-    }
-
-
     public void renderMapTerrain(SettlersMap gameMap) {
+
+        // todo: move this method to RenderingSystem
 
         // get map terrain
         // calculate visible area
@@ -402,11 +370,11 @@ public class Renderer {
         modelMatrix.translate(50, 50, 0);
         modelMatrix.scale(100, 100, 1);
 
-        modelMatrix.get(this.floatBuffer);
-        GL33C.glUniformMatrix4fv(this.modelMatrixAddress, false, this.floatBuffer);
+        modelMatrix.get(this.canvas.floatBuffer);
+        GL33C.glUniformMatrix4fv(this.canvas.modelMatrixAddress, false, this.canvas.floatBuffer);
 
         // set color uniform
-        GL33C.glUniform4f(this.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
+        GL33C.glUniform4f(this.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
 
         // bind vao and vbo
         GL33C.glBindVertexArray(vaoId);
@@ -426,12 +394,14 @@ public class Renderer {
 
     public void renderGameScene(long frameDuration, Window window, Camera camera, SettlersMap gameMap) {
 
+        // todo: move this method to RenderingSystem
+
         // update projection matrix
-        this.updateProjectionMatrix(800, 600);  // todo: canvas should have its own mvp matrixes
+        this.canvas.updateProjectionMatrix(this.canvas.width, this.canvas.height);
 
         // update view matrix
         camera.updateCameraPosition(frameDuration);
-        this.updateViewMatrix(camera);
+        this.canvas.updateViewMatrix(camera);
 
         // render game scene
         this.renderMapTerrain(gameMap);
@@ -460,6 +430,8 @@ public class Renderer {
 
 
     public void drawBuilding() {
+
+        // todo: move this method to RenderingSystem
 
         ResourceManager.setProvider(new SwingResourceProvider());
 

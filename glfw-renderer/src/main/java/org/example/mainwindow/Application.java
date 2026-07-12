@@ -37,17 +37,15 @@ public class Application {
         this.currentAspectRatio = (float) event.width() / (float) event.height();
         boolean isWideScreen = this.currentAspectRatio >= this.idealAspectRatio;
 
-        float canvasWidth = isWideScreen ? (float) this.window.height * this.idealAspectRatio : (float) this.window.width;
-        float canvasHeight = isWideScreen ? (float) this.window.height : (float) this.window.width / this.idealAspectRatio;
-        float canvasX = isWideScreen ? ((float) this.window.width - canvasWidth) / 2 : 0;
-        float canvasY = isWideScreen ? 0 : ((float) this.window.height - canvasHeight) / 2;
+        float viewportWidth = isWideScreen ? (float) this.window.height * this.idealAspectRatio : (float) this.window.width;
+        float viewportHeight = isWideScreen ? (float) this.window.height : (float) this.window.width / this.idealAspectRatio;
+        float viewportX = isWideScreen ? ((float) this.window.width - viewportWidth) / 2 : 0;
+        float viewportY = isWideScreen ? 0 : ((float) this.window.height - viewportHeight) / 2;
 
-        this.renderer.canvas.viewport.width = (int) canvasWidth;
-        this.renderer.canvas.viewport.height = (int) canvasHeight;
-        this.renderer.canvas.viewport.x = (int) canvasX;
-        this.renderer.canvas.viewport.y = (int) canvasY;
-
-        this.renderer.updateProjectionMatrix(event.width(), event.height());
+        this.renderer.viewport.width = (int) viewportWidth;
+        this.renderer.viewport.height = (int) viewportHeight;
+        this.renderer.viewport.x = (int) viewportX;
+        this.renderer.viewport.y = (int) viewportY;
 
         return;
     }
@@ -94,16 +92,16 @@ public class Application {
 
     public void cleanup() {
 
+        // renderer cleanup
+        // todo: delete viewport vbo and vao
+        GL33C.glDeleteFramebuffers(this.renderer.canvas.framebufferId);
+        GL33C.glDeleteTextures(this.renderer.canvas.textureId);
+        GL33C.glDeleteRenderbuffers(this.renderer.canvas.depthBufferId);
+
         // window cleanup
         Callbacks.glfwFreeCallbacks(this.window.handle);
         GLFW.glfwDestroyWindow(this.window.handle);
         GLFW.glfwTerminate();
-
-        // renderer cleanup
-        // todo: delete vbo and vao
-        GL33C.glDeleteFramebuffers(this.renderer.canvas.frameBufferId);
-        GL33C.glDeleteTextures(this.renderer.canvas.textureId);
-        GL33C.glDeleteRenderbuffers(this.renderer.canvas.depthStencilBufferId);
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {

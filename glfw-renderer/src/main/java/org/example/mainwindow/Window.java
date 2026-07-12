@@ -3,7 +3,6 @@ package org.example.mainwindow;
 import imgui.ImGui;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import java.nio.DoubleBuffer;
 import java.awt.Point;
@@ -23,7 +22,7 @@ public class Window {
 
     public int width;
     public int height;
-    public final long windowId;
+    public final long handle;
     public final EventManager eventManager;
 
 
@@ -36,8 +35,8 @@ public class Window {
         GLFW.glfwSetErrorCallback(this::errorCallback);
 
         // init glfw
-        if (!GLFW.glfwInit()) {
-            throw new IllegalStateException("Failed to initialize GLFW.");
+        if (GLFW.glfwInit() == false) {
+            throw new RuntimeException("Failed to initialize GLFW.");
         }
 
         // set window hints
@@ -49,25 +48,29 @@ public class Window {
         GLFW.glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);  // note: GLFW_OPENGL_DEBUG_CONTEXT needs to be conditional
 
         // create window
-        this.windowId = GLFW.glfwCreateWindow(this.width, this.height, "demo window", NULL, NULL);
+        this.handle = GLFW.glfwCreateWindow(this.width, this.height, "demo window", NULL, NULL);
+
+        if (this.handle == 0) {
+            throw new RuntimeException("failed to create glfw window");
+        }
 
         // set minimum size
-        GLFW.glfwSetWindowSizeLimits(this.windowId, 800, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
+        GLFW.glfwSetWindowSizeLimits(this.handle, 800, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
         // make context current
-        GLFW.glfwMakeContextCurrent(this.windowId);
+        GLFW.glfwMakeContextCurrent(this.handle);
 
         // enable vsync
         GLFW.glfwSwapInterval(1);
 
-        // register keyboard handler
-        GLFW.glfwSetKeyCallback(this.windowId, this::keyCallback);
-        GLFW.glfwSetCursorPosCallback(this.windowId, this::cursorCallback);
-        GLFW.glfwSetMouseButtonCallback(this.windowId, this::mouseCallback);
-        GLFW.glfwSetWindowSizeCallback(this.windowId, this::resizeCallback);
+        // register input callbacks
+        GLFW.glfwSetKeyCallback(this.handle, this::keyCallback);
+        GLFW.glfwSetCursorPosCallback(this.handle, this::cursorCallback);
+        GLFW.glfwSetMouseButtonCallback(this.handle, this::mouseCallback);
+        GLFW.glfwSetWindowSizeCallback(this.handle, InputSystem::addResizeEvent);
 
         // make window visible
-        GLFW.glfwShowWindow(this.windowId);
+        GLFW.glfwShowWindow(this.handle);
 
         return;
     }
@@ -89,7 +92,7 @@ public class Window {
 
     public void mouseCallback(long window, int button, int action, int mods) {
 
-        if (ImGui.getIO().getWantCaptureMouse()) {
+        if (ImGui.getIO().getWantCaptureMouse() == true) {
             return;
         }
 
@@ -102,7 +105,7 @@ public class Window {
 
     public void cursorCallback(long window, double xpos, double ypos) {
 
-        if (ImGui.getIO().getWantCaptureMouse()) {
+        if (ImGui.getIO().getWantCaptureMouse() == true) {
             return;
         }
 
@@ -113,6 +116,7 @@ public class Window {
     }
 
 
+    /*
     public void resizeCallback(long windowId, int newWidth, int newHeight) {
 
         this.width = newWidth;
@@ -132,7 +136,7 @@ public class Window {
         DoubleBuffer offsetX = BufferUtils.createDoubleBuffer(1);
         DoubleBuffer offsetY = BufferUtils.createDoubleBuffer(1);
 
-        GLFW.glfwGetCursorPos(this.windowId, offsetX, offsetY);
+        GLFW.glfwGetCursorPos(this.handle, offsetX, offsetY);
 
         Point cursor = new Point((int) offsetX.get(0), (int) offsetY.get(0));
 
@@ -140,16 +144,10 @@ public class Window {
     }
 
 
-    public boolean shouldClose() {
-        boolean shouldClose = GLFW.glfwWindowShouldClose(this.windowId);
-        return shouldClose;
-    }
-
-
     public void cleanup() {
 
-        Callbacks.glfwFreeCallbacks(this.windowId);
-        GLFW.glfwDestroyWindow(this.windowId);
+        Callbacks.glfwFreeCallbacks(this.handle);
+        GLFW.glfwDestroyWindow(this.handle);
         GLFW.glfwTerminate();
 
         return;
@@ -157,7 +155,7 @@ public class Window {
 
 
     public void swapBuffers() {
-        GLFW.glfwSwapBuffers(this.windowId);
+        GLFW.glfwSwapBuffers(this.handle);
         return;
     }
 
@@ -166,4 +164,5 @@ public class Window {
         GLFW.glfwPollEvents();
         return;
     }
+    */
 }

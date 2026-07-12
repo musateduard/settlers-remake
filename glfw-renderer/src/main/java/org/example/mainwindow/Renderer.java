@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.nio.IntBuffer;
 
-import go.graphics.swing.opengl.LWJGLDrawContext;
-import jsettlers.common.Color;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
 import jsettlers.common.resources.ResourceManager;
@@ -42,9 +40,9 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 /**
  * this class handles all low level rendering functions related to opengl.
  */
-public class Renderer implements ResizeListener {
+public class Renderer {
 
-    public final FrameBuffer canvasBuffer;
+    public final FrameBuffer canvas;
     public final ShaderProgram renderShader;
     public final int modelMatrixAddress;
     public final int viewMatrixAddress;
@@ -53,15 +51,15 @@ public class Renderer implements ResizeListener {
     public final float[] floatBuffer;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
-    public final GLCapabilities glCapabilities;
+    public final GLCapabilities capabilities;
     public final String glslVersion;
     // public final int renderVbo;
     // public final int renderVao;
 
 
-    public Renderer(Window window, EventManager eventManager) {
+    public Renderer(Window window) {
 
-        if (window.windowId == NULL) {
+        if (window.handle == NULL) {
             throw new RuntimeException("cannot initialize opengl context before creating glfw window");
         }
 
@@ -76,7 +74,7 @@ public class Renderer implements ResizeListener {
         this.viewMatrix.translate(0, 0, 0);
 
         // init gl capabilities for current context
-        this.glCapabilities = GL.createCapabilities();
+        this.capabilities = GL.createCapabilities();
         this.glslVersion = "#version 330";
 
         // enable debug output
@@ -99,7 +97,7 @@ public class Renderer implements ResizeListener {
         }
 
         // create canvas frame buffer
-        this.canvasBuffer = new FrameBuffer();
+        this.canvas = new FrameBuffer();
 
         // create render shader program
         String vertexShaderSource = """
@@ -170,9 +168,6 @@ public class Renderer implements ResizeListener {
         if (openglError != GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
-
-        // register event listener
-        eventManager.addResizeListener(this);
 
         return;
     }
@@ -280,7 +275,7 @@ public class Renderer implements ResizeListener {
 
 
     public void activateCanvasBuffer() {
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvasBuffer.frameBufferId);
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvas.frameBufferId);
         return;
     }
 
@@ -304,11 +299,11 @@ public class Renderer implements ResizeListener {
 
         GL33C.glDisable(GL_DEPTH_TEST);
 
-        this.canvasBuffer.shaderProgram.activateShader();
+        this.canvas.shaderProgram.activateShader();
 
         GL33C.glActiveTexture(GL_TEXTURE0);
-        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvasBuffer.textureId);
-        GL33C.glBindVertexArray(this.canvasBuffer.canvasVaoId);
+        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvas.textureId);
+        GL33C.glBindVertexArray(this.canvas.canvasVaoId);
         GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         GL33C.glEnable(GL_DEPTH_TEST);
@@ -317,15 +312,14 @@ public class Renderer implements ResizeListener {
     }
 
 
+    /*
     @Override
     public void onResizeEvent(ResizeEvent event) {
 
-        /*
-        note:
-
-        on resize projection matrix width and height should be set to
-        correspond to the internal frame buffer object size, not the screen size
-        */
+        // note:
+        //
+        // on resize projection matrix width and height should be set to
+        // correspond to the internal frame buffer object size, not the screen size
 
         this.updateProjectionMatrix(event.width(), event.height());
 
@@ -352,6 +346,7 @@ public class Renderer implements ResizeListener {
 
         return;
     }
+    */
 
 
     public void updateProjectionMatrix(int screenWidth, int screenHeight) {
@@ -437,47 +432,30 @@ public class Renderer implements ResizeListener {
     }
 
 
-    public void renderStaticObjects() {
-        return;
-    }
-
-
-    public void renderNonStaticObjects() {
-        return;
-    }
-
-
-    public void renderTeamObjects() {
-        return;
-    }
-
-
-    public void renderGameScene(long frameTimeDeltaNs, Window window, Camera camera, SettlersMap gameMap) {
+    public void renderGameScene(long frameDuration, Window window, Camera camera /* SettlersMap gameMap */) {
 
         // update projection matrix
-        this.updateProjectionMatrix(800, 600);
+        this.updateProjectionMatrix(800, 600);  // todo: canvas should have its own mvp matrixes
 
         // update view matrix
-        camera.updateCameraPosition(frameTimeDeltaNs);
+        camera.updateCameraPosition(frameDuration);
         this.updateViewMatrix(camera);
 
         // render game scene
-        this.renderMapTerrain(gameMap);
-        this.renderStaticObjects();
-        this.renderNonStaticObjects();
-        this.renderTeamObjects();
+        // this.renderMapTerrain(gameMap);
 
         return;
     }
 
 
+    /*
     public void cleanup() {
 
         // todo: delete vbo and vao
 
-        GL33C.glDeleteFramebuffers(this.canvasBuffer.frameBufferId);
-        GL33C.glDeleteTextures(this.canvasBuffer.textureId);
-        GL33C.glDeleteRenderbuffers(this.canvasBuffer.depthStencilBufferId);
+        GL33C.glDeleteFramebuffers(this.canvas.frameBufferId);
+        GL33C.glDeleteTextures(this.canvas.textureId);
+        GL33C.glDeleteRenderbuffers(this.canvas.depthStencilBufferId);
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
@@ -486,6 +464,7 @@ public class Renderer implements ResizeListener {
 
         return;
     }
+    */
 
 
     public void drawBuilding() {

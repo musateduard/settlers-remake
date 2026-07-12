@@ -115,7 +115,7 @@ public abstract class AbstractLabels {
 				InputStream inputStream = getLocaleStream(locale);
 
 				if (inputStream == null) {
-                    System.out.println("Warning: Could not load %s. Falling back to next file.".formatted(locale));
+                    System.out.println("Warning: Could not load locale %s. Falling back to next file.".formatted(locale));
                     continue;
 				}
 
@@ -127,7 +127,7 @@ public abstract class AbstractLabels {
 
             catch (IOException exception) {
 				System.err.println("Warning: Could not load %s. Falling back to next file.".formatted(locale));
-                System.err.println(exception);
+                exception.printStackTrace();
 			}
 		}
 	}

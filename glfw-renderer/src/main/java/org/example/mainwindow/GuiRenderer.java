@@ -12,6 +12,7 @@ import imgui.glfw.ImGuiImplGlfw;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.internal.ImGuiContext;
 import org.lwjgl.glfw.GLFW;
+import java.awt.Point;
 
 import static imgui.flag.ImGuiWindowFlags.NoMove;
 import static imgui.flag.ImGuiWindowFlags.NoResize;
@@ -23,7 +24,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class GuiRenderer {
 
-    public final double idealAspectRatio;
+    public final float idealAspectRatio;
     public final ImGuiImplGlfw glfwBackend;
     public final ImGuiImplGl3 openglBackend;
     public final ImFont menuFont;
@@ -33,7 +34,7 @@ public class GuiRenderer {
 
         this.idealAspectRatio = 800.00f / 600.00f;
 
-        if (window.windowId == NULL) {
+        if (window.handle == NULL) {
             throw new RuntimeException("cannot initialize gui renderer before creating glfw window");
         }
 
@@ -53,14 +54,14 @@ public class GuiRenderer {
         this.glfwBackend = new ImGuiImplGlfw();
         this.openglBackend = new ImGuiImplGl3();
 
-        this.glfwBackend.init(window.windowId, false);
+        this.glfwBackend.init(window.handle, false);
         this.openglBackend.init(renderer.glslVersion);
 
         return;
     }
 
 
-    public void renderGuiStack(Window window, Renderer renderer) {
+    public void renderUIStack(Application application) {
 
         // init new glfw frame
         this.glfwBackend.newFrame();
@@ -76,6 +77,7 @@ public class GuiRenderer {
         // scale input based on canvas size
         int screenWidth = (int) input.getDisplaySizeX();
         int screenHeight = (int) input.getDisplaySizeY();
+        /*
         float currentAspectRatio = (float) screenWidth / screenHeight;
         boolean isWideScreen = currentAspectRatio >= this.idealAspectRatio;
 
@@ -93,6 +95,7 @@ public class GuiRenderer {
 
         float canvasCursorX = (mouseX - canvasX) / canvasCursorScale;
         float canvasCursorY = (mouseY - canvasY) / canvasCursorScale;
+        */
 
         /*
         note:
@@ -112,12 +115,14 @@ public class GuiRenderer {
         input.AddMouseButtonEvent(ImGuiMouseButton_Left, false);
         */
 
+        Point cursor = application.getCursorPosition();
+
         // when rendering to canvas frame buffer
         input.setDisplaySize(800.00f, 600.00f);
         input.setDisplayFramebufferScale(1.00f, 1.00f);
-        input.addMousePosEvent(canvasCursorX, canvasCursorY);
+        input.addMousePosEvent((float) cursor.x, (float) cursor.y);
 
-        if (GLFW.glfwGetMouseButton(window.windowId, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
+        if (GLFW.glfwGetMouseButton(application.window.handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
             input.addMouseButtonEvent(ImGuiMouseButton.Left, true);
         }
 
@@ -126,6 +131,7 @@ public class GuiRenderer {
         }
 
         // when rendering to main buffer
+        // note: this is not needed; we're always rendering to canvas buffer
         // input.setDisplaySize(800, 600);
         // input.setDisplayFramebufferScale(canvasCursorScale, canvasCursorScale);
 
@@ -142,8 +148,8 @@ public class GuiRenderer {
         style.setColor(ImGuiCol.Text, 0, 12, 64, 255);
 
         // set window size and position
-        ImGui.setNextWindowPos(0, 0, ImGuiCond.Always);
-        ImGui.setNextWindowSize(800, 600, ImGuiCond.Always);
+        ImGui.setNextWindowPos(0.00f, 0.00f, ImGuiCond.Always);
+        ImGui.setNextWindowSize(800.00f, 600.00f, ImGuiCond.Always);
 
         // draw window
         ImGui.pushFont(this.menuFont);  // set window font
@@ -189,10 +195,10 @@ public class GuiRenderer {
         ImGui.text("window pos %d %d".formatted((int) ImGui.getWindowPos().x, (int) ImGui.getWindowPos().y));
         ImGui.text("window width %d".formatted(screenWidth));
         ImGui.text("window height %d".formatted(screenHeight));
-        ImGui.text("cursor x %d".formatted(mouseX));
-        ImGui.text("cursor y %d".formatted(mouseY));
-        ImGui.text("canvas cursor x %d".formatted((int) canvasCursorX));
-        ImGui.text("canvas cursor y %d".formatted((int) canvasCursorY));
+        // ImGui.text("window cursor x %d".formatted(mouseX));
+        // ImGui.text("window cursor y %d".formatted(mouseY));
+        ImGui.text("canvas cursor x %d".formatted(cursor.x));
+        ImGui.text("canvas cursor y %d".formatted(cursor.y));
         ImGui.text("LMB down %s".formatted(input.getMouseDown(ImGuiMouseButton.Left)));
         // ImGui.text("input queue size %d", event_queue_size);
         ImGui.end();

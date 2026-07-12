@@ -77,10 +77,10 @@ public class Renderer {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
-        // create canvas frame buffer
+        // create canvas framebuffer
         this.canvas = new Framebuffer();
 
-        // create render shader program (projects canvas texture to screen)
+        // create screen shader program (projects canvas texture to screen)
         String vertexShaderSource = """
         #version 330 core
 
@@ -207,15 +207,11 @@ public class Renderer {
 
     public int createVBO(float[] vertexBuffer, int bindingTarget, int usageType) {
 
-        // create and bind vbo
-        int vboId = GL33C.glGenBuffers();
-        GL33C.glBindBuffer(bindingTarget, vboId);
+        int vboId = GL33C.glGenBuffers();  // create vbo
 
-        // upload vbo to gpu
-        GL33C.glBufferData(bindingTarget, vertexBuffer, usageType);
-
-        // unbind vbo
-        GL33C.glBindBuffer(bindingTarget, 0);
+        GL33C.glBindBuffer(bindingTarget, vboId);  // bind vbo
+        GL33C.glBufferData(bindingTarget, vertexBuffer, usageType);  // upload vertex buffer to vbo
+        GL33C.glBindBuffer(bindingTarget, 0);  // unbind vbo
 
         int openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {

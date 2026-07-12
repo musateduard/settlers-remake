@@ -5,6 +5,7 @@ import java.nio.DoubleBuffer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.Callbacks;
+import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL33C;
 import org.example.events.ResizeEvent;
 
@@ -22,11 +23,23 @@ public class Application {
 
     public Application() {
 
+        GLFW.glfwSetErrorCallback(this::errorCallback);
+
+        // init glfw
+        if (GLFW.glfwInit() == false) {
+            throw new RuntimeException("Failed to initialize GLFW.");
+        }
+
         this.window = new Window();
         this.renderer = new Renderer(this.window);
         this.isRunning = true;
 
         return;
+    }
+
+
+    private void errorCallback(int errorCode, long errorMessage) {
+        throw new RuntimeException(GLFWErrorCallback.getDescription(errorMessage));
     }
 
 

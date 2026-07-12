@@ -26,13 +26,6 @@ public class Window {
         this.width = 800;
         this.height = 600;
 
-        GLFW.glfwSetErrorCallback(this::errorCallback);
-
-        // init glfw
-        if (GLFW.glfwInit() == false) {
-            throw new RuntimeException("Failed to initialize GLFW.");
-        }
-
         // set window hints
         GLFW.glfwDefaultWindowHints();
         GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -48,10 +41,10 @@ public class Window {
             throw new RuntimeException("failed to create glfw window");
         }
 
-        // set minimum size
+        // set minimum window size
         GLFW.glfwSetWindowSizeLimits(this.handle, 800, 600, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-        // make context current
+        // activate window context
         GLFW.glfwMakeContextCurrent(this.handle);
 
         // enable vsync
@@ -67,10 +60,5 @@ public class Window {
         GLFW.glfwShowWindow(this.handle);
 
         return;
-    }
-
-
-    private void errorCallback(int errorCode, long errorMessage) {
-        throw new RuntimeException(GLFWErrorCallback.getDescription(errorMessage));
     }
 }

@@ -1,4 +1,6 @@
-package org.example.mainwindow;
+package org.example.deprecated;
+
+import org.example.events.KeyEvent;
 
 
 public interface KeyListener {

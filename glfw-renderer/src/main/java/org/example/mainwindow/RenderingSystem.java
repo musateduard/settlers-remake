@@ -2,6 +2,7 @@ package org.example.mainwindow;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
+import org.example.gamemap.SettlersMap;
 
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
@@ -15,21 +16,21 @@ import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
 
 public class RenderingSystem {
 
-    public static void drawGameScene(long frameDuration, Application application, Camera camera) {
+    public static void drawGameScene(long frameDuration, Application application, Camera camera, SettlersMap gameMap) {
         // todo: move renderer.renderGameScene to RenderingSystem
-        application.renderer.renderGameScene(frameDuration, application.window, camera);
+        application.renderer.renderGameScene(frameDuration, application.window, camera, gameMap);
         return;
     }
 
 
-    public static void drawUI(Application application, GuiRenderer userInterface) {
+    public static void drawUI(Application application, UserInterface userInterface) {
         // todo: move userInterface.renderUIStack to RenderingSystem
         userInterface.renderUIStack(application);
         return;
     }
 
 
-    public static void drawFrame(long frameDuration, Application application, GuiRenderer userInterface, Camera camera) {
+    public static void drawFrame(long frameDuration, Application application, UserInterface userInterface, Camera camera, SettlersMap gameMap) {
 
         // activate canvas framebuffer
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.renderer.canvas.frameBufferId);
@@ -37,7 +38,7 @@ public class RenderingSystem {
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         // draw game scene
-        drawGameScene(frameDuration, application, camera);
+        drawGameScene(frameDuration, application, camera, gameMap);
 
         // draw ui
         drawUI(application, userInterface);

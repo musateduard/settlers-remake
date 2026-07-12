@@ -1,4 +1,4 @@
-package org.example.mainwindow;
+package org.example.events;
 
 
 public record KeyEvent(
@@ -7,4 +7,4 @@ public record KeyEvent(
     int scanCode,
     int action,
     int modifier
-) {}
+) implements InputEvent {}

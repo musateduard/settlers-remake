@@ -1,12 +1,15 @@
 package org.example.mainwindow;
 
+import org.example.events.MouseEvent;
+import org.example.events.CursorEvent;
+import org.example.events.KeyEvent;
 import org.lwjgl.glfw.GLFW;
 
 
 /**
  * this class handles all camera related functions like panning and zooming.
  */
-public class Camera implements MouseListener, CursorListener, KeyListener {
+public class Camera {
 
     public float offsetX;
     public float offsetY;
@@ -21,7 +24,7 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
     public boolean keyRightPressed;
 
 
-    public Camera(EventManager eventManager) {
+    public Camera() {
 
         this.offsetX = 0;
         this.offsetY = 0;
@@ -35,16 +38,11 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
         this.keyLeftPressed = false;
         this.keyRightPressed = false;
 
-        eventManager.addMouseListener(this);
-        eventManager.addCursorListener(this);
-        eventManager.addKeyListener(this);
-
         return;
     }
 
 
-    @Override
-    public void onMouseEvent(MouseEvent event) {
+    public void handleMouseButtonEvent(MouseEvent event) {
 
         if (event.action() == GLFW.GLFW_PRESS) {
 
@@ -78,8 +76,7 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
     }
 
 
-    @Override
-    public void onCursorEvent(CursorEvent event) {
+    public void handleCursorEvent(CursorEvent event) {
 
         /*
         note:
@@ -115,8 +112,7 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
     }
 
 
-    @Override
-    public void onKeyEvent(KeyEvent event) {
+    public void handleKeyEvent(KeyEvent event) {
 
         if (event.action() == GLFW.GLFW_PRESS) {
 
@@ -156,7 +152,7 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
     }
 
 
-    public void updateCameraPosition(long frameTimeDeltaNs) {
+    public void updateCameraPosition(long frameDuration) {
 
         // update based on key press
         // update based on mouse movement while pressed
@@ -183,15 +179,15 @@ public class Camera implements MouseListener, CursorListener, KeyListener {
 
         if (vectorX != 0 || vectorY != 0) {
 
-            final float FRAME_TIME_DELTA_S = frameTimeDeltaNs / 1_000_000_000.00f;
-            final float CAMERA_SPEED_UPS = 400.00f;  // units per second
+            final float frameDurationMs = frameDuration / 1_000_000.00f;
+            final float cameraSpeed = 0.60f;  // units per second
 
             float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
 
             float normalX = vectorX / vectorMagnitude;
             float normalY = vectorY / vectorMagnitude;
 
-            float distance = CAMERA_SPEED_UPS * FRAME_TIME_DELTA_S;
+            float distance = cameraSpeed * frameDurationMs;
 
             float deltaX = normalX * distance;
             float deltaY = normalY * distance;

@@ -25,8 +25,8 @@ public class MainLauncher {
         */
 
         Application application = new Application();
-        GuiRenderer userInterface = new GuiRenderer(application.window, application.renderer);
-        Camera camera = new Camera(application.eventManager);
+        UserInterface userInterface = new UserInterface(application.window, application.renderer);
+        Camera camera = new Camera();
 
         // create map instance
         SettlersMap gameMap = new SettlersMap();
@@ -74,12 +74,12 @@ public class MainLauncher {
             lastFrameTime = currentFrameTime;
 
             // handle input
-            InputSystem.handleInput(application);
+            InputSystem.handleInput(application, camera);
 
             // run game simulation
             // dispatch game events
 
-            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera);
+            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, gameMap);
 
             continue;
         }

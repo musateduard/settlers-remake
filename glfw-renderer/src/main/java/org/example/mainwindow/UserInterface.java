@@ -22,7 +22,7 @@ import static imgui.flag.ImGuiWindowFlags.NoBringToFrontOnFocus;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
-public class GuiRenderer {
+public class UserInterface {
 
     public final float idealAspectRatio;
     public final ImGuiImplGlfw glfwBackend;
@@ -30,7 +30,7 @@ public class GuiRenderer {
     public final ImFont menuFont;
 
 
-    public GuiRenderer(Window window, Renderer renderer) {
+    public UserInterface(Window window, Renderer renderer) {
 
         this.idealAspectRatio = 800.00f / 600.00f;
 

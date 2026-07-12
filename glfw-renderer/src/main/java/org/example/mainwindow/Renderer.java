@@ -22,18 +22,10 @@ import org.example.gamemap.SettlersMap;
 
 import static org.lwjgl.opengl.GL33C.GL_FLOAT;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL33C.GL_DONT_CARE;
-import static org.lwjgl.opengl.GL33C.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL33C.GL_CONTEXT_FLAGS;
-import static org.lwjgl.opengl.GL33C.GL_TRIANGLE_STRIP;
-import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
-import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL33C.GL_STENCIL_BUFFER_BIT;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
@@ -215,7 +207,7 @@ public class Renderer {
     }
 
 
-    public int createVbo(float[] vertexBuffer, int bindingTarget, int usageType) {
+    public int createVBO(float[] vertexBuffer, int bindingTarget, int usageType) {
 
         // create and bind vbo
         int vboId = GL33C.glGenBuffers();
@@ -236,7 +228,7 @@ public class Renderer {
     }
 
 
-    public int createVao(
+    public int createVAO(
         int vboId, int vboBindTarget,
         int attributeIndex, int attributeSize,
         int attributeDataType, boolean normalized,
@@ -274,6 +266,7 @@ public class Renderer {
     }
 
 
+    /*
     public void activateCanvasBuffer() {
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvas.frameBufferId);
         return;
@@ -312,7 +305,6 @@ public class Renderer {
     }
 
 
-    /*
     @Override
     public void onResizeEvent(ResizeEvent event) {
 
@@ -400,8 +392,8 @@ public class Renderer {
 
         // create vao vbo
         // note: vao vbo need to be created during construction and only referenced during rendering
-        int vboId = this.createVbo(mapVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-        int vaoId = this.createVao(vboId, GL_ARRAY_BUFFER, 0, 3, GL_FLOAT, false, 0, 0);
+        int vboId = this.createVBO(mapVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
+        int vaoId = this.createVAO(vboId, GL_ARRAY_BUFFER, 0, 3, GL_FLOAT, false, 0, 0);
 
         // todo: add modelMatrix to gameMap object
 
@@ -432,7 +424,7 @@ public class Renderer {
     }
 
 
-    public void renderGameScene(long frameDuration, Window window, Camera camera /* SettlersMap gameMap */) {
+    public void renderGameScene(long frameDuration, Window window, Camera camera, SettlersMap gameMap) {
 
         // update projection matrix
         this.updateProjectionMatrix(800, 600);  // todo: canvas should have its own mvp matrixes
@@ -442,7 +434,7 @@ public class Renderer {
         this.updateViewMatrix(camera);
 
         // render game scene
-        // this.renderMapTerrain(gameMap);
+        this.renderMapTerrain(gameMap);
 
         return;
     }

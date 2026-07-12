@@ -6,6 +6,8 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.opengl.GL33C;
+import org.example.events.ResizeEvent;
+import org.example.deprecated.EventManager;
 
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 
@@ -14,7 +16,6 @@ public class Application {
 
     public Window window;
     public Renderer renderer;
-    public EventManager eventManager;
     public final float idealAspectRatio = 800.00f / 600.00f;
     public float currentAspectRatio = 800.00f / 600.00f;
     public boolean isRunning;
@@ -22,8 +23,7 @@ public class Application {
 
     public Application() {
 
-        this.eventManager = new EventManager();
-        this.window = new Window(this.eventManager);
+        this.window = new Window();
         this.renderer = new Renderer(this.window);
         this.isRunning = true;
 

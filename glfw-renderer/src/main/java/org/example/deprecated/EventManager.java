@@ -1,4 +1,9 @@
-package org.example.mainwindow;
+package org.example.deprecated;
+
+import org.example.events.CursorEvent;
+import org.example.events.KeyEvent;
+import org.example.events.MouseEvent;
+import org.example.events.ResizeEvent;
 
 import java.util.ArrayList;
 

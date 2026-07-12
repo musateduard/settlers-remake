@@ -1,11 +1,7 @@
 package org.example.mainwindow;
 
-import imgui.ImGui;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFWErrorCallback;
-import java.nio.DoubleBuffer;
-import java.awt.Point;
 
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
@@ -23,14 +19,12 @@ public class Window {
     public int width;
     public int height;
     public final long handle;
-    public final EventManager eventManager;
 
 
-    public Window(EventManager eventManager) {
+    public Window() {
 
         this.width = 800;
         this.height = 600;
-        this.eventManager = eventManager;
 
         GLFW.glfwSetErrorCallback(this::errorCallback);
 
@@ -64,9 +58,9 @@ public class Window {
         GLFW.glfwSwapInterval(1);
 
         // register input callbacks
-        GLFW.glfwSetKeyCallback(this.handle, this::keyCallback);
-        GLFW.glfwSetCursorPosCallback(this.handle, this::cursorCallback);
-        GLFW.glfwSetMouseButtonCallback(this.handle, this::mouseCallback);
+        GLFW.glfwSetKeyCallback(this.handle, InputSystem::addKeyEvent);
+        GLFW.glfwSetCursorPosCallback(this.handle, InputSystem::addCursorEvent);
+        GLFW.glfwSetMouseButtonCallback(this.handle, InputSystem::addMouseButtonEvent);
         GLFW.glfwSetWindowSizeCallback(this.handle, InputSystem::addResizeEvent);
 
         // make window visible
@@ -81,6 +75,7 @@ public class Window {
     }
 
 
+    /*
     public void keyCallback(long windowId, int key, int scanCode, int action, int modifier) {
 
         KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifier);
@@ -116,7 +111,6 @@ public class Window {
     }
 
 
-    /*
     public void resizeCallback(long windowId, int newWidth, int newHeight) {
 
         this.width = newWidth;

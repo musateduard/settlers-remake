@@ -4,7 +4,7 @@ import go.graphics.ImageData;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.ARBInstancedArrays;
-import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.KHRDebug;
 
@@ -118,7 +118,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		this.setObjectLabel(GL11.GL_TEXTURE, texture, name + "-tex");
+		this.setObjectLabel(GL33C.GL_TEXTURE, texture, name + "-tex");
 
 		return textureHandle;
 	}
@@ -233,13 +233,13 @@ public class LWJGLDrawContext extends GLDrawContext {
 
 	public void updateProjectionMatrix(int screenWidth, int screenHeight) {
 
-		glViewport(0, 0, screenWidth, screenHeight);
+		GL33C.glViewport(0, 0, screenWidth, screenHeight);
 		this.projectionMatrix.setOrtho(0, screenWidth, 0, screenHeight, -1, 1);
 		this.projectionMatrix.get(this.matrixBuffer);
 
 		for (ShaderProgram shader : this.shaders) {
             this.activateShader(shader);
-			glUniformMatrix4fv(shader.projection, false, this.matrixBuffer);
+			GL33C.glUniformMatrix4fv(shader.projection, false, this.matrixBuffer);
 		}
 
         return;

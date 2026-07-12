@@ -1,8 +1,27 @@
 package org.example.mainwindow;
 
+import java.io.File;
 import go.graphics.swing.opengl.LWJGLDrawContext;
+import go.graphics.swing.sound.SwingSoundPlayer;
+import jsettlers.common.ai.EPlayerType;
+import jsettlers.common.player.ECivilisation;
+import jsettlers.common.resources.ResourceManager;
+import jsettlers.graphics.map.ETextDrawPosition;
+import jsettlers.graphics.map.MapContent;
+import jsettlers.graphics.map.draw.ImageProvider;
+import jsettlers.graphics.sound.SoundManager;
+import jsettlers.logic.constants.MatchConstants;
+import jsettlers.logic.map.loading.EMapStartResources;
+import jsettlers.logic.map.loading.MapLoader;
+import jsettlers.logic.map.loading.list.DirectoryMapLister;
+import jsettlers.logic.player.InitialGameState;
+import jsettlers.logic.player.PlayerSetting;
+import jsettlers.main.swing.resources.SwingResourceProvider;
+import jsettlers.main.swing.settings.SettingsManager;
 import org.example.gamemap.SettlersMap;
+import org.example.gamesimulation.JSettlersGameGLFW;
 import org.example.gamesimulation.SettlersGame;
+import org.example.gamesimulation.TaskExecutorGLFW;
 
 
 public class MainLauncher {
@@ -29,12 +48,50 @@ public class MainLauncher {
         Camera camera = new Camera();
 
         // create map instance
-        SettlersMap gameMap = new SettlersMap();
+        SettlersMap newGameMap = new SettlersMap();  // deprecated
+
+        ResourceManager.setProvider(new SwingResourceProvider());
+        SettingsManager.setup();
+        SettingsManager.getInstance().setSettlersFolder(new File("C:\\games\\Settlers 3 Ultimate"));
+        ImageProvider.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\GFX"), "745006780412758287");
+        SoundManager.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\SND"));
+
+        byte playerId = 0;
+        long randomSeed = System.currentTimeMillis();
+
+        PlayerSetting[] playerSettings = {
+            new PlayerSetting(true, EPlayerType.AI_HARD, ECivilisation.ROMAN, (byte) 0),
+            new PlayerSetting(true, EPlayerType.AI_HARD, ECivilisation.ASIAN, (byte) 1)
+        };
+
+        File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");
+        MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
+
+        InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
+        JSettlersGameGLFW offlineGame = new JSettlersGameGLFW(selectedMap, initialGameState);
+        TaskExecutorGLFW taskExecutor = new TaskExecutorGLFW();
+
+        offlineGame.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
+
+        MatchConstants.init(offlineGame.networkConnector.getGameClock(), randomSeed);
+        MatchConstants.clock().setTaskExecutor(taskExecutor);
+
+        JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) offlineGame.start();
+        SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
+
+        // note: MapContent can only be instantiated after GameRunner.mainGrid is properly loaded
+        while (runner.getMainGrid() == null) {
+            Thread.sleep(100);
+        }
+
+        ImageProvider.getInstance().waitForPreloadingFinish();
+        MapContent mapContent = new MapContent(runner, soundPlayer, ETextDrawPosition.DESKTOP);
+        LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
+        context.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
 
         // start game thread
-        SettlersGame gameSimulation = new SettlersGame(gameMap);
+        SettlersGame gameSimulation = new SettlersGame(newGameMap);
         Thread gameThread = new Thread(gameSimulation, "GameSimulationThread");
-        LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
 
         // gameThread.start();
 
@@ -79,12 +136,12 @@ public class MainLauncher {
             // run game simulation
             // dispatch game events
 
-            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, gameMap);
+            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, newGameMap, context, mapContent);
 
             continue;
         }
 
-        gameMap.gameOver = true;
+        newGameMap.gameOver = true;
         gameSimulation.running = false;
         gameThread.join();
 

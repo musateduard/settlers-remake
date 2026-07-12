@@ -49,12 +49,15 @@ public final class MatchConstants {
 	 */
 	public static boolean ENABLE_DEBUG_COLORS = true;
 
-	private MatchConstants() {
-	}
-
 	private static IGameClock clock;
 	private static ExtendedRandom gameRandom;
 	private static ExtendedRandom aiRandom;
+
+
+	private MatchConstants() {
+        return;
+    }
+
 
 	public static void init(IGameClock clock, long randomSeed) {
 		clearState();

@@ -36,7 +36,9 @@ import java.util.regex.Pattern;
 
 import go.graphics.swing.contextcreator.BackendSelector;
 
+
 public class SettingsManager implements ISoundSettingsProvider {
+
 	private static final String CONFIGURATION_FILE = ".jsettlers";
 
 	private static final String ENV_PREFIX = "SETTLERS_";
@@ -79,6 +81,13 @@ public class SettingsManager implements ISoundSettingsProvider {
 	private final Properties storedSettings = new Properties();
 	private final Map<String, String> runtimeProperties = new HashMap<>();
 
+
+    private SettingsManager(String[] args) throws IOException {
+        storedSettings.load(ResourceManager.getResourcesFileStream(CONFIGURATION_FILE));
+        loadRuntimeProperties(args);
+    }
+
+
 	public static void setup(String... args) throws IOException {
 		manager = new SettingsManager(args);
 
@@ -87,14 +96,11 @@ public class SettingsManager implements ISoundSettingsProvider {
 		CommonConstants.AI_MORE_TOWERS = manager::getAiTowerFocus;
 	}
 
+
 	public static SettingsManager getInstance() {
 		return manager;
 	}
 
-	private SettingsManager(String[] args) throws IOException {
-		storedSettings.load(ResourceManager.getResourcesFileStream(CONFIGURATION_FILE));
-		loadRuntimeProperties(args);
-	}
 
 	private void loadRuntimeProperties(String[] args) {
 		loadFromEnvironment();

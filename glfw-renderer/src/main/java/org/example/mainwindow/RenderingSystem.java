@@ -1,5 +1,6 @@
 package org.example.mainwindow;
 
+import java.awt.Rectangle;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.gamemap.SettlersMap;
@@ -43,26 +44,11 @@ public class RenderingSystem {
         // draw ui
         drawUI(application, userInterface);
 
+        Rectangle canvas = application.renderer.canvas.viewport;
+
         // activate screen buffer
-        // todo: set canvas size on resize and don't calculate every frame
-        int[] width = { 0 };
-        int[] height = { 0 };
-        GLFW.glfwGetWindowSize(application.window.handle, width, height);
-
-        int screenWidth = width[0];
-        int screenHeight = height[0];
-
-        float idealAspectRatio = 800.00f / 600.00f;
-        float currentAspectRatio = (float) screenWidth / (float) screenHeight;
-        boolean isWideScreen = currentAspectRatio >= idealAspectRatio;
-
-        int canvasWidth  = isWideScreen ? (int) (screenHeight * idealAspectRatio) : screenWidth;
-        int canvasHeight = isWideScreen ? screenHeight                            : (int) (screenWidth / idealAspectRatio);
-        int canvasX      = isWideScreen ? (screenWidth - canvasWidth) / 2         : 0;
-        int canvasY      = isWideScreen ? 0                                       : (screenHeight - canvasHeight) / 2;
-
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
+        GL33C.glViewport(canvas.x, canvas.y, canvas.width, canvas.height);
         GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);  // magenta
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 

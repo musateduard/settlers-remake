@@ -1,6 +1,7 @@
 package org.example.mainwindow;
 
 import org.joml.Matrix4f;
+import java.awt.Rectangle;
 import org.lwjgl.opengl.GL33C;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -17,6 +18,7 @@ public class FrameBuffer {
     public final int canvasVboId;
     public final int canvasVaoId;
     public final Matrix4f projectionMatrix;
+    public final Rectangle viewport;
 
 
     public FrameBuffer() {
@@ -25,6 +27,7 @@ public class FrameBuffer {
         this.height = 600;
         this.projectionMatrix = new Matrix4f();
         this.projectionMatrix.ortho(0, this.width, 0, this.height, -1, 1);
+        this.viewport = new Rectangle(0, 0, this.width, this.height);
 
         // create canvas frame buffer object
         this.frameBufferId = GL33C.glGenFramebuffers();
@@ -134,16 +137,6 @@ public class FrameBuffer {
         if (openglError != GL33C.GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
-
-        return;
-    }
-
-
-    public void resizeCanvas() {
-
-        // todo: implement resize canvas
-        // set canvas size
-        // update canvas projection matrix
 
         return;
     }

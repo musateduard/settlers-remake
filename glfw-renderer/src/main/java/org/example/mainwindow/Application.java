@@ -7,7 +7,6 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.opengl.GL33C;
 import org.example.events.ResizeEvent;
-import org.example.deprecated.EventManager;
 
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 
@@ -33,9 +32,21 @@ public class Application {
 
     public void resizeWindow(ResizeEvent event) {
 
-        this.currentAspectRatio = (float) event.width() / (float) event.height();
         this.window.width = event.width();
         this.window.height = event.height();
+        this.currentAspectRatio = (float) event.width() / (float) event.height();
+        boolean isWideScreen = this.currentAspectRatio >= this.idealAspectRatio;
+
+        float canvasWidth = isWideScreen ? (float) this.window.height * this.idealAspectRatio : (float) this.window.width;
+        float canvasHeight = isWideScreen ? (float) this.window.height : (float) this.window.width / this.idealAspectRatio;
+        float canvasX = isWideScreen ? ((float) this.window.width - canvasWidth) / 2 : 0;
+        float canvasY = isWideScreen ? 0 : ((float) this.window.height - canvasHeight) / 2;
+
+        this.renderer.canvas.viewport.width = (int) canvasWidth;
+        this.renderer.canvas.viewport.height = (int) canvasHeight;
+        this.renderer.canvas.viewport.x = (int) canvasX;
+        this.renderer.canvas.viewport.y = (int) canvasY;
+
         this.renderer.updateProjectionMatrix(event.width(), event.height());
 
         return;

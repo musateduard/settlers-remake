@@ -264,81 +264,6 @@ public class Renderer {
     }
 
 
-    /*
-    public void activateCanvasBuffer() {
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, this.canvas.frameBufferId);
-        return;
-    }
-
-
-    public void activateMainBuffer(int screenWidth, int screenHeight) {
-
-        float idealAspectRatio = 800.00f / 600.00f;
-        float currentAspectRatio = (float) screenWidth / screenHeight;
-        boolean isWideScreen = currentAspectRatio >= idealAspectRatio;
-
-        int canvasWidth =  isWideScreen ? (int) (screenHeight * idealAspectRatio) : screenWidth;
-        int canvasHeight = isWideScreen ? screenHeight                            : (int) (screenWidth / idealAspectRatio);
-        int canvasX =      isWideScreen ? (screenWidth - canvasWidth) / 2         : 0;
-        int canvasY =      isWideScreen ? 0                                       : (screenHeight - canvasHeight) / 2;
-
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL33C.glViewport(canvasX, canvasY, canvasWidth, canvasHeight);
-
-        GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);
-        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        GL33C.glDisable(GL_DEPTH_TEST);
-
-        this.canvas.shaderProgram.activateShader();
-
-        GL33C.glActiveTexture(GL_TEXTURE0);
-        GL33C.glBindTexture(GL_TEXTURE_2D, this.canvas.textureId);
-        GL33C.glBindVertexArray(this.canvas.canvasVaoId);
-        GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        GL33C.glEnable(GL_DEPTH_TEST);
-
-        return;
-    }
-
-
-    @Override
-    public void onResizeEvent(ResizeEvent event) {
-
-        // note:
-        //
-        // on resize projection matrix width and height should be set to
-        // correspond to the internal frame buffer object size, not the screen size
-
-        this.updateProjectionMatrix(event.width(), event.height());
-
-        return;
-    }
-
-
-    public void clearScreen() {
-
-        float saturation = 0.40f;
-        long currentFrameTimeMs = System.currentTimeMillis();
-        float currentTimeDeltaS = (currentFrameTimeMs - MainLauncher.GAME_START_TIME_MS) / 1000.00f;
-
-        float red = (float) (Math.sin(currentTimeDeltaS) * saturation + (1.00f - saturation));
-        float green = (float) (Math.sin(currentTimeDeltaS + 2.00 * Math.PI / 3.00) * saturation + (1.00f - saturation));
-        float blue = (float) (Math.sin(currentTimeDeltaS + 4.00 * Math.PI / 3.00) * saturation + (1.00f - saturation));
-
-        // set clear color
-        // GL33C.glClearColor(red, green, blue, 1.00f);
-        GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
-
-        // clear screen
-        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-        return;
-    }
-    */
-
-
     public void renderMapTerrain(SettlersMap gameMap) {
 
         // todo: move this method to RenderingSystem
@@ -408,25 +333,6 @@ public class Renderer {
 
         return;
     }
-
-
-    /*
-    public void cleanup() {
-
-        // todo: delete vbo and vao
-
-        GL33C.glDeleteFramebuffers(this.canvas.frameBufferId);
-        GL33C.glDeleteTextures(this.canvas.textureId);
-        GL33C.glDeleteRenderbuffers(this.canvas.depthStencilBufferId);
-
-        int openglError = GL33C.glGetError();
-        if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
-        }
-
-        return;
-    }
-    */
 
 
     public void drawBuilding() {

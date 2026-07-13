@@ -30,8 +30,6 @@ public class MainLauncher {
 
     public static void main(String[] args) throws Exception {
 
-        // test 1
-
         /*
         note:
 

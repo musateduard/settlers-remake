@@ -4,6 +4,7 @@ import java.io.File;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import go.graphics.swing.sound.SwingSoundPlayer;
 import jsettlers.common.ai.EPlayerType;
+import jsettlers.common.menu.IStartingGame;
 import jsettlers.common.player.ECivilisation;
 import jsettlers.common.resources.ResourceManager;
 import jsettlers.graphics.map.ETextDrawPosition;
@@ -15,6 +16,7 @@ import jsettlers.logic.map.loading.MapLoader;
 import jsettlers.logic.map.loading.list.DirectoryMapLister;
 import jsettlers.logic.player.InitialGameState;
 import jsettlers.logic.player.PlayerSetting;
+import jsettlers.main.JSettlersGame;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
 import org.example.gamemap.SettlersMap;
@@ -65,8 +67,11 @@ public class MainLauncher {
 
         File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");
         MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
-
         InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
+
+        /*
+        note: this is the modified glfw initialization that is able to start the game
+
         JSettlersGameGLFW offlineGame = new JSettlersGameGLFW(selectedMap, initialGameState);
         TaskExecutorGLFW taskExecutor = new TaskExecutorGLFW();
 
@@ -87,6 +92,21 @@ public class MainLauncher {
 
         ImageProvider.getInstance().waitForPreloadingFinish();
         MapContent mapContent = new MapContent(runner, soundPlayer, ETextDrawPosition.DESKTOP);
+        */
+
+        // this is the original jsettlers initialization sequence
+        SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
+        JSettlersGame game = new JSettlersGame(selectedMap, initialGameState);
+        IStartingGame startingGame = game.start();
+        GLFWStartingGameListener startingListener = new GLFWStartingGameListener(soundPlayer);
+        startingGame.setListener(startingListener);
+
+        while (startingGame.isStartupFinished() == false) {
+            Thread.sleep(100);
+        }
+
+        MapContent mapContent = startingListener.getMap();
+
         LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
         context.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
 

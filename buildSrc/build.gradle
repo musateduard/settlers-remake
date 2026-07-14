@@ -23,42 +23,58 @@ repositories {
 }
 
 dependencies {
-	implementation gradleApi()
 
+    String lwjglVersion = "3.3.6"
 
-	implementation "org.lwjgl:lwjgl:3.3.0"
-	implementation "org.lwjgl:lwjgl-shaderc:3.3.0"
+	OperatingSystem os = DefaultNativePlatform.getCurrentOperatingSystem()
+	ArchitectureInternal arch = DefaultNativePlatform.getCurrentArchitecture()
 
-	OperatingSystem os = DefaultNativePlatform.getCurrentOperatingSystem();
-	ArchitectureInternal arch = DefaultNativePlatform.getCurrentArchitecture();
+	String platform
 
-	String natives;
+	if (os.isWindows()) {
 
-	if(os.isWindows()) {
-		if(arch.isAmd64()) {
-			natives = "natives-windows"
-		} else if(arch.isI386()) {
-			natives = "natives-windows-x86"
-		} else {
-			natives = "natives-windows-arm64"
+		if (arch.isAmd64()) {
+			platform = "natives-windows"
 		}
-	} else if(os.isMacOsX()) {
-		if(arch.isAmd64() || arch.isI386()) {
-			natives = "natives-macos"
-		} else {
-			natives = "natives-macos-arm64"
+
+        else if (arch.isI386()) {
+			platform = "natives-windows-x86"
 		}
-	} else {
-		if(arch.isAmd64()) {
-			natives = "natives-linux"
-		} else if(arch.isArm()) {
-			natives = "natives-linux-arm32"
-		} else {
-			natives = "natives-linux-arm64"
+
+        else {
+			platform = "natives-windows-arm64"
 		}
 	}
 
-	runtimeOnly "org.lwjgl:lwjgl:3.2.3:" + natives
-	runtimeOnly "org.lwjgl:lwjgl-shaderc:3.2.3:" + natives
+    else if (os.isMacOsX()) {
 
+        if (arch.isAmd64() || arch.isI386()) {
+			platform = "natives-macos"
+		}
+
+        else {
+			platform = "natives-macos-arm64"
+		}
+	}
+
+    else {
+
+        if (arch.isAmd64()) {
+			platform = "natives-linux"
+		}
+
+        else if (arch.isArm()) {
+			platform = "natives-linux-arm32"
+		}
+
+        else {
+			platform = "natives-linux-arm64"
+		}
+	}
+
+    implementation gradleApi()
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-shaderc:${lwjglVersion}"
+	runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:${platform}"
+	runtimeOnly "org.lwjgl:lwjgl-shaderc:${lwjglVersion}:${platform}"
 }

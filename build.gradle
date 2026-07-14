@@ -19,12 +19,11 @@ plugins {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 ext {
-
     androidAnnotationsVersion = '4.8.0'
     androidSupportLibraryVersion = '28.0.0'
 
@@ -33,7 +32,7 @@ ext {
     androidMinSdkVersion = 19
     androidTargetSdkVersion = 26
 
-    lwjglVersion = "3.3.0"
+    lwjglVersion = "3.3.6"
 }
 
 allprojects {
@@ -48,28 +47,27 @@ allprojects {
     }
 }
 
-
 subprojects {
 
     plugins.withType(JavaPlugin).whenPluginAdded {
         compileJava {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-            options.release = 17
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+            options.release = 21
         }
         compileTestJava {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-            options.release = 17
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+            options.release = 21
         }
 
-        task copyMainResources(type: Copy) {
+        tasks.register("copyMainResources", Copy) {
             from sourceSets.main.resources
             into sourceSets.main.output.classesDirs[0]
         }
         processResources.dependsOn copyMainResources
 
-        task copyTestResources(type: Copy) {
+        tasks.register("copyTestResources", Copy) {
             from sourceSets.test.resources
             into sourceSets.test.output.classesDirs[0]
         }
@@ -79,7 +77,7 @@ subprojects {
         startScripts {
             defaultJvmOpts = ['-Xmx2G']
             optsEnvironmentVar = "XXXREPLACEXXX"
-            def args = '"-Dsettlers.maps=$APP_HOME/maps"'
+            String args = '"-Dsettlers.maps=$APP_HOME/maps"'
             doLast {
                 unixScript.text = unixScript.text.replace('$XXXREPLACEXXX', args)
                 windowsScript.text = windowsScript.text.replace('%XXXREPLACEXXX%', args.replace('$APP_HOME', '%APP_HOME%'))
@@ -87,13 +85,13 @@ subprojects {
         }
     }
 
-    tasks.withType(Test) {
+    tasks.withType(Test).configureEach {
         testLogging {
             exceptionFormat = 'full'
         }
     }
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 
@@ -111,7 +109,8 @@ subprojects {
 }
 
 // This is a hack to make ./gradlew run only run the swing version.
-task run(dependsOn: ':jsettlers.main.swing:run') {
+tasks.register("run") {
+    dependsOn ":jsettlers.main.swing:run"
     doLast {
         // We do not need any more tasks.
         tasks.getAsMap().values().each { task ->
@@ -126,13 +125,19 @@ tasks.getByPath(":jsettlers.mapcreator:run").onlyIf { !gradle.taskGraph.hasTask(
 tasks.getByPath(":jsettlers.network:run").onlyIf { !gradle.taskGraph.hasTask(":run") }
 tasks.getByPath(":jsettlers.tools:run").onlyIf { !gradle.taskGraph.hasTask(":run") }
 
-task runMapCreator(dependsOn: ':jsettlers.mapcreator:run') {}
+tasks.register("runMapCreator") {
+    dependsOn ":jsettlers.mapcreator:run"
+}
 
-task runTools(dependsOn: ':jsettlers.tools:run') {}
+tasks.register("runTools") {
+    dependsOn ":jsettlers.tools:run"
+}
 
 if (findProject(':jsettlers.main.android')) {
+
     // Android is present.
-    task runAndroid(dependsOn: ':jsettlers.main.android:assembleDebug') {
+    tasks.register("runAndroid") {
+        dependsOn ":jsettlers.main.android:assembleDebug"
         doLast {
             def androidHome = System.env.ANDROID_HOME;
             if (!androidHome) {
@@ -140,8 +145,10 @@ if (findProject(':jsettlers.main.android')) {
                 local.load(new FileInputStream("local.properties"))
                 androidHome = local.getProperty('sdk.dir');
             }
-            def adb = androidHome + '/platform-tools/adb'
+
+            String adb = androidHome + '/platform-tools/adb'
             println 'Copy files to your device...'
+
             exec {
                 commandLine adb, 'uninstall', 'jsettlers.main.android'
             }
@@ -156,13 +163,9 @@ if (findProject(':jsettlers.main.android')) {
     }
 }
 
+File releaseDir = project.file('release')
 
-
-
-def releaseDir = project.file('release')
-
-
-task releaseJSettlers(type: Zip) {
+tasks.register("releaseJSettlers", Zip) {
     into('JSettlers') {
         from { project.getRootProject().file('LICENSE.txt') }
         from tasks.getByPath(':jsettlers.main.swing:shadowJar')
@@ -188,15 +191,14 @@ task releaseJSettlers(type: Zip) {
     archiveBaseName.set("JSettlers");
 }
 
-
-task releaseDedicatedServer(type: Copy) {
+tasks.register("releaseDedicatedServer", Copy) {
     from tasks.getByPath(':jsettlers.network:shadowJar')
     into releaseDir
 }
 
-
 if (findProject(':jsettlers.main.android')) {
-    task releaseAndroid(type: Zip, dependsOn: ':jsettlers.main.android:assembleDebug') {
+    tasks.register("releaseAndroid", Zip) {
+        dependsOn ":jsettlers.main.android:assembleDebug"
         into('JSettlers-Android') {
             from { project.getRootProject().file('LICENSE.txt') }
             from file(project(':jsettlers.main.android').getBuildDir().absolutePath + '/outputs/apk/debug/jsettlers.main.android-debug.apk')
@@ -208,14 +210,16 @@ if (findProject(':jsettlers.main.android')) {
     }
 }
 
-
-task release(dependsOn: ['releaseJSettlers', 'releaseDedicatedServer', 'releaseAndroid'])
-
-
-task deployToGithub(type: Exec, dependsOn: 'release') {
-    commandLine 'bash', './deploy.sh'
+tasks.register("release") {
+    dependsOn("releaseJSettlers")
+    dependsOn("releaseDedicatedServer")
+    dependsOn("releaseAndroid")
 }
 
+tasks.register("deployToGithub", Exec) {
+    dependsOn("release")
+    commandLine("bash", "./deploy.sh")
+}
 
 clean {
     delete releaseDir

@@ -2,9 +2,9 @@ apply plugin: 'com.android.library'
 
 import jsettlers.shaders.compile.ShaderCompilationTask
 
-def shaderDefinitionDir = 'src/main/glsl/'
-def shaderJavaOutputDir = 'src/generated/java'
-def shaderResOutputDir = 'src/generated/resources'
+String shaderDefinitionDir = 'src/main/glsl/'
+String shaderJavaOutputDir = 'src/generated/java'
+String shaderResOutputDir = 'src/generated/resources'
 
 android {
     compileSdkVersion rootProject.ext.androidCompileSdkVersion
@@ -48,20 +48,19 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 }
 
-
 clean {
     delete file(shaderJavaOutputDir)
     delete file(shaderResOutputDir)
 }
 
-task compileShaders(type: ShaderCompilationTask) {
+tasks.register("compileShaders", ShaderCompilationTask) {
     inputDirectory = file(shaderDefinitionDir).toPath()
     generatedSourcesDirectory = file(shaderJavaOutputDir).toPath()
     generatedResourcesDirectory = file(shaderResOutputDir).toPath()
 }
 
-tasks.whenTaskAdded{ task ->
-    if(task.name == "generateDebugResources" || task.name == "generateReleaseResources" || task.name == "processDebugJavaRes" || task.name == "processReleaseJavaRes") {
+tasks.configureEach { task ->
+    if (task.name == "generateDebugResources" || task.name == "generateReleaseResources" || task.name == "processDebugJavaRes" || task.name == "processReleaseJavaRes") {
         task.dependsOn(compileShaders)
     }
 }

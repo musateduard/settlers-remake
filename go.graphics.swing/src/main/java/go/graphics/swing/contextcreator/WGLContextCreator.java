@@ -67,20 +67,20 @@ public class WGLContextCreator extends JAWTContextCreator {
 
 	@Override
 	public void stop() {
-		WGL.wglDeleteContext(context);
+		WGL.wglDeleteContext(null, context);
 	}
 
 	@Override
 	protected void swapBuffers() {
-		GDI32.SwapBuffers(windowDrawable);
+		GDI32.SwapBuffers(null, windowDrawable);
 	}
 
 	@Override
 	public void makeCurrent(boolean draw) {
 		if(draw) {
-			WGL.wglMakeCurrent(windowDrawable, context);
+			WGL.wglMakeCurrent(null, windowDrawable, context);
 		} else {
-			WGL.wglMakeCurrent(0, 0);
+			WGL.wglMakeCurrent(null, 0, 0);
 		}
 	}
 
@@ -94,21 +94,21 @@ public class WGLContextCreator extends JAWTContextCreator {
 
 		pfd.cDepthBits((byte) 24);
 
-		int pixel_format = GDI32.ChoosePixelFormat(windowDrawable, pfd);
+		int pixel_format = GDI32.ChoosePixelFormat(null, windowDrawable, pfd);
 		if(pixel_format == 0) error("Could not find pixel format!");
-		GDI32.SetPixelFormat(windowDrawable, pixel_format, pfd);
+		GDI32.SetPixelFormat(null, windowDrawable, pixel_format, pfd);
 
 		pfd.free();
 
 		if(context != 0) {
-			WGL.wglDeleteContext(context);
+			WGL.wglDeleteContext(null, context);
 		}
 
-		context = WGL.wglCreateContext(windowDrawable);
-		WGL.wglMakeCurrent(windowDrawable, context);
+		context = WGL.wglCreateContext(null, windowDrawable);
+		WGL.wglMakeCurrent(null, windowDrawable, context);
 		WGLCapabilities caps = GL.createCapabilitiesWGL();
 		if(caps.WGL_ARB_create_context && caps.WGL_ARB_create_context_profile) {
-			WGL.wglDeleteContext(context);
+			WGL.wglDeleteContext(null, context);
 			context = 0;
 
 			int i = 0;
@@ -116,7 +116,7 @@ public class WGLContextCreator extends JAWTContextCreator {
 				context = WGLARBCreateContext.wglCreateContextAttribsARB(windowDrawable, 0, ctx_attrs[i++][debug?0:1]);
 			}
 		} else if(debug) {
-			WGL.wglDeleteContext(context);
+			WGL.wglDeleteContext(null, context);
 			error("WGL could not create a debug context!");
 		}
 

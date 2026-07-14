@@ -74,7 +74,7 @@ public class VulkanContextCreator extends JAWTContextCreator {
 				VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
 						.sType(VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
 						.hwnd(windowConnection)
-						.hinstance(WinBase.GetModuleHandle((String) null));
+						.hinstance(WinBase.GetModuleHandle(null, (String) null));
 
 				if (vkCreateWin32SurfaceKHR(instance, surfaceCreateInfo, null, surfacePtr) != VK_SUCCESS) {
 					error("Could not create a surface via VK_KHR_win32_surface.");

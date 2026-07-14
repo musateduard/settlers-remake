@@ -1,7 +1,6 @@
 apply plugin: 'java'
 
 // This runs the unit tests and some more validation tests.
-
 test {
     minHeapSize = "128m"
     maxHeapSize = "512m"
@@ -15,7 +14,6 @@ test {
 
     environment.put('JSETTLERS_RESOURCES', project(':jsettlers.common').file('resources').getAbsolutePath())
 }
-
 
 sourceSets {
     main {

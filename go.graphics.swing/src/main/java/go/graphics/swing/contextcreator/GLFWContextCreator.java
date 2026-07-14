@@ -54,6 +54,7 @@ public class GLFWContextCreator extends AsyncContextCreator {
     protected long glfwWindowId;
     private long glfw_resize_time;
 	private final GLFWEventConverter eventConverter;
+    private GLFWErrorCallback errorCallback;
 
     private static final HashMap<Integer, String> keys = new HashMap<>();
     private static final HashMap<Integer, EModifier> mods = new HashMap<>();
@@ -103,8 +104,8 @@ public class GLFWContextCreator extends AsyncContextCreator {
 
 	public void async_init() {
 
-        GLFWErrorCallback callback = GLFWErrorCallback.createPrint(System.err);
-        GLFW.glfwSetErrorCallback(callback);
+        this.errorCallback = GLFWErrorCallback.createPrint(System.err);
+        GLFW.glfwSetErrorCallback(this.errorCallback);
 
 		if (GLFW.glfwInit() == false) {
             throw new Error("glfwInit() failed!");

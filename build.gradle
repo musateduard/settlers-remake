@@ -47,7 +47,6 @@ allprojects {
     }
 }
 
-
 subprojects {
 
     plugins.withType(JavaPlugin).whenPluginAdded {
@@ -78,7 +77,7 @@ subprojects {
         startScripts {
             defaultJvmOpts = ['-Xmx2G']
             optsEnvironmentVar = "XXXREPLACEXXX"
-            def args = '"-Dsettlers.maps=$APP_HOME/maps"'
+            String args = '"-Dsettlers.maps=$APP_HOME/maps"'
             doLast {
                 unixScript.text = unixScript.text.replace('$XXXREPLACEXXX', args)
                 windowsScript.text = windowsScript.text.replace('%XXXREPLACEXXX%', args.replace('$APP_HOME', '%APP_HOME%'))
@@ -146,7 +145,8 @@ if (findProject(':jsettlers.main.android')) {
                 local.load(new FileInputStream("local.properties"))
                 androidHome = local.getProperty('sdk.dir');
             }
-            def adb = androidHome + '/platform-tools/adb'
+
+            String adb = androidHome + '/platform-tools/adb'
             println 'Copy files to your device...'
 
             exec {
@@ -163,11 +163,7 @@ if (findProject(':jsettlers.main.android')) {
     }
 }
 
-
-
-
-def releaseDir = project.file('release')
-
+File releaseDir = project.file('release')
 
 tasks.register("releaseJSettlers", Zip) {
     into('JSettlers') {
@@ -195,12 +191,10 @@ tasks.register("releaseJSettlers", Zip) {
     archiveBaseName.set("JSettlers");
 }
 
-
 tasks.register("releaseDedicatedServer", Copy) {
     from tasks.getByPath(':jsettlers.network:shadowJar')
     into releaseDir
 }
-
 
 if (findProject(':jsettlers.main.android')) {
     tasks.register("releaseAndroid", Zip) {
@@ -216,19 +210,16 @@ if (findProject(':jsettlers.main.android')) {
     }
 }
 
-
 tasks.register("release") {
     dependsOn("releaseJSettlers")
     dependsOn("releaseDedicatedServer")
     dependsOn("releaseAndroid")
 }
 
-
 tasks.register("deployToGithub", Exec) {
     dependsOn("release")
     commandLine("bash", "./deploy.sh")
 }
-
 
 clean {
     delete releaseDir

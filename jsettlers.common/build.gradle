@@ -1,30 +1,27 @@
 apply plugin: 'java-library'
 
-
 import jsettlers.textures.generation.TextureGenerationTask
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 
+String generatedDirectory = 'src/generated/'
+String generatedCommitInfoDirectory = generatedDirectory + 'commitInfo/java/'
+String generatedTexturesJavaDirectory = generatedDirectory + 'textures/java'
+String generatedTexturesResourcesDirectory = generatedDirectory + 'textures/resources'
 
-def generatedDirectory = 'src/generated/'
-def generatedCommitInfoDirectory = generatedDirectory + 'commitInfo/java/'
-def generatedTexturesJavaDirectory = generatedDirectory + 'textures/java'
-def generatedTexturesResourcesDirectory = generatedDirectory + 'textures/resources'
-
-
-task compileTextures(type: TextureGenerationTask) {
+tasks.register("compileTextures", TextureGenerationTask) {
     resourceDirectory = file('raw_images_for_textures')
     generatedSourcesDirectory = file(generatedTexturesJavaDirectory)
     generatedResourcesDirectory = file(generatedTexturesResourcesDirectory)
 }
 
-task findGitRevision {
-    def commitFile = file(generatedCommitInfoDirectory + 'jsettlers/common/CommitInfo.java')
+tasks.register("findGitRevision") {
+    File commitFile = file(generatedCommitInfoDirectory + 'jsettlers/common/CommitInfo.java')
 
     FileRepositoryBuilder builder = new FileRepositoryBuilder()
     Repository repository = builder.readEnvironment().findGitDir(file('.')).build()
     def headRef = repository.exactRef("HEAD")
-    def localRev = headRef.objectId.name
+    String localRev = headRef.objectId.name
     repository.close()
 
     onlyIf {
@@ -45,8 +42,6 @@ public final class CommitInfo {
 }""", localRev.substring(0, 8), localRev, (new Date()).format('yyyy-MM-dd-HH-mm-ss'))
     }
 }
-
-
 
 sourceSets {
     main.java.srcDirs += [generatedTexturesJavaDirectory, generatedCommitInfoDirectory]

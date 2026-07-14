@@ -21,10 +21,10 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.9.0'
 }
 
+String layoutsFolder = './src/gen/java/jsettlers/graphics/ui/layout'
 
-def layoutsFolder = './src/gen/java/jsettlers/graphics/ui/layout'
-
-task generateLayouts(dependsOn: tasks.getByPath(':jsettlers.graphics:layoutbuilder:jar'), type: JavaExec) {
+tasks.register("generateLayouts", JavaExec) {
+    dependsOn tasks.getByPath(':jsettlers.graphics:layoutbuilder:jar')
     doFirst {
         delete(layoutsFolder)
         mkdir(layoutsFolder)

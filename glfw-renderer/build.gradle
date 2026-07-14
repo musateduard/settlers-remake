@@ -9,7 +9,7 @@ repositories {
     mavenCentral()
 }
 
-List<String> platformList = [
+String[] platformList = [
     "natives-linux",
     "natives-linux-arm32",
     "natives-linux-arm64",

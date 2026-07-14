@@ -9,7 +9,7 @@ plugins {
  * mp3 libraries: jl1.0.1.jar, tritonus_share.jar, mp3spi1.9.5.jar
  * jaxb (map editor only)
  */
-String[] lgplDependencies = new String[] {
+String[] lgplDependencies = [
     "javazoom:jlayer:1.0.1",
     "com.googlecode.soundlibs:tritonus-share:0.3.7.4",
     "com.googlecode.soundlibs:mp3spi:1.9.5.4",
@@ -19,7 +19,7 @@ String[] lgplDependencies = new String[] {
     "javax.xml.bind:jaxb-api:2.3.1",
     "com.sun.xml.bind:jaxb-impl:2.3.2",
     "com.sun.xml.bind:jaxb-core:2.3.0.1",
-}
+]
 
 configurations {
 	lgplDeps
@@ -49,9 +49,9 @@ dependencies {
 	}
 }
 
-task copyDependencies(type: Copy) {
-	from configurations.lgplDeps
-	into new File(layout.buildDirectory.get().asFile, 'libs/dependencies')
+tasks.register("copyDependencies", Copy) {
+    from configurations.lgplDeps
+    into new File(layout.buildDirectory.get().asFile, 'libs/dependencies')
 }
 
 jar {

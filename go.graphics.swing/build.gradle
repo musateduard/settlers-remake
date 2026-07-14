@@ -4,7 +4,12 @@ plugins {
 
 import jsettlers.shaders.compile.ShaderCompilationTask
 
-String[] variants = new String[] {
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+String[] platformList = [
     "natives-linux",
     "natives-linux-arm32",
     "natives-linux-arm64",
@@ -13,29 +18,27 @@ String[] variants = new String[] {
     "natives-windows",
     "natives-windows-x86",
     "natives-windows-arm64",
-};
-
-String[] modules = new String[] {
-    "lwjgl",
-    "lwjgl-opengl",
-    "lwjgl-openal",
-    "lwjgl-glfw",
-    "lwjgl-vma",
-}
+]
 
 dependencies {
 
 	implementation project(':go.graphics')
 
-	def lwjglVersion = rootProject.ext.lwjglVersion
+	String lwjglVersion = rootProject.ext.lwjglVersion
 
-	for (String module : modules) {
-		implementation "org.lwjgl:${module}:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-opengl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-openal:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-glfw:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-vma:${lwjglVersion}"
 
-		for (String variant : variants) {
-			runtimeOnly "org.lwjgl:${module}:${lwjglVersion}:${variant}"
-		}
-	}
+    for (String platform : platformList) {
+        runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-opengl:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-openal:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-glfw:${lwjglVersion}:${platform}"
+        runtimeOnly "org.lwjgl:lwjgl-vma:${lwjglVersion}:${platform}"
+    }
 
 	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}:natives-macos"
 	implementation "org.lwjgl:lwjgl-vulkan:${lwjglVersion}"
@@ -52,9 +55,9 @@ dependencies {
 	runtimeOnly "org.jogamp.jogl:jogl-all:2.3.2:natives-macosx-universal"
 }
 
-def shaderDefinitionDir = 'src/main/glsl/'
-def shaderJavaOutputDir = 'src/generated/java'
-def shaderResOutputDir = 'src/generated/resources'
+String shaderDefinitionDir = 'src/main/glsl/'
+String shaderJavaOutputDir = 'src/generated/java'
+String shaderResOutputDir = 'src/generated/resources'
 
 sourceSets {
 	main.java.srcDirs += [shaderJavaOutputDir]
@@ -66,10 +69,10 @@ clean {
 	delete file(shaderResOutputDir)
 }
 
-task compileShaders(type: ShaderCompilationTask) {
-	inputDirectory = file(shaderDefinitionDir).toPath()
-	generatedSourcesDirectory = file(shaderJavaOutputDir).toPath()
-	generatedResourcesDirectory = file(shaderResOutputDir).toPath()
+tasks.register("compileShaders", ShaderCompilationTask) {
+    inputDirectory = file(shaderDefinitionDir).toPath()
+    generatedSourcesDirectory = file(shaderJavaOutputDir).toPath()
+    generatedResourcesDirectory = file(shaderResOutputDir).toPath()
 }
 
 compileJava {
@@ -78,9 +81,4 @@ compileJava {
 
 copyMainResources {
 	dependsOn compileShaders
-}
-
-java {
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
 }

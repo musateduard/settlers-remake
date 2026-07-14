@@ -1,22 +1,23 @@
 apply plugin: 'java'
 
-
-task aiDifficultiesIT(type: Test, dependsOn: testClasses) {
-	include '**/AiDifficultiesIT*'
+tasks.register("aiDifficultiesIT", Test) {
+    dependsOn testClasses
+    include '**/AiDifficultiesIT*'
 }
 
-task autoReplayIT(type: Test, dependsOn: testClasses) {
-	include '**/AutoReplayIT*'
+tasks.register("autoReplayIT", Test) {
+    dependsOn testClasses
+    include '**/AutoReplayIT*'
 }
 
-task replayValidationIT(type: Test, dependsOn: testClasses) {
-	include '**/ReplayValidationIT*'
+tasks.register("replayValidationIT", Test) {
+    dependsOn testClasses
+    include '**/ReplayValidationIT*'
 }
 
-task unitTest(type: Test) {
-	exclude 'jsettlers/integration/**'
+tasks.register("unitTest", Test) {
+    exclude 'jsettlers/integration/**'
 }
-
 
 dependencies {
 	implementation project(':go.graphics')

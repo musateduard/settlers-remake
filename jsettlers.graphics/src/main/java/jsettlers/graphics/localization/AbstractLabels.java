@@ -150,8 +150,8 @@ public abstract class AbstractLabels {
 
 		LocaleSuffix[] locales = new LocaleSuffix[] {
             new LocaleSuffix(Locale.of("en", "US"), false),
-            new LocaleSuffix(this.preferredLocale, false),
-            new LocaleSuffix(this.preferredLocale, true),
+            new LocaleSuffix(AbstractLabels.preferredLocale, false),
+            new LocaleSuffix(AbstractLabels.preferredLocale, true),
 		};
 
 		return locales;

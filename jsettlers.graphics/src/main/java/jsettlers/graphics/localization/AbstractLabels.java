@@ -17,12 +17,13 @@ package jsettlers.graphics.localization;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Properties;
 
 /**
  * This is a class that helps with the locale management. Don't use it directly, use {@link Labels} instead.
- * 
+ *
  * @author Michael Zangl
  *
  */
@@ -31,21 +32,19 @@ public abstract class AbstractLabels {
 
 	/**
 	 * This defines a locale suffix (like _en_US).
-	 * 
+	 *
 	 * @author Michael Zangl
 	 */
 	public static class LocaleSuffix {
 		private static final String SEPARATOR = "_";
-		private Locale locale;
-		private boolean useCountry;
+		private final Locale locale;
+		private final boolean useCountry;
 
 		/**
 		 * Creates a new locale suffix object.
-		 * 
-		 * @param locale
-		 *            The locale to use.
-		 * @param useCountry
-		 *            The we should interpret the country field of the locale.
+		 *
+		 * @param locale The locale to use.
+		 * @param useCountry Flag for reading the country field of the locale.
 		 */
 		public LocaleSuffix(Locale locale, boolean useCountry) {
 			this.locale = locale;
@@ -54,7 +53,7 @@ public abstract class AbstractLabels {
 
 		/**
 		 * Gets the locale used.
-		 * 
+		 *
 		 * @return The {@link Locale}
 		 */
 		public Locale getLocale() {
@@ -63,7 +62,7 @@ public abstract class AbstractLabels {
 
 		/**
 		 * Creates a file name with this suffix.
-		 * 
+		 *
 		 * @param prefix
 		 *            The file prefix.
 		 * @param suffix
@@ -85,15 +84,9 @@ public abstract class AbstractLabels {
 
 		@Override
 		public String toString() {
-			StringBuilder builder = new StringBuilder();
-			builder.append("LocaleSuffix [locale=");
-			builder.append(locale);
-			builder.append(", useCountry=");
-			builder.append(useCountry);
-			builder.append("]");
-			return builder.toString();
+            String result = "LocaleSuffix [locale=%s, useCountry=%s]".formatted(this.locale, this.useCountry);
+			return result;
 		}
-
 	}
 
 	private Properties loadedLabels;
@@ -115,50 +108,58 @@ public abstract class AbstractLabels {
 		LocaleSuffix[] locales = getLocaleSuffixes();
 
 		for (LocaleSuffix locale : locales) {
+
 			try {
 				Properties currentLocaleLabels = new Properties(loadedLabels);
 				InputStream inputStream = getLocaleStream(locale);
+
 				if (inputStream == null) {
-					throw new IOException();
+                    System.out.println("Warning: Could not load locale %s. Falling back to next file.".formatted(locale));
+                    continue;
 				}
-				currentLocaleLabels.load(new InputStreamReader(inputStream, "UTF-8"));
+
+                currentLocaleLabels.load(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 				loadedLabels = currentLocaleLabels;
 				// Store the most dominant locale found.
 				usedLocale = locale.getLocale();
-			} catch (IOException e) {
-				System.err.println("Warning: Could not load " + locale + ". Falling back to next file.");
+			}
+
+            catch (IOException exception) {
+				System.err.println("Warning: Could not load %s. Falling back to next file.".formatted(locale));
+                exception.printStackTrace();
 			}
 		}
 	}
 
 	/**
 	 * Generates an input stream for the given locale.
-	 * 
-	 * @param locale
-	 *            The locale to generate the input stream for.
-	 * @return The stream.
-	 * @throws IOException
-	 *             If the stream could not be generated.
+	 *
+	 * @param locale The locale to generate the input stream for.
+	 *
+     * @return The stream.
+	 * @throws IOException If the stream could not be generated.
 	 */
 	protected abstract InputStream getLocaleStream(LocaleSuffix locale) throws IOException;
 
 	/**
 	 * Gets a list of locale suffixes.
-	 * 
+	 *
 	 * @return The list, ordered from least to most preferred.
 	 */
 	public LocaleSuffix[] getLocaleSuffixes() {
+
 		LocaleSuffix[] locales = new LocaleSuffix[] {
-				new LocaleSuffix(new Locale("en"), false),
-				new LocaleSuffix(preferredLocale, false),
-				new LocaleSuffix(preferredLocale, true),
+            new LocaleSuffix(Locale.of("en", "US"), false),
+            new LocaleSuffix(AbstractLabels.preferredLocale, false),
+            new LocaleSuffix(AbstractLabels.preferredLocale, true),
 		};
+
 		return locales;
 	}
 
 	/**
 	 * Gets a string.
-	 * 
+	 *
 	 * @param key
 	 *            The name of the string
 	 * @return The localized string
@@ -176,7 +177,7 @@ public abstract class AbstractLabels {
 
 	/**
 	 * Gets the locale that was used.
-	 * 
+	 *
 	 * @return The locale.
 	 */
 	public Locale getUsedLocale() {
@@ -185,7 +186,7 @@ public abstract class AbstractLabels {
 
 	/**
 	 * Sets the preferred locale to use. This is only regarded when creating new locale objects.
-	 * 
+	 *
 	 * @param preferredLocale
 	 *            The new proffered locale.
 	 */

@@ -17,6 +17,14 @@ public class InputSystem {
 
 
     private InputSystem() {
+
+        // note: this class is a singleton and is not meant to be instantiated
+        // instead you use getInstance() to get the current running instance
+        // don't call this method from threads other than main
+        // you can also use glfwSetWindowUserPointer to pass an instance to glfw that you can access during the callbacks
+        // use glfwGetWindowUserPointer to get the instance pointer
+        // for this project a singleton is sufficient
+
         return;
     }
 
@@ -67,7 +75,7 @@ public class InputSystem {
     }
 
 
-    public static void handleInput(Application application, Camera camera) {
+    public static void handleInput(Application application, Camera camera, GLFWGOEventConverter eventConverter) {
 
         InputSystem input = InputSystem.getInstance();
 
@@ -80,10 +88,27 @@ public class InputSystem {
             InputEvent event = input.queue.remove();
 
             switch (event) {
+
                 case ResizeEvent resize -> application.resizeWindow(resize);
                 case KeyEvent key -> camera.handleKeyEvent(key);
-                case MouseEvent mouseButton -> camera.handleMouseButtonEvent(mouseButton);
-                case CursorEvent mouseMove -> camera.handleCursorEvent(mouseMove);
+
+                case MouseEvent mouseButton -> {
+
+                    if (mouseButton.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                        eventConverter.onMouseButton(application, mouseButton);
+                    }
+
+                    else {
+                        camera.handleMouseButtonEvent(mouseButton);
+                    }
+                }
+
+                case CursorEvent mouseMove -> {
+                    // this always passes cursor events to all subsystems
+                    eventConverter.onCursorMove(application, mouseMove);
+                    camera.handleCursorEvent(mouseMove);
+                }
+
                 default -> throw new RuntimeException("unhandled event type");
             }
 

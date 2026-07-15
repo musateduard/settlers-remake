@@ -18,6 +18,7 @@ public class Application {
     public Renderer renderer;
     public final float idealAspectRatio = 800.00f / 600.00f;
     public float currentAspectRatio = 800.00f / 600.00f;
+    public Point cursorPosition = new Point(0, 0);
     public boolean isRunning;
 
 
@@ -88,12 +89,10 @@ public class Application {
         float canvasCursorX = ((float) mouseX.get() - canvasX) / canvasCursorScale;
         float canvasCursorY = ((float) mouseY.get() - canvasY) / canvasCursorScale;
 
-        Point cursor = new Point(
-            (int) canvasCursorX,
-            (int) canvasCursorY
-        );
+        this.cursorPosition.x = (int) canvasCursorX;
+        this.cursorPosition.y = (int) canvasCursorY;
 
-        return cursor;
+        return this.cursorPosition;
     }
 
 

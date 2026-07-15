@@ -87,7 +87,6 @@ public abstract class AbstractLabels {
             String result = "LocaleSuffix [locale=%s, useCountry=%s]".formatted(this.locale, this.useCountry);
 			return result;
 		}
-
 	}
 
 	private Properties loadedLabels;

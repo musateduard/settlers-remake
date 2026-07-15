@@ -7,7 +7,6 @@ import jsettlers.common.ai.EPlayerType;
 import jsettlers.common.menu.IStartingGame;
 import jsettlers.common.player.ECivilisation;
 import jsettlers.common.resources.ResourceManager;
-import jsettlers.graphics.map.ETextDrawPosition;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.sound.SoundManager;
@@ -20,9 +19,7 @@ import jsettlers.main.JSettlersGame;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
 import org.example.gamemap.SettlersMap;
-import org.example.gamesimulation.JSettlersGameGLFW;
 import org.example.gamesimulation.SettlersGame;
-import org.example.gamesimulation.TaskExecutorGLFW;
 
 
 public class MainLauncher {
@@ -61,7 +58,7 @@ public class MainLauncher {
         long randomSeed = System.currentTimeMillis();
 
         PlayerSetting[] playerSettings = {
-            new PlayerSetting(true, EPlayerType.AI_HARD, ECivilisation.ROMAN, (byte) 0),
+            new PlayerSetting(true, EPlayerType.HUMAN, ECivilisation.ROMAN, (byte) 0),
             new PlayerSetting(true, EPlayerType.AI_HARD, ECivilisation.ASIAN, (byte) 1)
         };
 
@@ -106,6 +103,7 @@ public class MainLauncher {
         }
 
         MapContent mapContent = startingListener.getMap();
+        GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
 
         LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
         context.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
@@ -152,7 +150,7 @@ public class MainLauncher {
             lastFrameTime = currentFrameTime;
 
             // handle input
-            InputSystem.handleInput(application, camera);
+            InputSystem.handleInput(application, camera, eventConverter);
 
             // run game simulation
             // dispatch game events

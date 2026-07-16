@@ -1,7 +1,11 @@
 package org.example.mainwindow;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 
+import imgui.ImGui;
+import imgui.ImGuiIO;
+import imgui.flag.ImGuiMouseButton;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import jsettlers.graphics.map.MapContent;
 import org.joml.Matrix4f;
@@ -93,12 +97,53 @@ public class RenderingSystem {
     }
 
 
-    public static void drawUI(Application application, UserInterface userInterface) {
+    static class UserInterfaceRender {
 
-        // todo: move userInterface.renderUIStack to RenderingSystem
-        userInterface.renderUIStack(application);
+        static void drawDebugMenu(Application application, UserInterface userInterface) {
 
-        return;
+            Point cursor = application.getCursorPosition();
+            ImGuiIO input = ImGui.getIO();
+
+            // draw debug info
+            ImGui.begin("debug info");
+            ImGui.text("window pos %d %d".formatted((int) ImGui.getWindowPos().x, (int) ImGui.getWindowPos().y));
+            // ImGui.text("window width %d".formatted(screenWidth));
+            // ImGui.text("window height %d".formatted(screenHeight));
+            // ImGui.text("window cursor x %d".formatted(mouseX));
+            // ImGui.text("window cursor y %d".formatted(mouseY));
+            ImGui.text("canvas cursor x %d".formatted(cursor.x));
+            ImGui.text("canvas cursor y %d".formatted(cursor.y));
+            ImGui.text("LMB down %s".formatted(input.getMouseDown(ImGuiMouseButton.Left)));
+            // ImGui.text("input queue size %d", event_queue_size);
+            ImGui.end();
+
+            return;
+        }
+
+
+        static void drawUI(Application application, UserInterface userInterface) {
+
+            userInterface.glfwBackend.newFrame();
+            userInterface.openglBackend.newFrame();
+
+            ImGuiIO input = ImGui.getIO();
+            Point cursor = application.getCursorPosition();
+
+            // input.addMousePosEvent needs to be called here
+            // glfwBackend.newFrame also calls it and overwrites the correct coordinates from InputSystem
+            input.setDisplaySize(800.00f, 600.00f);
+            input.setDisplayFramebufferScale(1.00f, 1.00f);
+            input.addMousePosEvent((float) cursor.x, (float) cursor.y);
+
+            ImGui.newFrame();
+
+            UserInterfaceRender.drawDebugMenu(application, userInterface);
+
+            ImGui.render();
+            userInterface.openglBackend.renderDrawData(ImGui.getDrawData());
+
+            return;
+        }
     }
 
 
@@ -122,7 +167,7 @@ public class RenderingSystem {
         jsettlersMap.drawContent(context, application.renderer.canvas.width, application.renderer.canvas.height);
 
         // draw ui
-        // RenderingSystem.drawUI(application, userInterface);
+        UserInterfaceRender.drawUI(application, userInterface);
 
         Rectangle viewport = application.renderer.viewport;
 

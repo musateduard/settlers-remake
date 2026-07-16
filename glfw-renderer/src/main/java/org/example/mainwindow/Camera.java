@@ -42,6 +42,7 @@ public class Camera {
     }
 
 
+    /*
     public void handleMouseButtonEvent(MouseEvent event) {
 
         if (event.action() == GLFW.GLFW_PRESS) {
@@ -78,13 +79,11 @@ public class Camera {
 
     public void handleCursorEvent(CursorEvent event) {
 
-        /*
-        note:
-
-        glfw screen coordinates are calculated from top-left to bottom right
-        opengl coordinates are bottom-left to top-right
-        deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
-        */
+        // note:
+        //
+        // glfw screen coordinates are calculated from top-left to bottom right
+        // opengl coordinates are bottom-left to top-right
+        // deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
 
         float deltaX = (float) event.xpos() - this.prevCursorX;
         float deltaY = this.prevCursorY - (float) event.ypos();  // deltaY needs to be inverted so that moves up are positive
@@ -150,6 +149,7 @@ public class Camera {
 
         return;
     }
+    */
 
 
     public void updateCameraPosition(long frameDuration) {

@@ -35,8 +35,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 public class Renderer {
 
-    public final Rectangle viewport;
-    public final Framebuffer canvas;
     public final ShaderProgram screenShader;
     public final int viewportVBOId;
     public final int viewportVAOId;
@@ -45,10 +43,6 @@ public class Renderer {
 
 
     public Renderer(Window window) {
-
-        int width = 800;
-        int height = 600;
-        this.viewport = new Rectangle(0, 0, width, height);
 
         if (window.handle == NULL) {
             throw new RuntimeException("cannot initialize opengl context before creating glfw window");
@@ -68,7 +62,7 @@ public class Renderer {
 
             GL33C.glEnable(KHRDebug.GL_DEBUG_OUTPUT);
             GL33C.glEnable(KHRDebug.GL_DEBUG_OUTPUT_SYNCHRONOUS);
-            KHRDebug.glDebugMessageCallback(this::debugCallback, NULL);
+            KHRDebug.glDebugMessageCallback(Renderer::debugCallback, NULL);
             KHRDebug.glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, (IntBuffer) null, true);
         }
 
@@ -76,9 +70,6 @@ public class Renderer {
         if (openglError != GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
-
-        // create canvas framebuffer
-        this.canvas = new Framebuffer();
 
         // create screen shader program (projects canvas texture to screen)
         String vertexShaderSource = """
@@ -163,7 +154,7 @@ public class Renderer {
     }
 
 
-    public void debugCallback(int source, int type, int id, int severity, int length, long message, long userParam) {
+    public static void debugCallback(int source, int type, int id, int severity, int length, long message, long userParam) {
 
         String sourceString;
         switch (source) {
@@ -339,10 +330,8 @@ public class Renderer {
 
         return;
     }
-    */
 
 
-    /*
     public void renderGameFrame() throws Exception {
 
         // old project game initialization
@@ -447,10 +436,8 @@ public class Renderer {
 
         return;
     }
-    */
 
 
-    /*
     public void renderTestFrame() {
 
         // create vertex buffer

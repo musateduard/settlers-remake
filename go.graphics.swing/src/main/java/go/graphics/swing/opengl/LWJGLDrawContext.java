@@ -213,6 +213,7 @@ public class LWJGLDrawContext extends GLDrawContext {
 	}
 
 
+    @Override
 	public void updateViewMatrix(float offsetX, float offsetY, float offsetZ, float scaleX, float scaleY, float scaleZ) {
 
         this.finishFrame();

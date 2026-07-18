@@ -300,7 +300,7 @@ public class InputSystem {
                                 // Treat as point selection
                                 ShortPoint2D mapPosition = map.mapContext.getPositionOnScreen(
                                     cursorPosition.x,
-                                    (float) application.renderer.canvas.height - cursorPosition.y
+                                    (float) application.canvas.height - cursorPosition.y
                                 );
 
                                 if (map.mapContext.checkMapCoordinates(mapPosition.x, mapPosition.y)) {
@@ -311,7 +311,7 @@ public class InputSystem {
 
                             else {
 
-                                int canvasHeight = application.renderer.canvas.height;
+                                int canvasHeight = application.canvas.height;
 
                                 // Treat as area selection
                                 int startX = Math.min(userInterface.selectionStartPosition.x, cursorPosition.x);

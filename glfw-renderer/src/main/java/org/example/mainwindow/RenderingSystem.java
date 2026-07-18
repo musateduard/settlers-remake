@@ -60,11 +60,11 @@ public class RenderingSystem {
         modelMatrix.translate(50, 50, 0);
         modelMatrix.scale(100, 100, 1);
 
-        modelMatrix.get(application.renderer.canvas.floatBuffer);
-        GL33C.glUniformMatrix4fv(application.renderer.canvas.modelMatrixAddress, false, application.renderer.canvas.floatBuffer);
+        modelMatrix.get(application.canvas.floatBuffer);
+        GL33C.glUniformMatrix4fv(application.canvas.modelMatrixAddress, false, application.canvas.floatBuffer);
 
         // set color uniform
-        GL33C.glUniform4f(application.renderer.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
+        GL33C.glUniform4f(application.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
 
         // bind vao and vbo
         GL33C.glBindVertexArray(vaoId);
@@ -85,16 +85,16 @@ public class RenderingSystem {
     public static void drawGameScene(long frameDuration, Application application, Camera camera, LWJGLDrawContext context, MapContent map) {
 
         // update projection matrix
-        application.renderer.canvas.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
+        application.canvas.updateProjectionMatrix(application.canvas.width, application.canvas.height);
 
         // update view matrix
         camera.updateCameraPosition(frameDuration);
-        application.renderer.canvas.updateViewMatrix(camera);
+        application.canvas.updateViewMatrix(camera);
 
         // render game scene
         // RenderingSystem.renderMapTerrain(application, gameMap);
         map.mapContext.getScreen().setScreenCenter(-camera.offsetX, -camera.offsetY);
-        map.drawContent(context, application.renderer.canvas.width, application.renderer.canvas.height);
+        map.drawContent(context, application.canvas.width, application.canvas.height);
 
         return;
     }
@@ -189,7 +189,7 @@ public class RenderingSystem {
         MapContent jsettlersMap) {
 
         // activate canvas framebuffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.renderer.canvas.framebufferId);
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.canvas.framebufferId);
         GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         GL33C.glViewport(0, 0, 800, 600);
@@ -200,7 +200,7 @@ public class RenderingSystem {
         // draw ui
         UserInterfaceRender.drawUI(application, userInterface);
 
-        Rectangle viewport = application.renderer.viewport;
+        Rectangle viewport = application.viewport;
 
         // activate screen buffer
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -212,7 +212,7 @@ public class RenderingSystem {
         GL33C.glDisable(GL_DEPTH_TEST);
         GL33C.glUseProgram(application.renderer.screenShader.id);
         GL33C.glActiveTexture(GL_TEXTURE0);
-        GL33C.glBindTexture(GL_TEXTURE_2D, application.renderer.canvas.textureId);
+        GL33C.glBindTexture(GL_TEXTURE_2D, application.canvas.textureId);
         GL33C.glBindVertexArray(application.renderer.viewportVAOId);
         GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         GL33C.glEnable(GL_DEPTH_TEST);

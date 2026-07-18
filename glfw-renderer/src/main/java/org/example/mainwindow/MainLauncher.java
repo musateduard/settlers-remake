@@ -106,7 +106,7 @@ public class MainLauncher {
         GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
 
         LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
-        context.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
+        context.updateProjectionMatrix(application.canvas.width, application.canvas.height);
 
         // start game thread
         SettlersGame gameSimulation = new SettlersGame(newGameMap);

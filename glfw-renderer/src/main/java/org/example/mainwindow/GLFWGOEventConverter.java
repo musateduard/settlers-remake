@@ -48,7 +48,7 @@ public class GLFWGOEventConverter extends AbstractEventConverter {
         Point canvasCursor = application.getCursorPosition();
         UIPoint position = new UIPoint(
             canvasCursor.x,
-            application.renderer.canvas.height - canvasCursor.y
+            application.canvas.height - canvasCursor.y
         );
 
         if (event.action() == GLFW.GLFW_PRESS) {
@@ -74,7 +74,7 @@ public class GLFWGOEventConverter extends AbstractEventConverter {
         Point canvasCursor = application.getCursorPosition();
         UIPoint position = new UIPoint(
             canvasCursor.x,
-            application.renderer.canvas.height - canvasCursor.y
+            application.canvas.height - canvasCursor.y
         );
 
         this.updateDrawPosition(position);

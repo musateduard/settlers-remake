@@ -1,6 +1,7 @@
 package org.example.mainwindow;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.nio.DoubleBuffer;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.GLFW;
@@ -16,6 +17,8 @@ public class Application {
 
     public final Window window;
     public final Renderer renderer;
+    public final Framebuffer canvas;
+    public final Rectangle viewport;
     public final float idealAspectRatio = 800.00f / 600.00f;
     public float currentAspectRatio = 800.00f / 600.00f;
     public final Point cursorPosition = new Point(0, 0);
@@ -31,8 +34,13 @@ public class Application {
             throw new RuntimeException("Failed to initialize GLFW.");
         }
 
+        int width = 800;
+        int height = 600;
+        this.viewport = new Rectangle(0, 0, width, height);
+
         this.window = new Window();
         this.renderer = new Renderer(this.window);
+        this.canvas = new Framebuffer();
         this.isRunning = true;
 
         return;
@@ -56,10 +64,10 @@ public class Application {
         float viewportX = isWideScreen ? ((float) this.window.width - viewportWidth) / 2 : 0;
         float viewportY = isWideScreen ? 0 : ((float) this.window.height - viewportHeight) / 2;
 
-        this.renderer.viewport.width = (int) viewportWidth;
-        this.renderer.viewport.height = (int) viewportHeight;
-        this.renderer.viewport.x = (int) viewportX;
-        this.renderer.viewport.y = (int) viewportY;
+        this.viewport.width = (int) viewportWidth;
+        this.viewport.height = (int) viewportHeight;
+        this.viewport.x = (int) viewportX;
+        this.viewport.y = (int) viewportY;
 
         return;
     }
@@ -106,9 +114,9 @@ public class Application {
 
         // renderer cleanup
         // todo: delete viewport vbo and vao
-        GL33C.glDeleteFramebuffers(this.renderer.canvas.framebufferId);
-        GL33C.glDeleteTextures(this.renderer.canvas.textureId);
-        GL33C.glDeleteRenderbuffers(this.renderer.canvas.depthBufferId);
+        GL33C.glDeleteFramebuffers(this.canvas.framebufferId);
+        GL33C.glDeleteTextures(this.canvas.textureId);
+        GL33C.glDeleteRenderbuffers(this.canvas.depthBufferId);
 
         // window cleanup
         Callbacks.glfwFreeCallbacks(this.window.handle);

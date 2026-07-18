@@ -132,23 +132,25 @@ public class Framebuffer {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
+        this.updateProjectionMatrix(this.width, this.height);
+
         return;
     }
 
 
-    public void updateProjectionMatrix(int screenWidth, int screenHeight) {
+    public void updateProjectionMatrix(int newWidth, int newHeight) {
 
         // update projection matrix on the canvas-space shader
         this.shader.activate();
 
         this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(0, screenWidth, 0, screenHeight, -1, 1);
+        this.projectionMatrix.ortho(0, newWidth, 0, newHeight, -1, 1);
         this.projectionMatrix.get(this.floatBuffer);
 
         GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
 
         // update viewport size and position
-        GL33C.glViewport(0, 0, screenWidth, screenHeight);
+        GL33C.glViewport(0, 0, newWidth, newHeight);
 
         return;
     }

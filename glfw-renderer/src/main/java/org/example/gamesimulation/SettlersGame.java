@@ -3,30 +3,30 @@ package org.example.gamesimulation;
 import org.example.gamemap.SettlersMap;
 
 
-class Task {
-
-    public Task() {
-        return;
-    }
-
-
-    public void execute() {
-        return;
-    }
-}
-
-
-class TaskPacket {
-
-    public TaskPacket() {
-        // task packet contains all tasks
-        // do i need separate task packet? can i just store tasks in list and append them?
-        return;
-    }
-}
-
-
 public class SettlersGame implements Runnable {
+
+    static class Task {
+
+        public Task() {
+            return;
+        }
+
+
+        public void execute() {
+            return;
+        }
+    }
+
+
+    static class TaskPacket {
+
+        public TaskPacket() {
+            // task packet contains all tasks
+            // do i need separate task packet? can i just store tasks in list and append them?
+            return;
+        }
+    }
+
 
     public static final int LOCKSTEP_DURATION_MS = 100;
     public static final int TICK_DURATION_MS = 50;

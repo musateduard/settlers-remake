@@ -850,12 +850,12 @@ public class Background implements IGraphicsBackgroundListener {
 	};
 	private static final ImageLink ALTERNATIVE_BACKGROUND = ImageLink.fromName("background");
 
-	private final int bufferWidth; // in map points.
-	private final int bufferHeight; // in map points.
+	public final int bufferWidth; // in map points.
+	public final int bufferHeight; // in map points.
 
 	private static Map<Boolean, TextureHandle> textures = new HashMap<>();
 
-	private BackgroundDrawHandle backgroundHandle = null;
+	public BackgroundDrawHandle backgroundHandle = null;
 
 	private final boolean hasdgp;
 	private final IDirectGridProvider dgp;
@@ -936,7 +936,7 @@ public class Background implements IGraphicsBackgroundListener {
 
 	}
 
-	private static TextureHandle getTextureData(GLDrawContext context) {
+	public static TextureHandle getTextureData(GLDrawContext context) {
 		return getTextureData(context, DrawConstants.FORCE_ORIGINAL);
 	}
 
@@ -1194,7 +1194,7 @@ public class Background implements IGraphicsBackgroundListener {
     }
 
 
-	private void generateGeometry(MapDrawContext context) throws IllegalBufferException {
+	public void generateGeometry(MapDrawContext context) throws IllegalBufferException {
 
 		int vertices = this.bufferWidth * this.bufferHeight * 3 * 2;
         this.backgroundHandle = context.getGl().createBackgroundDrawCall(vertices, Background.getTextureData(context.getGl()));
@@ -1222,7 +1222,7 @@ public class Background implements IGraphicsBackgroundListener {
 	private final ByteBuffer vertexBfr;
 	private final ThreadLocal<ByteBuffer> localVertexBfr;
 
-	private void updateGeometry(MapDrawContext context, MapRectangle screen) {
+	public void updateGeometry(MapDrawContext context, MapRectangle screen) {
 		fowEnabled = hasdgp && dgp.isFoWEnabled();
 
 		try {

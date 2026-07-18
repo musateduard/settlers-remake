@@ -3,7 +3,6 @@ package org.example.mainwindow;
 import java.io.File;
 import java.util.Arrays;
 import java.nio.IntBuffer;
-import java.awt.Rectangle;
 
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.images.OriginalImageLink;
@@ -13,13 +12,11 @@ import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.graphics.sound.SoundManager;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
-import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.KHRDebug;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GLCapabilities;
-import org.example.gamemap.SettlersMap;
 
 import static org.lwjgl.opengl.GL33C.GL_FLOAT;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
@@ -40,6 +37,9 @@ public class Renderer {
     public final int viewportVAOId;
     public final GLCapabilities capabilities;
     public final String glslVersion;
+    public final String supportedVersion;
+    public final String rendererName;
+    public final String vendorName;
 
 
     public Renderer(Window window) {
@@ -51,6 +51,9 @@ public class Renderer {
         // init gl capabilities for current context
         this.capabilities = GL.createCapabilities();
         this.glslVersion = "#version 330";
+        this.supportedVersion = GL33C.glGetString(GL33C.GL_VERSION);
+        this.rendererName = GL33C.glGetString(GL33C.GL_RENDERER);
+        this.vendorName = GL33C.glGetString(GL33C.GL_VENDOR);
 
         // enable debug output
         int[] flags = new int[32];

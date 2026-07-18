@@ -177,7 +177,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	 */
 	private static final int NOTIFY_ATTACKED_SOUND_ID = 80;
 
-	private final IGraphicsGrid map;
+	public final IGraphicsGrid map;
 	private final IMapObject[] objectsGrid;
 	private final IGraphicsMovable[] movableGrid;
 	private final BitSet borderGrid;
@@ -186,7 +186,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private final short width, height;
 	private final boolean isVisibleGridAvailable;
 
-	private final Background background;
+	public final Background background;
 
 	public final MapDrawContext mapContext;
 
@@ -197,7 +197,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	 */
 	private final MapInterfaceConnector connector;
 
-	private final FramerateComputer framerate = new FramerateComputer();
+	public final FramerateComputer framerate = new FramerateComputer();
 
 	private final Messenger messenger;
 	private final SoundManager soundmanager;
@@ -240,7 +240,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private UIPoint currentSelectionAreaStart;
 	private IInGamePlayer localPlayer;
 
-	private final IntervalTimeRateCalculator gameSpeedCalculator;
+	public final IntervalTimeRateCalculator gameSpeedCalculator;
 
 	private long getGameTimeNS() {
 		return gameTimeProvider.getGameTime()*1000L*1000L;
@@ -314,7 +314,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 
-	private void resizeTo(int newWindowWidth, int newWindowHeight) {
+	public void resizeTo(int newWindowWidth, int newWindowHeight) {
 
 		this.windowWidth = newWindowWidth;
 		this.windowHeight = newWindowHeight;
@@ -335,6 +335,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	public void drawContent(GLDrawContext glContext, int newWidth, int newHeight) {
 
 		try {
+            /*
 			this.framerate.nextFrame();
 			this.gameSpeedCalculator.tick();
 
@@ -355,10 +356,11 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			this.objectDrawer.nextFrame();
 
 			this.mapContext.begin(glContext);
+            */
 			long startTime = System.nanoTime();
 
 			FloatRectangle screen = this.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            this.drawMapTerrain(screen);
+            // this.drawMapTerrain(screen);
 			long backgroundDuration = System.nanoTime() - startTime;
 
 			startTime = System.nanoTime();
@@ -392,9 +394,11 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
             this.drawTooltip(glContext);
 			long uiTime = System.nanoTime() - startTime;
 
+            /*
 			if (CommonConstants.ENABLE_GRAPHICS_TIMES_DEBUG_OUTPUT) {
 				System.out.println("Background: " + backgroundDuration / 1000 + "µs, Foreground: " + foregroundDuration / 1000 + "µs, UI: " + uiTime / 1000 + "µs");
 			}
+            */
 		}
 
         catch (Throwable exception) {
@@ -543,7 +547,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 
-	private void adaptScreenSize() {
+	public void adaptScreenSize() {
 
 		FloatRectangle newScreen = this.mapContext.getScreen().getPosition();
 

@@ -3,15 +3,21 @@ package org.example.mainwindow;
 import java.awt.Point;
 import java.awt.Rectangle;
 
-import imgui.ImDrawList;
 import imgui.ImGui;
 import imgui.ImGuiIO;
-import imgui.flag.ImGuiMouseButton;
-import go.graphics.swing.opengl.LWJGLDrawContext;
-import jsettlers.graphics.map.MapContent;
+import imgui.ImDrawList;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
+import go.graphics.GLDrawContext;
+import go.graphics.BackgroundDrawHandle;
+import go.graphics.IllegalBufferException;
+import go.graphics.swing.opengl.LWJGLDrawContext;
+import jsettlers.common.map.IDirectGridProvider;
+import jsettlers.common.map.shapes.MapRectangle;
+import jsettlers.common.position.FloatRectangle;
+import jsettlers.graphics.map.draw.Background;
+import jsettlers.graphics.map.MapContent;
 import org.example.gamemap.SettlersMap;
 
 import static org.lwjgl.opengl.GL11C.GL_FLOAT;
@@ -29,78 +35,232 @@ import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
 
 public class RenderingSystem {
 
-    public static void renderMapTerrain(Application application, SettlersMap gameMap) {
+    static class GameRenderer {
 
-        // todo: move this method to RenderingSystem
+        public static void renderTestScene(Application application, SettlersMap gameMap) {
 
-        // get map terrain
-        // calculate visible area
-        // render visible terrain
+            // todo: move this method to RenderingSystem
 
-        // note: this method should only scale its model matrix
-        // note: projection and view matrixes are only modified by screen resize and camera move
+            // get map terrain
+            // calculate visible area
+            // render visible terrain
 
-        // create vertex buffer
-        float[] mapVertexBuffer = {
-            0.00f, 0.00f, 0.00f,  // bottom left
-            1.00f, 0.00f, 0.00f,  // bottom right
-            1.00f, 1.00f, 0.00f,  // top right
-            0.00f, 1.00f, 0.00f,  // top left
-        };
+            // note: this method should only scale its model matrix
+            // note: projection and view matrixes are only modified by screen resize and camera move
 
-        // create vao vbo
-        // note: vao vbo need to be created during construction and only referenced during rendering
-        int vboId = application.renderer.createVBO(mapVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-        int vaoId = application.renderer.createVAO(vboId, GL_ARRAY_BUFFER, 0, 3, GL_FLOAT, false, 0, 0);
+            // create vertex buffer
+            float[] mapVertexBuffer = {
+                0.00f, 0.00f, 0.00f,  // bottom left
+                1.00f, 0.00f, 0.00f,  // bottom right
+                1.00f, 1.00f, 0.00f,  // top right
+                0.00f, 1.00f, 0.00f,  // top left
+            };
 
-        // todo: add modelMatrix to gameMap object
+            // create vao vbo
+            // note: vao vbo need to be created during construction and only referenced during rendering
+            int vboId = application.renderer.createVBO(mapVertexBuffer, GL_ARRAY_BUFFER, GL_STATIC_DRAW);
+            int vaoId = application.renderer.createVAO(vboId, GL_ARRAY_BUFFER, 0, 3, GL_FLOAT, false, 0, 0);
 
-        // upload model matrix
-        Matrix4f modelMatrix = new Matrix4f();
-        modelMatrix.translate(50, 50, 0);
-        modelMatrix.scale(100, 100, 1);
+            // todo: add modelMatrix to gameMap object
 
-        modelMatrix.get(application.canvas.floatBuffer);
-        GL33C.glUniformMatrix4fv(application.canvas.modelMatrixAddress, false, application.canvas.floatBuffer);
+            // upload model matrix
+            Matrix4f modelMatrix = new Matrix4f();
+            modelMatrix.translate(50, 50, 0);
+            modelMatrix.scale(100, 100, 1);
 
-        // set color uniform
-        GL33C.glUniform4f(application.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
+            modelMatrix.get(application.canvas.floatBuffer);
+            GL33C.glUniformMatrix4fv(application.canvas.modelMatrixAddress, false, application.canvas.floatBuffer);
 
-        // bind vao and vbo
-        GL33C.glBindVertexArray(vaoId);
-        GL33C.glEnableVertexAttribArray(0);
+            // set color uniform
+            GL33C.glUniform4f(application.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
 
-        // draw buffer
-        GL33C.glDrawArrays(GL33C.GL_TRIANGLE_FAN, 0, 4);
+            // bind vao and vbo
+            GL33C.glBindVertexArray(vaoId);
+            GL33C.glEnableVertexAttribArray(0);
 
-        // cleanup
-        GL33C.glDisableVertexAttribArray(0);
-        GL33C.glBindVertexArray(0);
-        GL33C.glUseProgram(0);
+            // draw buffer
+            GL33C.glDrawArrays(GL33C.GL_TRIANGLE_FAN, 0, 4);
 
-        return;
+            // cleanup
+            GL33C.glDisableVertexAttribArray(0);
+            GL33C.glBindVertexArray(0);
+            GL33C.glUseProgram(0);
+
+            return;
+        }
+
+
+        public static void frameSetupLegacy(Application application, LWJGLDrawContext context, MapContent map) {
+
+            map.framerate.nextFrame();
+            map.gameSpeedCalculator.tick();
+            map.objectDrawer.setVisibleGrid(((IDirectGridProvider) map.map).getVisibleStatusArray());
+            map.resizeTo(application.canvas.width, application.canvas.height);
+
+            map.adaptScreenSize();  // adaptScreenSize fires a ScreenChangeAction on screen resize
+            map.objectDrawer.nextFrame();
+            map.mapContext.begin(context);
+
+            return;
+        }
+
+
+        public static void renderLandscapeData(BackgroundDrawHandle drawHandle, LWJGLDrawContext context) {
+
+            // 1) Bind the landscape texture to texture units 0 and 1.
+            //    Legacy drawBackground always bound the same texture twice.
+            int textureId = 0;
+            if (drawHandle.texture != null) {
+                textureId = drawHandle.texture.getTextureId();
+            }
+
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, textureId);
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, textureId);
+
+            // 2) Activate the background shader created by LWJGLDrawContext's constructor.
+            GL33C.glUseProgram(context.getBackgroundShaderId());
+
+            // 3) Bind geometry.
+            // Normal path: VAO already has attrib layout from createBackgroundDrawCall.
+            // Fallback path: no VAO, so set attrib pointers every draw.
+            int vaoId = drawHandle.getVertexArrayId();
+            if (vaoId != -1) {
+                GL33C.glBindVertexArray(vaoId);
+            }
+
+            else {
+                GL33C.glEnableVertexAttribArray(0);
+                GL33C.glEnableVertexAttribArray(1);
+                GL33C.glEnableVertexAttribArray(2);
+                GL33C.glDisableVertexAttribArray(3);
+
+                int vboId = 0;
+                if (drawHandle.vertices != null) {
+                    vboId = drawHandle.vertices.getBufferId();
+                }
+
+                GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vboId);
+                // Vertex layout: x, y, height, u, v, color  (6 floats)
+                GL33C.glVertexAttribPointer(0, 3, GL33C.GL_FLOAT, false, 6 * 4, 0);
+                GL33C.glVertexAttribPointer(1, 2, GL33C.GL_FLOAT, false, 6 * 4, 3 * 4);
+                GL33C.glVertexAttribPointer(2, 1, GL33C.GL_FLOAT, false, 6 * 4, 5 * 4);
+            }
+
+            // 4) Convert interleaved [first, count, first, count, ...] into the two
+            // arrays glMultiDrawArrays expects.
+            int lineCount = drawHandle.visibleLineCount;
+            int[] lineVertexOffsetList = new int[lineCount];
+            int[] lineVertexCount = new int[lineCount];
+
+            for (int index = 0; index < lineCount; index++) {
+                lineVertexOffsetList[index] = drawHandle.visibleLineObjectList[index * 2];
+                lineVertexCount[index] = drawHandle.visibleLineObjectList[index * 2 + 1];
+            }
+
+            // 5) Draw all visible terrain lines in one multi-draw call.
+            GL33C.glMultiDrawArrays(GL33C.GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
+            context.invalidateDrawState();
+            return;
+        }
+
+
+        public static void drawLandscape(Application application, LWJGLDrawContext context, MapContent map) {
+
+            FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            // map.background.drawMapContent(map.mapContext, screen);
+            Background background = map.background;
+            GLDrawContext glContext = map.mapContext.getGl();
+
+            // todo: migrate Background.generateGeometry and Background.updateGeometry to RenderingSystem
+
+            try {
+                if (background.backgroundHandle == null || background.backgroundHandle.isValid() == false) {
+                    background.generateGeometry(map.mapContext);
+                    glContext.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
+                }
+            }
+
+            catch (IllegalBufferException exception) {
+                exception.printStackTrace();
+            }
+
+            MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
+            background.updateGeometry(map.mapContext, visibleMapSection);
+            background.backgroundHandle.texture = Background.getTextureData(glContext);
+            background.backgroundHandle.visibleLineCount = visibleMapSection.getLines();
+            background.backgroundHandle.visibleLineObjectList = new int[background.backgroundHandle.visibleLineCount * 2];
+
+            for (int index = 0; index < background.backgroundHandle.visibleLineCount; index++) {
+
+                int startX = visibleMapSection.getLineStartX(index);
+                if (startX < 0) {
+                    startX = 0;
+                }
+
+                int endX = visibleMapSection.getLineEndX(index);
+                if (endX >= background.bufferWidth) {
+                    endX = background.bufferWidth;
+                }
+
+                int lineY = visibleMapSection.getLineY(index);
+                if (lineY < 0 || lineY > background.bufferHeight) {
+                    continue;
+                }
+
+                background.backgroundHandle.visibleLineObjectList[index * 2] = (background.bufferWidth * lineY + startX) * 2 * 3;
+                background.backgroundHandle.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
+                continue;
+            }
+
+            // glContext.drawBackground(background.backgroundHandle);
+            GameRenderer.renderLandscapeData(background.backgroundHandle, context);
+            return;
+        }
+
+
+        public static void frameTeardownLegacy(Application application, LWJGLDrawContext context, MapContent map) {
+            map.drawContent(context, application.canvas.width, application.canvas.height);
+            return;
+        }
+
+
+        public static void drawGameScene(long frameDuration, Application application, Camera camera, LWJGLDrawContext context, MapContent map) {
+
+            /*
+            drawGameScene needs to follow the following structure
+            - frame setup? (do we even need frame setup)
+            - set camera position
+            - draw terrain
+            - draw static sprites
+            - draw animated sprites
+            - draw settlers
+            - frame teardown? (legacy)
+            */
+
+            // update view matrix
+            camera.updateCameraPosition(frameDuration);
+            application.canvas.updateViewMatrix(camera);  // view matrix should only change when camera moves
+
+            // render game scene
+            map.mapContext.getScreen().setScreenCenter(-camera.offsetX, -camera.offsetY);
+
+            GameRenderer.frameSetupLegacy(application, context, map);
+
+            GameRenderer.drawLandscape(application, context, map);
+            // draw static sprites
+            // draw animated sprites
+            // draw settlers units
+
+            GameRenderer.frameTeardownLegacy(application, context, map);
+
+            return;
+        }
     }
 
 
-    public static void drawGameScene(long frameDuration, Application application, Camera camera, LWJGLDrawContext context, MapContent map) {
-
-        // update projection matrix
-        application.canvas.updateProjectionMatrix(application.canvas.width, application.canvas.height);
-
-        // update view matrix
-        camera.updateCameraPosition(frameDuration);
-        application.canvas.updateViewMatrix(camera);
-
-        // render game scene
-        // RenderingSystem.renderMapTerrain(application, gameMap);
-        map.mapContext.getScreen().setScreenCenter(-camera.offsetX, -camera.offsetY);
-        map.drawContent(context, application.canvas.width, application.canvas.height);
-
-        return;
-    }
-
-
-    static class UserInterfaceRender {
+    static class UserInterfaceRenderer {
 
         static void drawForeground(Application application, UserInterface userInterface) {
 
@@ -168,8 +328,8 @@ public class RenderingSystem {
 
             ImGui.newFrame();
 
-            UserInterfaceRender.drawDebugMenu(application, userInterface);
-            UserInterfaceRender.drawForeground(application, userInterface);
+            UserInterfaceRenderer.drawDebugMenu(application, userInterface);
+            UserInterfaceRenderer.drawForeground(application, userInterface);
 
             ImGui.render();
             userInterface.openglBackend.renderDrawData(ImGui.getDrawData());
@@ -184,7 +344,7 @@ public class RenderingSystem {
         Application application,
         UserInterface userInterface,
         Camera camera,
-        SettlersMap gameMap,
+        // SettlersMap gameMap,
         LWJGLDrawContext context,
         MapContent jsettlersMap) {
 
@@ -194,11 +354,8 @@ public class RenderingSystem {
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         GL33C.glViewport(0, 0, 800, 600);
 
-        // draw game scene
-        RenderingSystem.drawGameScene(frameDuration, application, camera, context, jsettlersMap);
-
-        // draw ui
-        UserInterfaceRender.drawUI(application, userInterface);
+        GameRenderer.drawGameScene(frameDuration, application, camera, context, jsettlersMap);
+        UserInterfaceRenderer.drawUI(application, userInterface);
 
         Rectangle viewport = application.viewport;
 

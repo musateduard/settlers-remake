@@ -313,7 +313,7 @@ public class LWJGLDrawContext extends GLDrawContext {
         this.setObjectLabel(KHRDebug.GL_BUFFER, vertexBuffer.getBufferId(), name + "-vertices");
 
 		if (data != null) {
-			glBufferData(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, data, GL_DYNAMIC_DRAW);
 		}
 
         else {
@@ -591,6 +591,20 @@ public class LWJGLDrawContext extends GLDrawContext {
         glDrawArrays(primitive, call.offset, vertexCount);
 
         return;
+    }
+
+
+    public int getBackgroundShaderId() {
+        return this.prog_background.program;
+    }
+
+
+    public void invalidateDrawState() {
+        this.lastProgram = null;
+        this.lastGeometry = null;
+        this.lastTextures = new TextureHandle[2];
+        this.lastFormat = -1;
+        this.vertArrays = new boolean[4];
     }
 
 

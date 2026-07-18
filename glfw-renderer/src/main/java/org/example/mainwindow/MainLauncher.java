@@ -46,7 +46,7 @@ public class MainLauncher {
         Camera camera = new Camera();
 
         // create map instance
-        SettlersMap newGameMap = new SettlersMap();  // deprecated
+        // SettlersMap newGameMap = new SettlersMap();  // deprecated
 
         ResourceManager.setProvider(new SwingResourceProvider());
         SettingsManager.setup();
@@ -103,15 +103,16 @@ public class MainLauncher {
         }
 
         MapContent mapContent = startingListener.getMap();
-        GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
+        camera.offsetX = -mapContent.mapContext.getScreen().getScreenCenterX();
+        camera.offsetY = -mapContent.mapContext.getScreen().getScreenCenterY();
 
+        GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
         LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
         context.updateProjectionMatrix(application.canvas.width, application.canvas.height);
 
         // start game thread
-        SettlersGame gameSimulation = new SettlersGame(newGameMap);
-        Thread gameThread = new Thread(gameSimulation, "GameSimulationThread");
-
+        // SettlersGame gameSimulation = new SettlersGame(newGameMap);
+        // Thread gameThread = new Thread(gameSimulation, "GameSimulationThread");
         // gameThread.start();
 
         // start rendering
@@ -155,14 +156,14 @@ public class MainLauncher {
             // run game simulation
             // dispatch game events
 
-            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, newGameMap, context, mapContent);
+            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, context, mapContent);
 
             continue;
         }
 
-        newGameMap.gameOver = true;
-        gameSimulation.running = false;
-        gameThread.join();
+        // newGameMap.gameOver = true;
+        // gameSimulation.running = false;
+        // gameThread.join();
 
         System.out.printf("closing game\n");
 

@@ -15,7 +15,6 @@ public class Camera {
     public float offsetY;
     public float prevCursorX;
     public float prevCursorY;
-    public boolean lmbPressed;
     public boolean rmbPressed;
     public boolean mmbPressed;
     public boolean keyUpPressed;
@@ -30,7 +29,6 @@ public class Camera {
         this.offsetY = 0;
         this.prevCursorX = 0;
         this.prevCursorY = 0;
-        this.lmbPressed = false;
         this.rmbPressed = false;
         this.mmbPressed = false;
         this.keyUpPressed = false;
@@ -180,7 +178,7 @@ public class Camera {
         if (vectorX != 0 || vectorY != 0) {
 
             final float frameDurationMs = frameDuration / 1_000_000.00f;
-            final float cameraSpeed = 0.60f;  // units per second
+            final float cameraSpeed = 1.00f;  // units per second
 
             float vectorMagnitude = (float) Math.sqrt(vectorX * vectorX + vectorY * vectorY);
 

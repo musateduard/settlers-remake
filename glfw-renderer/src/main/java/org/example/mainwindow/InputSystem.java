@@ -159,22 +159,22 @@ public class InputSystem {
             switch (event.key()) {
 
                 case GLFW.GLFW_KEY_UP -> {
-                    camera.keyUpPressed = event.action() == GLFW.GLFW_PRESS;
+                    camera.keyUpPressed = event.action() != GLFW.GLFW_RELEASE;
                     return true;
                 }
 
                 case GLFW.GLFW_KEY_DOWN -> {
-                    camera.keyDownPressed = event.action() == GLFW.GLFW_PRESS;
+                    camera.keyDownPressed = event.action() != GLFW.GLFW_RELEASE;
                     return true;
                 }
 
                 case GLFW.GLFW_KEY_LEFT -> {
-                    camera.keyLeftPressed = event.action() == GLFW.GLFW_PRESS;
+                    camera.keyLeftPressed = event.action() != GLFW.GLFW_RELEASE;
                     return true;
                 }
 
                 case GLFW.GLFW_KEY_RIGHT -> {
-                    camera.keyRightPressed = event.action() == GLFW.GLFW_PRESS;
+                    camera.keyRightPressed = event.action() != GLFW.GLFW_RELEASE;
                     return true;
                 }
 
@@ -189,14 +189,9 @@ public class InputSystem {
 
             switch (event.button()) {
 
-                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> {
-                    camera.lmbPressed = event.action() == GLFW.GLFW_PRESS;
-                    return false;  // return false for testing; don't return false unconditionally
-                }
-
                 case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> {
                     camera.rmbPressed = event.action() == GLFW.GLFW_PRESS;
-                    return false;
+                    return false;  // return false for testing; don't return false unconditionally
                 }
 
                 case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> {

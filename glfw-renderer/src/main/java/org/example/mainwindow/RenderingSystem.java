@@ -82,7 +82,7 @@ public class RenderingSystem {
     }
 
 
-    public static void drawGameScene(long frameDuration, Application application, Camera camera, SettlersMap gameMap) {
+    public static void drawGameScene(long frameDuration, Application application, Camera camera, LWJGLDrawContext context, MapContent map) {
 
         // update projection matrix
         application.renderer.canvas.updateProjectionMatrix(application.renderer.canvas.width, application.renderer.canvas.height);
@@ -92,7 +92,9 @@ public class RenderingSystem {
         application.renderer.canvas.updateViewMatrix(camera);
 
         // render game scene
-        RenderingSystem.renderMapTerrain(application, gameMap);
+        // RenderingSystem.renderMapTerrain(application, gameMap);
+        map.mapContext.getScreen().setScreenCenter(-camera.offsetX, -camera.offsetY);
+        map.drawContent(context, application.renderer.canvas.width, application.renderer.canvas.height);
 
         return;
     }
@@ -193,8 +195,7 @@ public class RenderingSystem {
         GL33C.glViewport(0, 0, 800, 600);
 
         // draw game scene
-        // RenderingSystem.drawGameScene(frameDuration, application, camera, gameMap);
-        jsettlersMap.drawContent(context, application.renderer.canvas.width, application.renderer.canvas.height);
+        RenderingSystem.drawGameScene(frameDuration, application, camera, context, jsettlersMap);
 
         // draw ui
         UserInterfaceRender.drawUI(application, userInterface);

@@ -14,11 +14,11 @@ import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 
 public class Application {
 
-    public Window window;
-    public Renderer renderer;
+    public final Window window;
+    public final Renderer renderer;
     public final float idealAspectRatio = 800.00f / 600.00f;
     public float currentAspectRatio = 800.00f / 600.00f;
-    public Point cursorPosition = new Point(0, 0);
+    public final Point cursorPosition = new Point(0, 0);
     public boolean isRunning;
 
 

@@ -3,6 +3,7 @@ package org.example.mainwindow;
 import java.awt.Point;
 import java.awt.Rectangle;
 
+import imgui.ImDrawList;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiMouseButton;
@@ -99,6 +100,32 @@ public class RenderingSystem {
 
     static class UserInterfaceRender {
 
+        static void drawForeground(Application application, UserInterface userInterface) {
+
+            if (userInterface.isLmbPressed == false) {
+                return;
+            }
+
+            Point currentPos = application.getCursorPosition();
+            ImDrawList drawList = ImGui.getForegroundDrawList();
+            int deltaX = currentPos.x - userInterface.selectionStartPosition.x;
+            int deltaY = currentPos.y - userInterface.selectionStartPosition.y;
+
+            if ((deltaX * deltaX + deltaY * deltaY) >= 50) {
+
+                float startX = userInterface.selectionStartPosition.x;
+                float startY = userInterface.selectionStartPosition.y;
+                float endX = currentPos.x;
+                float endY = currentPos.y;
+                int outlineColor = ImGui.getColorU32(1.00f, 1.00f, 1.00f, 1.00f);
+
+                drawList.addRect(startX, startY, endX, endY, outlineColor, 0.00f, 0, 1.00f);
+            }
+
+            return;
+        }
+
+
         static void drawDebugMenu(Application application, UserInterface userInterface) {
 
             Point cursor = application.getCursorPosition();
@@ -111,10 +138,12 @@ public class RenderingSystem {
             // ImGui.text("window height %d".formatted(screenHeight));
             // ImGui.text("window cursor x %d".formatted(mouseX));
             // ImGui.text("window cursor y %d".formatted(mouseY));
+            ImGui.text("LMB down %s".formatted(GLFW.glfwGetMouseButton(application.window.handle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS));
             ImGui.text("canvas cursor x %d".formatted(cursor.x));
             ImGui.text("canvas cursor y %d".formatted(cursor.y));
-            ImGui.text("LMB down %s".formatted(input.getMouseDown(ImGuiMouseButton.Left)));
-            // ImGui.text("input queue size %d", event_queue_size);
+            ImGui.text("start selection x %d".formatted(userInterface.selectionStartPosition.x));
+            ImGui.text("start selection y %d".formatted(userInterface.selectionStartPosition.y));
+            // ImGui.text("input queue size %d", event_queue_size);  // not available in java
             ImGui.end();
 
             return;
@@ -138,6 +167,7 @@ public class RenderingSystem {
             ImGui.newFrame();
 
             UserInterfaceRender.drawDebugMenu(application, userInterface);
+            UserInterfaceRender.drawForeground(application, userInterface);
 
             ImGui.render();
             userInterface.openglBackend.renderDrawData(ImGui.getDrawData());

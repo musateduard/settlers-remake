@@ -28,11 +28,14 @@ public class UserInterface {
     public final ImGuiImplGlfw glfwBackend;
     public final ImGuiImplGl3 openglBackend;
     public final ImFont menuFont;
+    public boolean isLmbPressed = false;
+    public final Point selectionStartPosition;
 
 
     public UserInterface(Window window, Renderer renderer) {
 
         this.idealAspectRatio = 800.00f / 600.00f;
+        this.selectionStartPosition = new Point();
 
         if (window.handle == NULL) {
             throw new RuntimeException("cannot initialize gui renderer before creating glfw window");
@@ -61,6 +64,7 @@ public class UserInterface {
     }
 
 
+    /*
     public void renderUIStack(Application application) {
 
         // init new glfw frame
@@ -77,43 +81,39 @@ public class UserInterface {
         // scale input based on canvas size
         int screenWidth = (int) input.getDisplaySizeX();
         int screenHeight = (int) input.getDisplaySizeY();
-        /*
-        float currentAspectRatio = (float) screenWidth / screenHeight;
-        boolean isWideScreen = currentAspectRatio >= this.idealAspectRatio;
+        // float currentAspectRatio = (float) screenWidth / screenHeight;
+        // boolean isWideScreen = currentAspectRatio >= this.idealAspectRatio;
 
         // note: getMousePos returns incorrect values
         // note: getCursorPosition returns accurate cursor position using glfw
 
-        int mouseX = window.getCursorPosition().x;
-        int mouseY = window.getCursorPosition().y;
+        // int mouseX = window.getCursorPosition().x;
+        // int mouseY = window.getCursorPosition().y;
+        //
+        // int canvasWidth =         isWideScreen ? (int) (screenHeight * this.idealAspectRatio) : screenWidth;
+        // int canvasHeight =        isWideScreen ? screenHeight                                 : (int) (screenWidth / this.idealAspectRatio);
+        // int canvasX =             isWideScreen ? (screenWidth - canvasWidth) / 2              : 0;
+        // int canvasY =             isWideScreen ? 0                                            : (screenHeight - canvasHeight) / 2;
+        // float canvasCursorScale = isWideScreen ? (screenHeight / 600.00f)                     : (screenWidth / 800.00f);
+        //
+        // float canvasCursorX = (mouseX - canvasX) / canvasCursorScale;
+        // float canvasCursorY = (mouseY - canvasY) / canvasCursorScale;
 
-        int canvasWidth =         isWideScreen ? (int) (screenHeight * this.idealAspectRatio) : screenWidth;
-        int canvasHeight =        isWideScreen ? screenHeight                                 : (int) (screenWidth / this.idealAspectRatio);
-        int canvasX =             isWideScreen ? (screenWidth - canvasWidth) / 2              : 0;
-        int canvasY =             isWideScreen ? 0                                            : (screenHeight - canvasHeight) / 2;
-        float canvasCursorScale = isWideScreen ? (screenHeight / 600.00f)                     : (screenWidth / 800.00f);
-
-        float canvasCursorX = (mouseX - canvasX) / canvasCursorScale;
-        float canvasCursorY = (mouseY - canvasY) / canvasCursorScale;
-        */
-
-        /*
-        note:
-
-        cursor only has problems when moving cursor fast and pressing lmb
-        possible solution with AddMousePosEvent() or AddMouseButtonEvent()
-        maybe check if mouse is pressed and dispatch mouse button event?
-        imgui window is still mapped to top left corner of screen
-        this causes input to sometimes be dispatched to the "real" window instead of the one scaled to the framebuffer
-
-        fix:
-        in order to prevent this behavior you need to disable imgui from processing inputs itself
-        ImGui_ImplGlfw_InitForOpenGL(window.window_id, false);
-
-        this means you need to add input events to the imgui backend manually
-        input.AddMouseButtonEvent(ImGuiMouseButton_Left, true);
-        input.AddMouseButtonEvent(ImGuiMouseButton_Left, false);
-        */
+        // note:
+        //
+        // cursor only has problems when moving cursor fast and pressing lmb
+        // possible solution with AddMousePosEvent() or AddMouseButtonEvent()
+        // maybe check if mouse is pressed and dispatch mouse button event?
+        // imgui window is still mapped to top left corner of screen
+        // this causes input to sometimes be dispatched to the "real" window instead of the one scaled to the framebuffer
+        //
+        // fix:
+        // in order to prevent this behavior you need to disable imgui from processing inputs itself
+        // ImGui_ImplGlfw_InitForOpenGL(window.window_id, false);
+        //
+        // this means you need to add input events to the imgui backend manually
+        // input.AddMouseButtonEvent(ImGuiMouseButton_Left, true);
+        // input.AddMouseButtonEvent(ImGuiMouseButton_Left, false);
 
         Point cursor = application.getCursorPosition();
 
@@ -208,6 +208,7 @@ public class UserInterface {
 
         return;
     }
+    */
 
 
     public void cleanup() {

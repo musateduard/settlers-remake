@@ -1,6 +1,5 @@
 package org.example.mainwindow;
 
-import java.awt.Cursor;
 import java.awt.Point;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -10,6 +9,8 @@ import imgui.ImGuiIO;
 import imgui.flag.ImGuiMouseButton;
 import jsettlers.common.action.EActionType;
 import jsettlers.common.action.PointAction;
+import jsettlers.common.action.SelectAreaAction;
+import jsettlers.common.map.shapes.IMapArea;
 import jsettlers.common.position.ShortPoint2D;
 import jsettlers.graphics.map.MapContent;
 import org.lwjgl.glfw.GLFW;
@@ -23,7 +24,7 @@ import org.example.events.ResizeEvent;
 public class InputSystem {
 
     private static InputSystem instance = null;
-    public Queue<InputEvent> queue = new ArrayDeque<>();
+    public final Queue<InputEvent> queue = new ArrayDeque<>();
 
 
     private InputSystem() {
@@ -155,121 +156,56 @@ public class InputSystem {
 
         static boolean handleKeyEvent(Camera camera, KeyEvent event) {
 
-            if (event.action() == GLFW.GLFW_PRESS) {
+            switch (event.key()) {
 
-                switch (event.key()) {
-
-                    case GLFW.GLFW_KEY_UP -> {
-                        camera.keyUpPressed = true;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_DOWN -> {
-                        camera.keyDownPressed = true;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_LEFT -> {
-                        camera.keyLeftPressed = true;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_RIGHT -> {
-                        camera.keyRightPressed = true;
-                        return true;
-                    }
-
-                    default -> {
-                        return false;
-                    }
+                case GLFW.GLFW_KEY_UP -> {
+                    camera.keyUpPressed = event.action() == GLFW.GLFW_PRESS;
+                    return true;
                 }
-            }
 
-            else if (event.action() == GLFW.GLFW_RELEASE) {
-
-                switch (event.key()) {
-
-                    case GLFW.GLFW_KEY_UP -> {
-                        camera.keyUpPressed = false;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_DOWN -> {
-                        camera.keyDownPressed = false;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_LEFT -> {
-                        camera.keyLeftPressed = false;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_KEY_RIGHT -> {
-                        camera.keyRightPressed = false;
-                        return true;
-                    }
-
-                    default -> {
-                        return false;
-                    }
+                case GLFW.GLFW_KEY_DOWN -> {
+                    camera.keyDownPressed = event.action() == GLFW.GLFW_PRESS;
+                    return true;
                 }
-            }
 
-            else {
-                return false;
+                case GLFW.GLFW_KEY_LEFT -> {
+                    camera.keyLeftPressed = event.action() == GLFW.GLFW_PRESS;
+                    return true;
+                }
+
+                case GLFW.GLFW_KEY_RIGHT -> {
+                    camera.keyRightPressed = event.action() == GLFW.GLFW_PRESS;
+                    return true;
+                }
+
+                default -> {
+                    return false;
+                }
             }
         }
 
 
         static boolean handleMouseEvent(Camera camera, MouseEvent event) {
 
-            if (event.action() == GLFW.GLFW_PRESS) {
+            switch (event.button()) {
 
-                switch (event.button()) {
-
-                    case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> {
-                        camera.rmbPressed = true;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_MOUSE_BUTTON_LEFT -> {
-                        camera.lmbPressed = true;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> {
-                        camera.mmbPressed = true;
-                        return true;
-                    }
-
-                    default -> {
-                        return false;
-                    }
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> {
+                    camera.lmbPressed = event.action() == GLFW.GLFW_PRESS;
+                    return false;  // return false for testing; don't return false unconditionally
                 }
-            }
 
-            else {
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> {
+                    camera.rmbPressed = event.action() == GLFW.GLFW_PRESS;
+                    return false;
+                }
 
-                switch (event.button()) {
+                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> {
+                    camera.mmbPressed = event.action() == GLFW.GLFW_PRESS;
+                    return false;
+                }
 
-                    case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> {
-                        camera.rmbPressed = false;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_MOUSE_BUTTON_LEFT -> {
-                        camera.lmbPressed = false;
-                        return true;
-                    }
-
-                    case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> {
-                        camera.mmbPressed = false;
-                        return true;
-                    }
-
-                    default -> {
-                        return false;
-                    }
+                default -> {
+                    return false;
                 }
             }
         }
@@ -288,8 +224,8 @@ public class InputSystem {
             deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
             */
 
-            float deltaX = (float) event.xpos() - camera.prevCursorX;
-            float deltaY = camera.prevCursorY - (float) event.ypos();  // deltaY needs to be inverted so that moves up are positive
+            float deltaX = (float) event.offsetX() - camera.prevCursorX;
+            float deltaY = camera.prevCursorY - (float) event.offsetY();  // deltaY needs to be inverted so that moves up are positive
 
             if (camera.rmbPressed) {
 
@@ -307,8 +243,8 @@ public class InputSystem {
                 camera.offsetY += deltaY;
             }
 
-            camera.prevCursorX = (float) event.xpos();
-            camera.prevCursorY = (float) event.ypos();
+            camera.prevCursorX = (float) event.offsetX();
+            camera.prevCursorY = (float) event.offsetY();
             return false;
         }
 
@@ -340,32 +276,102 @@ public class InputSystem {
 
     static class GameInput {
 
-        static void createAction(Application application, MapContent map, GLFWGOEventConverter eventConverter, InputEvent event) {
+        static void handleMouseEvent(Application application, UserInterface userInterface, MapContent map, MouseEvent event) {
+
+            switch (event.button()) {
+
+                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> {
+
+                    Point cursorPosition = application.getCursorPosition();
+
+                    if (event.action() == GLFW.GLFW_PRESS) {
+                        userInterface.isLmbPressed = true;
+                        userInterface.selectionStartPosition.x = cursorPosition.x;
+                        userInterface.selectionStartPosition.y = cursorPosition.y;
+                    }
+
+                    else if (event.action() == GLFW.GLFW_RELEASE) {
+
+                        if (userInterface.isLmbPressed) {
+
+                            userInterface.isLmbPressed = false;
+
+                            int deltaX = cursorPosition.x - userInterface.selectionStartPosition.x;
+                            int deltaY = cursorPosition.y - userInterface.selectionStartPosition.y;
+                            int distanceSq = deltaX * deltaX + deltaY * deltaY;
+
+                            if (distanceSq < 10) {
+
+                                // Treat as point selection
+                                ShortPoint2D mapPosition = map.mapContext.getPositionOnScreen(
+                                    cursorPosition.x,
+                                    (float) application.renderer.canvas.height - cursorPosition.y
+                                );
+
+                                if (map.mapContext.checkMapCoordinates(mapPosition.x, mapPosition.y)) {
+                                    PointAction singleSelect = new PointAction(EActionType.SELECT_POINT, mapPosition);
+                                    map.fireAction(singleSelect);
+                                }
+                            }
+
+                            else {
+
+                                int canvasHeight = application.renderer.canvas.height;
+
+                                // Treat as area selection
+                                int startX = Math.min(userInterface.selectionStartPosition.x, cursorPosition.x);
+                                int startY = Math.min(canvasHeight - userInterface.selectionStartPosition.y, canvasHeight - cursorPosition.y);
+
+                                // Y needs to be inverted for MapContent since origin is bottom-left for it
+                                int endX = Math.max(userInterface.selectionStartPosition.x, cursorPosition.x);
+                                int endY = Math.max(canvasHeight - userInterface.selectionStartPosition.y, canvasHeight - cursorPosition.y);
+
+                                IMapArea selectionArea = map.mapContext.getRectangleOnScreen(startX, startY, endX, endY);
+                                SelectAreaAction selection = new SelectAreaAction(selectionArea);
+                                map.fireAction(selection);
+                            }
+
+                            userInterface.selectionStartPosition.x = 0;
+                            userInterface.selectionStartPosition.y = 0;
+                        }
+                    }
+                }
+
+                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> System.out.println("handling right click");
+
+                default -> {
+                    // do nothing
+                }
+            }
+
+            return;
+        }
+
+
+        static void consumeEvent(
+            Application application,
+            UserInterface userInterface,
+            MapContent map,
+            GLFWGOEventConverter eventConverter,
+            InputEvent event) {
 
             switch (event) {
 
                 case CursorEvent cursor -> {
-                    eventConverter.onCursorMove(application, cursor);
+
+                    if (userInterface.isLmbPressed == false) {
+                        userInterface.selectionStartPosition.x = 0;
+                        userInterface.selectionStartPosition.y = 0;
+                    }
+
+                    else {
+                        // do nothing
+                    }
                 }
 
                 case MouseEvent mouse -> {
-
                     // eventConverter.onMouseButton(application, mouse);
-
-                    // todo: make this into a switch statement
-                    if (mouse.action() == GLFW.GLFW_RELEASE && mouse.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-
-                        Point cursorPosition = application.getCursorPosition();
-                        ShortPoint2D mapPosition = map.mapContext.getPositionOnScreen(
-                            (float) cursorPosition.x,
-                            (float) application.renderer.canvas.height - cursorPosition.y
-                        );
-
-                        if (map.mapContext.checkMapCoordinates(mapPosition.x, mapPosition.y)) {
-                            PointAction select = new PointAction(EActionType.SELECT_POINT, mapPosition);
-                            map.fireAction(select);
-                        }
-                    }
+                    GameInput.handleMouseEvent(application, userInterface, map, mouse);
                 }
 
                 default -> {
@@ -378,7 +384,12 @@ public class InputSystem {
     }
 
 
-    public static void handleInput(Application application, Camera camera, GLFWGOEventConverter eventConverter, MapContent map) {
+    public static void handleInput(
+        Application application,
+        UserInterface userInterface,
+        Camera camera,
+        GLFWGOEventConverter eventConverter,
+        MapContent map) {
 
         InputSystem input = InputSystem.getInstance();
 
@@ -403,38 +414,9 @@ public class InputSystem {
             }
 
             else {
-                GameInput.createAction(application, map, eventConverter, event);
+                GameInput.consumeEvent(application, userInterface, map, eventConverter, event);
                 continue;
             }
-
-            /*
-            switch (event) {
-
-                case ResizeEvent resize -> application.resizeWindow(resize);
-                case KeyEvent key -> camera.handleKeyEvent(key);
-
-                case MouseEvent mouseButton -> {
-
-                    if (mouseButton.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-                        eventConverter.onMouseButton(application, mouseButton);
-                    }
-
-                    else {
-                        camera.handleMouseButtonEvent(mouseButton);
-                    }
-                }
-
-                case CursorEvent mouseMove -> {
-                    // this always passes cursor events to all subsystems
-                    eventConverter.onCursorMove(application, mouseMove);
-                    camera.handleCursorEvent(mouseMove);
-                }
-
-                default -> throw new RuntimeException("unhandled event type");
-            }
-
-            continue;
-            */
         }
 
         return;

@@ -150,7 +150,7 @@ public class MainLauncher {
             lastFrameTime = currentFrameTime;
 
             // handle input
-            InputSystem.handleInput(application, camera, eventConverter, mapContent);
+            InputSystem.handleInput(application, userInterface, camera, eventConverter, mapContent);
 
             // run game simulation
             // dispatch game events

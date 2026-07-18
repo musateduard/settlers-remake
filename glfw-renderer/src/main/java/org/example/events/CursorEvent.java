@@ -3,6 +3,6 @@ package org.example.events;
 
 public record CursorEvent(
     long window,
-    double xpos,
-    double ypos
+    double offsetX,
+    double offsetY
 ) implements InputEvent {}

@@ -212,7 +212,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	/**
 	 * The controls that represent the interface.
 	 */
-	private final IControls controls;
+	public final IControls controls;
 
 	private FloatRectangle oldScreen;
 	private UIPoint mousePosition = new UIPoint(0, 0);
@@ -220,10 +220,10 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private int windowWidth = 1;
 	private int windowHeight = 1;
 
-	private ShortPoint2D scrollMarker;
+	public ShortPoint2D scrollMarker;
 	private long scrollMarkerTime;
 
-	private ShortPoint2D moveToMarker;
+	public ShortPoint2D moveToMarker;
 	private long moveToMarkerTime;
 
 	private String tooltipString = "";
@@ -233,7 +233,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	private PlacementBuilding placementBuilding;
 
 	private UIPoint currentSelectionAreaEnd;
-	private boolean actionThreadIsSlow;
+	public boolean actionThreadIsSlow;
 	private long lastSelectPointTime = 0;
 	private ShortPoint2D lastSelectPointPos = null;
 
@@ -335,7 +335,6 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	public void drawContent(GLDrawContext glContext, int newWidth, int newHeight) {
 
 		try {
-            /*
 			this.framerate.nextFrame();
 			this.gameSpeedCalculator.tick();
 
@@ -356,11 +355,10 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 			this.objectDrawer.nextFrame();
 
 			this.mapContext.begin(glContext);
-            */
 			long startTime = System.nanoTime();
 
 			FloatRectangle screen = this.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            // this.drawMapTerrain(screen);
+            this.drawMapTerrain(screen);
 			long backgroundDuration = System.nanoTime() - startTime;
 
 			startTime = System.nanoTime();
@@ -394,11 +392,9 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
             this.drawTooltip(glContext);
 			long uiTime = System.nanoTime() - startTime;
 
-            /*
 			if (CommonConstants.ENABLE_GRAPHICS_TIMES_DEBUG_OUTPUT) {
 				System.out.println("Background: " + backgroundDuration / 1000 + "µs, Foreground: " + foregroundDuration / 1000 + "µs, UI: " + uiTime / 1000 + "µs");
 			}
-            */
 		}
 
         catch (Throwable exception) {
@@ -446,7 +442,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 
-	private void drawGotoMarker() {
+	public void drawGotoMarker() {
 
 		long timeDifference = System.currentTimeMillis() - this.scrollMarkerTime;
 
@@ -463,7 +459,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	}
 
 
-	private void drawMoveToMarker() {
+	public void drawMoveToMarker() {
 
 		long timeDifference = System.currentTimeMillis() - this.moveToMarkerTime;
 
@@ -486,7 +482,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 				: Math.max(0, 1f - (float) age / IMessage.MESSAGE_TTL);
 	}
 
-	private void drawWinStateMsg(GLDrawContext gl) {
+	public void drawWinStateMsg(GLDrawContext gl) {
 		if(localPlayer == null || localPlayer.getWinState() == EWinState.UNDECIDED) {
 			return;
 		}
@@ -498,7 +494,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		drawer.drawString((windowWidth - drawer.getWidth(msg)) / 2, windowHeight - 7 * EFontSize.HEADLINE.getSize(), color, msg);
 	}
 
-	private void drawMessages(GLDrawContext gl) {
+	public void drawMessages(GLDrawContext gl) {
 		EFontSize fontSize = EFontSize.HEADLINE;
 		TextDrawer drawer = textDrawer.getTextDrawer(gl, fontSize);
 		messenger.doTick();
@@ -562,7 +558,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 
 	private UnifiedDrawHandle selectionArea = null;
 
-	private void drawSelectionHint(GLDrawContext gl) {
+	public void drawSelectionHint(GLDrawContext gl) {
 		if (this.currentSelectionAreaStart != null && this.currentSelectionAreaEnd != null) {
 
 			if(selectionArea == null || !selectionArea.isValid()) {
@@ -575,7 +571,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		}
 	}
 
-	private void drawFramerateTimeAndHash(GLDrawContext gl) {
+	public void drawFramerateTimeAndHash(GLDrawContext gl) {
 		if (textDrawPosition == ETextDrawPosition.NONE) {
 			return;
 		}
@@ -632,14 +628,14 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 		return drawer.getHeight("X");
 	}
 
-	private void drawTooltip(GLDrawContext gl) {
+	public void drawTooltip(GLDrawContext gl) {
 		if (!tooltipString.isEmpty()) {
 			TextDrawer drawer = textDrawer.getTextDrawer(gl, EFontSize.NORMAL);
 			drawer.drawString((int) mousePosition.getX(), (int) mousePosition.getY(), tooltipString);
 		}
 	}
 
-	private void drawActionThreadSlow(GLDrawContext gl) {
+	public void drawActionThreadSlow(GLDrawContext gl) {
 		TextDrawer drawer = textDrawer.getTextDrawer(gl, EFontSize.NORMAL);
 		String string = Labels.getString("action_firerer_slow");
 		float x = windowWidth - drawer.getWidth(string) - 5;
@@ -651,7 +647,7 @@ public final class MapContent implements RegionContent, IMapInterfaceListener, A
 	/**
 	 * Draws the main content (buildings, settlers, ...), assuming the context is set up.
 	 */
-	private void drawMapObjects(FloatRectangle screen) {
+    public void drawMapObjects(FloatRectangle screen) {
 
 		MapRectangle area = this.mapContext.getConverter().getMapForScreen(screen);
 

@@ -18,7 +18,7 @@ public class Framebuffer {
     public final int viewMatrixAddress;
     public final int projectionMatrixAddress;
     public final int colorUniformAddress;
-    public final float[] floatBuffer;
+    public final float[] buffer;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
 
@@ -29,12 +29,12 @@ public class Framebuffer {
         this.height = 600;
 
         // set canvas-space matrixes (fixed at canvas resolution)
-        this.floatBuffer = new float[16];
+        this.buffer = new float[16];
         this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0, this.width, 0, this.height, -1, 1);
+        this.projectionMatrix.ortho(0.00f, (float) this.width, 0.00f, (float) this.height, -1.00f, 1.00f);
         this.viewMatrix = new Matrix4f();
-        this.viewMatrix.scale(1);
-        this.viewMatrix.translate(0, 0, 0);
+        this.viewMatrix.scale(1.00f);
+        this.viewMatrix.translate(0.00f, 0.00f, 0.00f);
 
         // create canvas frame buffer object
         this.framebufferId = GL33C.glGenFramebuffers();
@@ -145,9 +145,9 @@ public class Framebuffer {
 
         this.projectionMatrix.identity();
         this.projectionMatrix.ortho(0, newWidth, 0, newHeight, -1, 1);
-        this.projectionMatrix.get(this.floatBuffer);
+        this.projectionMatrix.get(this.buffer);
 
-        GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.floatBuffer);
+        GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.buffer);
 
         // update viewport size and position
         GL33C.glViewport(0, 0, newWidth, newHeight);
@@ -162,9 +162,9 @@ public class Framebuffer {
 
         this.viewMatrix.identity();
         this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);
-        this.viewMatrix.get(this.floatBuffer);
+        this.viewMatrix.get(this.buffer);
 
-        GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.floatBuffer);
+        GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.buffer);
 
         return;
     }

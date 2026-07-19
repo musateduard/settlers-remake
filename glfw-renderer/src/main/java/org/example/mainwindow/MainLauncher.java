@@ -41,9 +41,9 @@ public class MainLauncher {
         todo: pass renderer as argument to gui constructor
         */
 
-        Application application = new Application();
-        UserInterface userInterface = new UserInterface(application.window, application.renderer);
-        Camera camera = new Camera();
+        final Application application = new Application();
+        final UserInterface userInterface = new UserInterface(application.window, application.renderer);
+        final Camera camera = new Camera();
 
         // create map instance
         // SettlersMap newGameMap = new SettlersMap();  // deprecated
@@ -54,17 +54,17 @@ public class MainLauncher {
         ImageProvider.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\GFX"), "745006780412758287");
         SoundManager.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\SND"));
 
-        byte playerId = 0;
-        long randomSeed = System.currentTimeMillis();
+        final byte playerId = 0;
+        final long randomSeed = System.currentTimeMillis();
 
-        PlayerSetting[] playerSettings = {
+        final PlayerSetting[] playerSettings = {
             new PlayerSetting(true, EPlayerType.HUMAN, ECivilisation.ROMAN, (byte) 0),
             new PlayerSetting(true, EPlayerType.AI_HARD, ECivilisation.ASIAN, (byte) 1)
         };
 
-        File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");
-        MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
-        InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
+        final File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");
+        final MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
+        final InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
 
         /*
         note: this is the modified glfw initialization that is able to start the game
@@ -92,22 +92,23 @@ public class MainLauncher {
         */
 
         // this is the original jsettlers initialization sequence
-        SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
-        JSettlersGame game = new JSettlersGame(selectedMap, initialGameState);
-        IStartingGame startingGame = game.start();
-        GLFWStartingGameListener startingListener = new GLFWStartingGameListener(soundPlayer);
+        final SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
+        final JSettlersGame game = new JSettlersGame(selectedMap, initialGameState);
+        final IStartingGame startingGame = game.start();
+        final GLFWStartingGameListener startingListener = new GLFWStartingGameListener(soundPlayer);
         startingGame.setListener(startingListener);
 
         while (startingGame.isStartupFinished() == false) {
             Thread.sleep(100);
         }
 
-        MapContent mapContent = startingListener.getMap();
+        final MapContent mapContent = startingListener.getMap();
+        final LandscapeTexture landscape = new LandscapeTexture(application.canvas, mapContent.mapContext);
         camera.offsetX = -mapContent.mapContext.getScreen().getScreenCenterX();
         camera.offsetY = -mapContent.mapContext.getScreen().getScreenCenterY();
 
-        GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
-        LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
+        final GLFWGOEventConverter eventConverter = new GLFWGOEventConverter(mapContent);
+        final LWJGLDrawContext context = new LWJGLDrawContext(application.renderer.capabilities, true, 1.00f);
         context.updateProjectionMatrix(application.canvas.width, application.canvas.height);
 
         // start game thread
@@ -156,7 +157,7 @@ public class MainLauncher {
             // run game simulation
             // dispatch game events
 
-            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, context, mapContent);
+            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, landscape, context, mapContent);
 
             continue;
         }

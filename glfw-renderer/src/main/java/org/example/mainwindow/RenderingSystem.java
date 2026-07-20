@@ -2,10 +2,15 @@ package org.example.mainwindow;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImDrawList;
+import jsettlers.common.map.IGraphicsGrid;
+import jsettlers.logic.map.grid.MainGrid;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
@@ -22,6 +27,7 @@ import org.example.gamemap.SettlersMap;
 import static org.lwjgl.opengl.GL11C.GL_FLOAT;
 import static org.lwjgl.opengl.GL15C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15C.GL_STATIC_DRAW;
+import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
@@ -63,11 +69,11 @@ public class RenderingSystem {
             modelMatrix.translate(50, 50, 0);
             modelMatrix.scale(100, 100, 1);
 
-            modelMatrix.get(application.canvas.buffer);
-            GL33C.glUniformMatrix4fv(application.canvas.modelMatrixAddress, false, application.canvas.buffer);
+            modelMatrix.get(application.canvas.shader.buffer);
+            GL33C.glUniformMatrix4fv(application.canvas.shader.modelMatrixAddress, false, application.canvas.shader.buffer);
 
             // set color uniform
-            GL33C.glUniform4f(application.canvas.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
+            GL33C.glUniform4f(application.canvas.shader.colorUniformAddress, 0.00f, 1.00f, 1.00f, 1.00f);
 
             // bind vao and vbo
             GL33C.glBindVertexArray(vaoId);
@@ -100,12 +106,11 @@ public class RenderingSystem {
         }
 
 
-        // todo: remove LWJGLDrawContext and MapContent from renderLandscapeData
         public static void renderLandscapeData(
             Application application,
             BackgroundDrawHandle drawRequest,
             LandscapeTexture landscape,
-            MapContent map) {
+            Camera camera) {
 
             // 1) Bind the landscape texture to texture units 0 and 1.
             // Legacy drawBackground always bound the same texture twice.
@@ -137,11 +142,10 @@ public class RenderingSystem {
             GL33C.glUniformMatrix4fv(landscape.projectionMatrixUniform, false, landscape.buffer);  // this needs to update only on screen resize
 
             // update view matrix
-            // this should use Camera for setting the view matrix
             landscape.viewMatrix.identity();
             landscape.viewMatrix.translate(
-                map.mapContext.getOffsetX(),
-                map.mapContext.getOffsetY(),
+                camera.offsetX + (application.canvas.width / 2.00f),
+                camera.offsetY + (application.canvas.height / 2.00f),
                 0.00f
             );
 
@@ -149,8 +153,7 @@ public class RenderingSystem {
             GL33C.glUniformMatrix4fv(landscape.viewMatrixUniform, false, landscape.buffer);
 
             // update height matrix
-            // todo: heightUniform should live in LandscapeTexture; see MapCoordinateConverter
-            GL33C.glUniformMatrix4fv(landscape.heightUniform, false, map.mapContext.getConverter().getMatrixWithHeight());
+            GL33C.glUniformMatrix4fv(landscape.heightUniform, false, landscape.heightMatrix);
 
             // 3) Bind geometry.
             // Normal path: VAO already has attrib layout from createBackgroundDrawCall.
@@ -199,6 +202,7 @@ public class RenderingSystem {
         public static void drawLandscape(
             Application application,
             LandscapeTexture landscape,
+            Camera camera,
             LWJGLDrawContext context,
             MapContent map) {
 
@@ -221,9 +225,10 @@ public class RenderingSystem {
                     */
 
                     // todo: remove MapContent from generateGeometry
-                    // todo: move setHeightMatrix into LandscapeTexture
                     landscape.generateGeometry(map.mapContext);
-                    context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
+                    // context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
+                    GL33C.glUseProgram(landscape.shader.id);
+                    GL33C.glUniformMatrix4fv(landscape.heightUniform, false, landscape.heightMatrix);
                 }
 
                 catch (IllegalBufferException exception) {
@@ -236,7 +241,7 @@ public class RenderingSystem {
             // todo: calculate visibleMapSection without MapContent
             MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
             landscape.updateGeometry(map.mapContext, visibleMapSection);
-            landscape.handle.texture = LandscapeTexture.getTextureData(context);  // should this use Background.getTextureData or LandscapeTexture.getTextureData?
+            landscape.handle.texture = LandscapeTexture.generateTextureAtlas(context, true);  // should this use Background.getTextureData or LandscapeTexture.getTextureData?
             landscape.handle.visibleLineCount = visibleMapSection.getLines();
             landscape.handle.visibleLineObjectList = new int[landscape.handle.visibleLineCount * 2];
 
@@ -262,7 +267,7 @@ public class RenderingSystem {
                 continue;
             }
 
-            GameRenderer.renderLandscapeData(application, landscape.handle, landscape, map);
+            GameRenderer.renderLandscapeData(application, landscape.handle, landscape, camera);
             return;
         }
 
@@ -322,6 +327,8 @@ public class RenderingSystem {
             LWJGLDrawContext context,
             MapContent map) {
 
+            // todo: use IGraphicsGrid as single source of truth for game state
+
             /*
             drawGameScene needs to follow the following structure
             - frame setup? (do we even need frame setup)
@@ -335,19 +342,19 @@ public class RenderingSystem {
 
             // update view matrix
             camera.updateCameraPosition(frameDuration);
-            application.canvas.updateViewMatrix(camera);  // view matrix should only change when camera moves
+            application.canvas.shader.updateViewMatrix(camera);  // view matrix should only change when camera moves
 
             // render game scene
             map.mapContext.getScreen().setScreenCenter(-camera.offsetX, -camera.offsetY);
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            GameRenderer.drawLandscape(application, landscape, context, map);
+            GameRenderer.drawLandscape(application, landscape, camera, context, map);
             // draw static sprites
             // draw animated sprites
             // draw settlers units
 
-            context.invalidateDrawState();  // this invalidates the LWJGLDrawContext managed variables
+            context.invalidateDrawState();  // this forces the LWJGLDrawContext managed variables to update their state
             GameRenderer.frameTeardownLegacy(application, context, map);
 
             return;

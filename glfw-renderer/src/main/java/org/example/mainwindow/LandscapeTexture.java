@@ -370,10 +370,11 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 			/* 234: small */ { 2, 24, 1 },
 	};
 
-	private static final ImageLink ALTERNATIVE_BACKGROUND = ImageLink.fromName("background");
+	// private static final ImageLink ALTERNATIVE_BACKGROUND = ImageLink.fromName("background");
 	public final int bufferWidth; // in map points.
 	public final int bufferHeight; // in map points.
-	private static final Map<Boolean, TextureHandle> textures = new HashMap<>();
+	private static final Map<Boolean, Integer> textures = new HashMap<>();
+	// private static final Map<Boolean, TextureHandle> textures = new HashMap<>();
 	public BackgroundDrawHandle handle = null;
 	private final boolean hasDGP;
 	private final IDirectGridProvider dgp;
@@ -392,6 +393,12 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
     public final float[] buffer;
+    public final float[] heightMatrix;
+    public int vaoId;
+    public int vboId;
+    public int textureId;
+    public int visibleLineCount;
+    public int[] visibleLineObjectList;
 
 
     public LandscapeTexture(Framebuffer canvas, MapDrawContext context) {
@@ -483,11 +490,98 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
         this.viewMatrix.translate(0.00f, 0.00f, 0.00f);
         this.buffer = new float[16];
 
+        final float scaleX = 16f; // DrawConstants.DISTANCE_X
+        final float scaleY = 9f;  // DrawConstants.DISTANCE_Y
+        final int realMapHeight = this.mapHeight - 1;
+
+        this.heightMatrix = new float[] {
+            scaleX, 0.00f, 0.00f, 0.00f,
+            -0.50f * scaleX, -scaleY, 0.00f, 0.00f,
+            0.00f, 2.00f, 1.00f, 0.00f,
+            realMapHeight * scaleX * 0.50f, realMapHeight * scaleY, 0.00f, 1.00f
+        };
+
         return;
     }
 
 
-	private static ImageData getTextureData(boolean original) {
+    public static TextureHandle generateTextureAtlas(GLDrawContext context, boolean original) {
+        Integer textureId = textures.get(original);
+        if (textureId != null && textureId != 0) {
+            return new TextureHandle(context, textureId);
+        }
+        long startTime = System.currentTimeMillis();
+        // --- CPU: same as private getTextureData(boolean) ---
+        int[] data = new int[TEXTURE_SIZE * TEXTURE_SIZE];
+        try {
+            addTextures(data);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        IntBuffer pixels = ByteBuffer
+            .allocateDirect(TEXTURE_SIZE * TEXTURE_SIZE * 4)
+            .order(ByteOrder.nativeOrder())
+            .asIntBuffer();
+        pixels.put(data).rewind();
+        int width = TEXTURE_SIZE;
+        int height = TEXTURE_SIZE;
+
+        // if (!original) {
+        //     Image img = ImageProvider.getInstance().getImage(ALTERNATIVE_BACKGROUND);
+        //     if (img instanceof SingleImage single && !(img instanceof NullImage)) {
+        //         ImageData alt = single.getData();
+        //         // nearest-neighbor scale orig → alt size, fill transparent alt pixels
+        //         ImageData orig = ImageData.of(pixels, TEXTURE_SIZE, TEXTURE_SIZE);
+        //         ImageData origScaled = orig.convert(alt.getWidth(), alt.getHeight());
+        //         IntBuffer altBfr = alt.getWriteData32();
+        //         IntBuffer origBfr = origScaled.getReadData32();
+        //         for (int i = 0; i < altBfr.limit(); i++) {
+        //             if ((altBfr.get(i) & 0xFF) == 0) {
+        //                 altBfr.put(i, origBfr.get(i));
+        //             }
+        //         }
+        //         altBfr.rewind();
+        //         pixels = altBfr;
+        //         width = alt.getWidth();
+        //         height = alt.getHeight();
+        //     }
+        // }
+
+        // --- GPU: flattened LWJGLDrawContext.generateTexture / resizeTexture ---
+        int texture = GL33C.glGenTextures();
+        if (texture == 0) {
+            throw new RuntimeException("glGenTextures failed for landscape atlas");
+        }
+
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, texture);
+        GL33C.glTexImage2D(
+            GL33C.GL_TEXTURE_2D,
+            0,
+            GL33C.GL_RGBA,
+            width,
+            height,
+            0,
+            GL33C.GL_RGBA,
+            GL33C.GL_UNSIGNED_INT_8_8_8_8,
+            pixels
+        );
+
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_WRAP_S, GL33C.GL_CLAMP_TO_EDGE);
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_WRAP_T, GL33C.GL_CLAMP_TO_EDGE);
+        // Mag/min filter: TextureHandle defaults to NEAREST_FILTER; set explicitly if you care.
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
+
+        textures.put(original, texture);
+        TextureHandle textureHandle = new TextureHandle(context, texture);
+        System.out.println("Background texture generated in " + (System.currentTimeMillis() - startTime) + "ms");
+
+        return textureHandle;
+    }
+
+
+    /*
+    private static ImageData getTextureData(boolean original) {
 		int[] data = new int[TEXTURE_SIZE * TEXTURE_SIZE];
 		try {
 			addTextures(data);
@@ -525,6 +619,27 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 		return alt;
 	}
 
+    private static TextureHandle getTextureData(GLDrawContext context, boolean original) {
+        TextureHandle texture = LandscapeTexture.textures.get(original);
+
+        if (texture == null || !texture.isValid()) {
+            long startTime = System.currentTimeMillis();
+            ImageData data = getTextureData(original);
+            texture = context.generateTexture(data, "background-" + (original?"original":"custom"));
+            LandscapeTexture.textures.put(original, texture);
+
+            System.out.println("Background texture generated in " + (System.currentTimeMillis() - startTime) + "ms");
+        }
+
+        return texture;
+    }
+
+
+    public static TextureHandle getTextureData(GLDrawContext context) {
+        return LandscapeTexture.getTextureData(context, DrawConstants.FORCE_ORIGINAL);
+    }
+    */
+
 	private static void saveOriginal(ImageData data) {
 		IntBuffer image = data.getReadData32();
 		final int width = data.getWidth();
@@ -542,27 +657,6 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-    // todo: what does this method do and do we need it?
-	private static TextureHandle getTextureData(GLDrawContext context, boolean original) {
-		TextureHandle texture = LandscapeTexture.textures.get(original);
-
-		if (texture == null || !texture.isValid()) {
-			long startTime = System.currentTimeMillis();
-			ImageData data = getTextureData(original);
-			texture = context.generateTexture(data, "background-" + (original?"original":"custom"));
-            LandscapeTexture.textures.put(original, texture);
-
-			System.out.println("Background texture generated in " + (System.currentTimeMillis() - startTime) + "ms");
-		}
-
-		return texture;
-	}
-
-
-	public static TextureHandle getTextureData(GLDrawContext context) {
-		return LandscapeTexture.getTextureData(context, DrawConstants.FORCE_ORIGINAL);
 	}
 
 	private static class ImageWriter implements ImageArrayProvider {
@@ -800,11 +894,13 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 	public void generateGeometry(MapDrawContext context) throws IllegalBufferException {
 
 		int vertices = this.bufferWidth * this.bufferHeight * 3 * 2;
-        this.handle = context.getGl().createBackgroundDrawCall(vertices, LandscapeTexture.getTextureData(context.getGl()));
+        this.handle = context.getGl().createBackgroundDrawCall(vertices, LandscapeTexture.generateTextureAtlas(context.getGl(), true));
 
         this.fowEnabled = this.hasDGP && this.dgp.isFoWEnabled();
 
-		ByteBuffer bufferLine = ByteBuffer.allocateDirect(LandscapeTexture.BYTES_PER_FIELD * this.bufferWidth).order(ByteOrder.nativeOrder());
+		ByteBuffer bufferLine = ByteBuffer
+            .allocateDirect(LandscapeTexture.BYTES_PER_FIELD * this.bufferWidth)
+            .order(ByteOrder.nativeOrder());
 
 		for (int offsetY = 0; offsetY < this.bufferHeight; offsetY += 1) {
 

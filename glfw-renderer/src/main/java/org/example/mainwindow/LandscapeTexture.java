@@ -544,6 +544,7 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 		}
 	}
 
+    // todo: what does this method do and do we need it?
 	private static TextureHandle getTextureData(GLDrawContext context, boolean original) {
 		TextureHandle texture = LandscapeTexture.textures.get(original);
 

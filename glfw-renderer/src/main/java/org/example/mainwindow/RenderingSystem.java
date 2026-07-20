@@ -100,10 +100,10 @@ public class RenderingSystem {
         }
 
 
+        // todo: remove LWJGLDrawContext and MapContent from renderLandscapeData
         public static void renderLandscapeData(
             Application application,
             BackgroundDrawHandle drawRequest,
-            LWJGLDrawContext context,
             LandscapeTexture landscape,
             MapContent map) {
 
@@ -191,21 +191,23 @@ public class RenderingSystem {
 
             // 5) Draw all visible terrain lines in one multi-draw call.
             GL33C.glMultiDrawArrays(GL33C.GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
-            context.invalidateDrawState();
             return;
         }
 
 
-        public static void drawLandscape(Application application, LWJGLDrawContext context, LandscapeTexture landscape, MapContent map) {
+        // todo: remove LWJGLDrawContext and MapContent from drawLandscape
+        public static void drawLandscape(
+            Application application,
+            LandscapeTexture landscape,
+            LWJGLDrawContext context,
+            MapContent map) {
 
+            // todo: getScreen().getPosition().bigger() into LandscapeTexture
             FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            // map.background.drawMapContent(map.mapContext, screen);
-            // Background landscape = map.background;
-            // GLDrawContext glContext = map.mapContext.getGl();
 
-            try {
-                if (landscape.handle == null || landscape.handle.isValid() == false) {
+            if (landscape.handle == null || landscape.handle.isValid() == false) {
 
+                try {
                     /*
                     note:
 
@@ -215,17 +217,23 @@ public class RenderingSystem {
 
                     todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
                     note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
+
                     */
 
+                    // todo: remove MapContent from generateGeometry
+                    // todo: move setHeightMatrix into LandscapeTexture
                     landscape.generateGeometry(map.mapContext);
                     context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
                 }
+
+                catch (IllegalBufferException exception) {
+                    exception.printStackTrace();
+                }
             }
 
-            catch (IllegalBufferException exception) {
-                exception.printStackTrace();
-            }
-
+            // todo: remove LWJGLDrawContext from getTextureData
+            // todo: remove MapContent from updateGeometry
+            // todo: calculate visibleMapSection without MapContent
             MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
             landscape.updateGeometry(map.mapContext, visibleMapSection);
             landscape.handle.texture = LandscapeTexture.getTextureData(context);  // should this use Background.getTextureData or LandscapeTexture.getTextureData?
@@ -254,8 +262,7 @@ public class RenderingSystem {
                 continue;
             }
 
-            // glContext.drawBackground(background.backgroundHandle);
-            GameRenderer.renderLandscapeData(application, landscape.handle, context, landscape, map);
+            GameRenderer.renderLandscapeData(application, landscape.handle, landscape, map);
             return;
         }
 
@@ -284,7 +291,7 @@ public class RenderingSystem {
 
             // startTime = System.nanoTime();
             context.clearDepthBuffer();
-            context.updateViewMatrix(0, 0, 0, 1, 1, 1);
+            context.updateViewMatrix(0.00f, 0.00f, 0.00f, 1.00f, 1.00f, 1.00f);
 
             map.drawSelectionHint(context);
             map.controls.drawAt(context);
@@ -335,11 +342,12 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            GameRenderer.drawLandscape(application, context, landscape, map);
+            GameRenderer.drawLandscape(application, landscape, context, map);
             // draw static sprites
             // draw animated sprites
             // draw settlers units
 
+            context.invalidateDrawState();  // this invalidates the LWJGLDrawContext managed variables
             GameRenderer.frameTeardownLegacy(application, context, map);
 
             return;

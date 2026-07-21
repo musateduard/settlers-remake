@@ -1,33 +1,22 @@
 package org.example.mainwindow;
 
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
-
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImDrawList;
-import jsettlers.common.map.IGraphicsGrid;
-import jsettlers.logic.map.grid.MainGrid;
-import org.joml.Matrix4f;
+import java.awt.Point;
+import java.awt.Rectangle;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
+import org.example.shaders.ScreenShader;
+import org.example.shaders.LandscapeShader;
 import go.graphics.BackgroundDrawHandle;
 import go.graphics.IllegalBufferException;
 import go.graphics.swing.opengl.LWJGLDrawContext;
+import jsettlers.graphics.map.MapContent;
+import jsettlers.common.CommonConstants;
 import jsettlers.common.map.IDirectGridProvider;
 import jsettlers.common.map.shapes.MapRectangle;
 import jsettlers.common.position.FloatRectangle;
-import jsettlers.common.CommonConstants;
-import jsettlers.graphics.map.MapContent;
-import org.example.gamemap.SettlersMap;
-
-import static org.lwjgl.opengl.GL11C.GL_FLOAT;
-import static org.lwjgl.opengl.GL15C.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15C.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL20C.glUniformMatrix4fv;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
@@ -42,6 +31,7 @@ public class RenderingSystem {
 
     static class GameRenderer {
 
+        /*
         public static void renderTestScene(Application application, SettlersMap gameMap) {
 
             // get map terrain
@@ -68,8 +58,8 @@ public class RenderingSystem {
             Matrix4f modelMatrix = new Matrix4f();
             modelMatrix.translate(50, 50, 0);
             modelMatrix.scale(100, 100, 1);
-
             modelMatrix.get(application.canvas.shader.buffer);
+
             GL33C.glUniformMatrix4fv(application.canvas.shader.modelMatrixAddress, false, application.canvas.shader.buffer);
 
             // set color uniform
@@ -89,6 +79,7 @@ public class RenderingSystem {
 
             return;
         }
+        */
 
 
         public static void frameSetupLegacy(Application application, LWJGLDrawContext context, MapContent map) {
@@ -109,7 +100,7 @@ public class RenderingSystem {
         public static void renderLandscapeData(
             Application application,
             BackgroundDrawHandle drawRequest,
-            LandscapeTexture landscape,
+            LandscapeShader shader,
             Camera camera) {
 
             // 1) Bind the landscape texture to texture units 0 and 1.
@@ -125,35 +116,35 @@ public class RenderingSystem {
             GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, textureId);
 
             // activate landscape shader
-            landscape.shader.activate();
+            shader.activate();
 
             // update mvp matrix
-            GL33C.glUniform1i(landscape.texHandleUniform, 0);
+            GL33C.glUniform1i(shader.texHandleUniform, 0);
 
             // update projection matrix
-            landscape.projectionMatrix.identity();
-            landscape.projectionMatrix.ortho(
+            shader.projectionMatrix.identity();
+            shader.projectionMatrix.ortho(
                 0.00f, (float) application.canvas.width,
                 0.00f, (float) application.canvas.height,
                 -1.00f, 1.00f
             );
 
-            landscape.projectionMatrix.get(landscape.buffer);
-            GL33C.glUniformMatrix4fv(landscape.projectionMatrixUniform, false, landscape.buffer);  // this needs to update only on screen resize
+            shader.projectionMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.projectionMatrixUniform, false, shader.buffer);  // this needs to update only on screen resize
 
             // update view matrix
-            landscape.viewMatrix.identity();
-            landscape.viewMatrix.translate(
+            shader.viewMatrix.identity();
+            shader.viewMatrix.translate(
                 camera.offsetX + (application.canvas.width / 2.00f),
                 camera.offsetY + (application.canvas.height / 2.00f),
                 0.00f
             );
 
-            landscape.viewMatrix.get(landscape.buffer);
-            GL33C.glUniformMatrix4fv(landscape.viewMatrixUniform, false, landscape.buffer);
+            shader.viewMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.viewMatrixUniform, false, shader.buffer);
 
             // update height matrix
-            GL33C.glUniformMatrix4fv(landscape.heightUniform, false, landscape.heightMatrix);
+            GL33C.glUniformMatrix4fv(shader.heightUniform, false, shader.heightMatrix);
 
             // 3) Bind geometry.
             // Normal path: VAO already has attrib layout from createBackgroundDrawCall.
@@ -225,10 +216,10 @@ public class RenderingSystem {
                     */
 
                     // todo: remove MapContent from generateGeometry
-                    landscape.generateGeometry(map.mapContext);
+                    landscape.generateTerrainMesh(map.mapContext);
                     // context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
                     GL33C.glUseProgram(landscape.shader.id);
-                    GL33C.glUniformMatrix4fv(landscape.heightUniform, false, landscape.heightMatrix);
+                    GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
                 }
 
                 catch (IllegalBufferException exception) {
@@ -267,12 +258,12 @@ public class RenderingSystem {
                 continue;
             }
 
-            GameRenderer.renderLandscapeData(application, landscape.handle, landscape, camera);
+            GameRenderer.renderLandscapeData(application, landscape.handle, landscape.shader, camera);
             return;
         }
 
 
-        public static void frameTeardownLegacy(Application application, LWJGLDrawContext context, MapContent map) {
+        public static void frameTeardownLegacy(LWJGLDrawContext context, MapContent map) {
 
             // long startTime = System.nanoTime();
 
@@ -355,7 +346,7 @@ public class RenderingSystem {
             // draw settlers units
 
             context.invalidateDrawState();  // this forces the LWJGLDrawContext managed variables to update their state
-            GameRenderer.frameTeardownLegacy(application, context, map);
+            GameRenderer.frameTeardownLegacy(context, map);
 
             return;
         }
@@ -451,33 +442,55 @@ public class RenderingSystem {
         MapContent settlersMap) {
 
         // activate canvas framebuffer
-        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, application.canvas.framebufferId);
-        GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
-        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        GL33C.glViewport(0, 0, 800, 600);
+        RenderingSystem.activateCanvasBuffer(application.canvas);
 
         GameRenderer.drawGameScene(frameDuration, application, camera, landscape, context, settlersMap);
         UserInterfaceRenderer.drawUI(application, userInterface);
 
-        Rectangle viewport = application.viewport;
-
         // activate screen buffer
+        RenderingSystem.activateScreenBuffer(application.viewport);
+
+        // draw canvas to screen with aspect ratio
+        RenderingSystem.renderCanvasToScreen(application.screenShader, application.canvas, application.viewportBuffer);
+
+        // present frame
+        GLFW.glfwSwapBuffers(application.window.handle);
+
+        return;
+    }
+
+
+    public static void activateScreenBuffer(Rectangle viewport) {
+
         GL33C.glBindFramebuffer(GL_FRAMEBUFFER, 0);
         GL33C.glViewport(viewport.x, viewport.y, viewport.width, viewport.height);
         GL33C.glClearColor(1.00f, 0.00f, 1.00f, 1.00f);  // magenta
         GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        // draw canvas to screen with aspect ratio
+        return;
+    }
+
+
+    public static void activateCanvasBuffer(Framebuffer canvas) {
+
+        GL33C.glBindFramebuffer(GL_FRAMEBUFFER, canvas.framebufferId);
+        GL33C.glViewport(0, 0, canvas.width, canvas.height);
+        GL33C.glClearColor(1.00f, 1.00f, 1.00f, 1.00f);
+        GL33C.glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        return;
+    }
+
+
+    public static void renderCanvasToScreen(ScreenShader shader, Framebuffer canvas, VertexBuffer viewport) {
+
         GL33C.glDisable(GL_DEPTH_TEST);
-        GL33C.glUseProgram(application.renderer.screenShader.id);
+        GL33C.glUseProgram(shader.id);
         GL33C.glActiveTexture(GL_TEXTURE0);
-        GL33C.glBindTexture(GL_TEXTURE_2D, application.canvas.textureId);
-        GL33C.glBindVertexArray(application.renderer.viewportVAOId);
+        GL33C.glBindTexture(GL_TEXTURE_2D, canvas.textureId);
+        GL33C.glBindVertexArray(viewport.vaoId);
         GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         GL33C.glEnable(GL_DEPTH_TEST);
-
-        // present frame
-        GLFW.glfwSwapBuffers(application.window.handle);
 
         return;
     }

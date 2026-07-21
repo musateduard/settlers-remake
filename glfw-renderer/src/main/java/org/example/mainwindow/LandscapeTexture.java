@@ -1,17 +1,3 @@
-/*******************************************************************************
- * Copyright (c) 2015 - 2017
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *******************************************************************************/
 package org.example.mainwindow;
 
 import go.graphics.AdvancedUpdateBufferCache;
@@ -22,13 +8,10 @@ import go.graphics.ImageData;
 import go.graphics.TextureHandle;
 import go.graphics.VkDrawContext;
 import jsettlers.common.CommonConstants;
-import jsettlers.common.images.ImageLink;
 import jsettlers.common.landscape.ELandscapeType;
 import jsettlers.common.map.IDirectGridProvider;
 import jsettlers.common.map.IGraphicsBackgroundListener;
 import jsettlers.common.map.shapes.MapRectangle;
-import jsettlers.graphics.image.Image;
-import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.image.reader.DatFileReader;
 import jsettlers.graphics.image.reader.ImageArrayProvider;
@@ -38,7 +21,7 @@ import jsettlers.graphics.map.MapDrawContext;
 import jsettlers.graphics.map.draw.DrawConstants;
 import jsettlers.graphics.map.draw.ETextureOrientation;
 import jsettlers.graphics.map.draw.ImageProvider;
-import org.joml.Matrix4f;
+import org.example.shaders.LandscapeShader;
 import org.lwjgl.opengl.GL33C;
 
 import javax.imageio.ImageIO;
@@ -128,253 +111,253 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 	 * +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 	 */
 	private static final int[][] TEXTURE_POSITIONS = {
-			/* 0: big */ { 0, 0, 5 },
-			/* 1: big */ { 5, 0, 5 },
-			/* 2: big */ { 10, 0, 5 },
-			/* 3: big */ { 15, 0, 5 },
-			/* 4: big */ { 20, 0, 5 },
-			/* 5: small */ { 30, 0, 1 },
-			/* 6: small */ { 31, 0, 1 },
-			/* 7: big */ { 25, 0, 5 },
-			/* 8: small */ { 30, 1, 1 },
-			/* 9: small */ { 31, 1, 1 },
-			/* 10: big */ { 0, 5, 5 },
-			/* 11: small, continuous */ { 0, 20, 2 },
-			/* 12: small, continuous */ { 2, 20, 2 },
-			/* 13: small, continuous */ { 4, 20, 2 },
-			/* 14: small, continuous */ { 6, 20, 2 },
-			/* 15: small, continuous */ { 8, 20, 2 },
-			/* 16: small, continuous */ { 10, 20, 2 },
-			/* 17: small, continuous */ { 12, 20, 2 },
-			/* 18: big */ { 5, 5, 5 },
-			/* 19: small */ { 31, 5, 1 },
-			/* 20: small */ { 30, 6, 1 },
-			/* 21: big */ { 10, 5, 5 },
-			/* 22: small */ { 31, 6, 1 },
-			/* 23: small */ { 30, 7, 1 },
-			/* 24: big */ { 15, 5, 5 },
-			/* 25: small */ { 31, 7, 1 },
-			/* 26: small */ { 30, 8, 1 },
-			/* 27: small */ { 31, 8, 1 },
-			/* 28: small */ { 30, 9, 1 },
-			/* 29: small */ { 31, 9, 1 },
-			/* 30: small */ { 30, 10, 1 },
-			/* 31: big */ { 20, 5, 5 },
-			/* 32: small */ { 31, 10, 1 },
-			/* 33: small */ { 30, 11, 1 },
-			/* 34: small */ { 31, 11, 1 },
-			/* 35: big */ { 25, 5, 5 },
-			/* 36: big */ { 0, 10, 5 },
-			/* 37: small */ { 30, 13, 1 },
-			/* 38: small */ { 31, 13, 1 },
-			/* 39: small */ { 30, 14, 1 },
-			/* 40: small */ { 31, 14, 1 },
-			/* 41: small */ { 0, 15, 1 },
-			/* 42: small */ { 1, 15, 1 },
-			/* 43: small */ { 2, 15, 1 },
-			/* 44: small */ { 3, 15, 1 },
-			/* 45: small */ { 4, 15, 1 },
-			/* 46: small */ { 5, 15, 1 },
-			/* 47: small */ { 6, 15, 1 },
-			/* 48: small */ { 7, 15, 1 },
-			/* 49: small */ { 8, 15, 1 },
-			/* 50: small */ { 9, 15, 1 },
-			/* 51: small */ { 10, 15, 1 },
-			/* 52: small */ { 11, 15, 1 },
-			/* 53: small */ { 12, 15, 1 },
-			/* 54: small */ { 13, 15, 1 },
-			/* 55: small */ { 14, 15, 1 },
-			/* 56: small */ { 15, 15, 1 },
-			/* 57: small */ { 16, 15, 1 },
-			/* 58: small */ { 17, 15, 1 },
-			/* 59: small */ { 18, 15, 1 },
-			/* 60: small */ { 19, 15, 1 },
-			/* 61: small */ { 20, 15, 1 },
-			/* 62: small */ { 21, 15, 1 },
-			/* 63: small */ { 22, 15, 1 },
-			/* 64: small */ { 23, 15, 1 },
-			/* 65: small */ { 24, 15, 1 },
-			/* 66: small */ { 25, 15, 1 },
-			/* 67: small */ { 26, 15, 1 },
-			/* 68: small */ { 27, 15, 1 },
-			/* 69: small */ { 28, 15, 1 },
-			/* 70: small */ { 29, 15, 1 },
-			/* 71: small */ { 30, 15, 1 },
-			/* 72: small */ { 31, 15, 1 },
-			// ------------------------------------
-			/* 73: small */ { 0, 16, 1 },
-			/* 74: small */ { 1, 16, 1 },
-			/* 75: small */ { 2, 16, 1 },
-			/* 76: small */ { 3, 16, 1 },
-			/* 77: small */ { 4, 16, 1 },
-			/* 78: small */ { 5, 16, 1 },
-			/* 79: small */ { 6, 16, 1 },
-			/* 80: small */ { 7, 16, 1 },
-			/* 81: small */ { 8, 16, 1 },
-			/* 82: small */ { 9, 16, 1 },
-			/* 83: small */ { 10, 16, 1 },
-			/* 84: small */ { 11, 16, 1 },
-			/* 85: small */ { 12, 16, 1 },
-			/* 86: small */ { 13, 16, 1 },
-			/* 87: small */ { 14, 16, 1 },
-			/* 88: small */ { 15, 16, 1 },
-			/* 89: small */ { 16, 16, 1 },
-			/* 90: small */ { 17, 16, 1 },
-			/* 91: small */ { 18, 16, 1 },
-			/* 92: small */ { 19, 16, 1 },
-			/* 93: small */ { 20, 16, 1 },
-			/* 94: small */ { 21, 16, 1 },
-			/* 95: small */ { 22, 16, 1 },
-			/* 96: small */ { 23, 16, 1 },
-			/* 97: small */ { 24, 16, 1 },
-			/* 98: small */ { 30, 16, 1 },
-			/* 99: small */ { 31, 12, 1 },
-			/* 100: small */ { 25, 12, 1 },
-			/* 101: small */ { 26, 16, 1 },
-			/* 102: small */ { 27, 16, 1 },
-			/* 103: small */ { 28, 16, 1 },
-			/* 104: small */ { 29, 16, 1 },
-			/* 105: small */ { 30, 16, 1 },
-			/* 106: small */ { 31, 16, 1 },
-			// ------------------------------------
-			/* 107: small */ { 0, 17, 1 },
-			/* 108: small */ { 1, 17, 1 },
-			/* 109: small */ { 2, 17, 1 },
-			/* 110: small */ { 3, 17, 1 },
-			/* 111: small */ { 4, 17, 1 },
-			/* 112: small */ { 5, 17, 1 },
-			/* 113: small */ { 6, 17, 1 },
-			/* 114: small */ { 7, 17, 1 },
-			/* 115: small */ { 8, 17, 1 },
-			/* 116: small */ { 9, 17, 1 },
-			/* 117: small */ { 10, 17, 1 },
-			/* 118: small */ { 11, 17, 1 },
-			/* 119: small */ { 12, 17, 1 },
-			/* 120: small */ { 13, 17, 1 },
-			/* 121: small */ { 14, 17, 1 },
-			/* 122: small */ { 15, 17, 1 },
-			/* 123: small */ { 16, 17, 1 },
-			/* 124: small */ { 17, 17, 1 },
-			/* 125: small */ { 18, 17, 1 },
-			/* 126: small */ { 19, 17, 1 },
-			/* 127: small */ { 20, 17, 1 },
-			/* 128: small */ { 21, 17, 1 },
-			/* 129: small */ { 22, 17, 1 },
-			/* 130: small */ { 23, 17, 1 },
-			/* 131: small */ { 24, 17, 1 },
-			/* 132: small */ { 25, 17, 1 },
-			/* 133: small */ { 26, 17, 1 },
-			/* 134: small */ { 27, 17, 1 },
-			/* 135: small */ { 28, 17, 1 },
-			/* 136: small */ { 29, 17, 1 },
-			/* 137: small */ { 30, 17, 1 },
-			/* 138: small */ { 31, 17, 1 },
-			// ------------------------------------
-			/* 139: small */ { 0, 18, 1 },
-			/* 140: small */ { 1, 18, 1 },
-			/* 141: small */ { 2, 18, 1 },
-			/* 142: small */ { 3, 18, 1 },
-			/* 143: small */ { 4, 18, 1 },
-			/* 144: small */ { 5, 18, 1 },
-			/* 145: small */ { 6, 18, 1 },
-			/* 146: small */ { 7, 18, 1 },
-			/* 147: small */ { 8, 18, 1 },
-			/* 148: small */ { 9, 18, 1 },
-			/* 149: small */ { 10, 18, 1 },
-			/* 150: small */ { 11, 18, 1 },
-			/* 151: small */ { 12, 18, 1 },
-			/* 152: small */ { 13, 18, 1 },
-			/* 153: small */ { 14, 18, 1 },
-			/* 154: small */ { 15, 18, 1 },
-			/* 155: small */ { 16, 18, 1 },
-			/* 156: small */ { 17, 18, 1 },
-			/* 157: small */ { 18, 18, 1 },
-			/* 158: small */ { 19, 18, 1 },
-			/* 159: small */ { 20, 18, 1 },
-			/* 160: small */ { 21, 18, 1 },
-			/* 161: small */ { 22, 18, 1 },
-			/* 162: small */ { 23, 18, 1 },
-			/* 163: small */ { 24, 18, 1 },
-			/* 164: small */ { 25, 18, 1 },
-			/* 165: small */ { 26, 18, 1 },
-			/* 166: small */ { 27, 18, 1 },
-			/* 167: small */ { 28, 18, 1 },
-			/* 168: small */ { 29, 18, 1 },
-			/* 169: small */ { 30, 18, 1 },
-			/* 170: small */ { 31, 18, 1 },
-			// ------------------------------------
-			/* 171: small */ { 0, 19, 1 },
-			/* 172: small */ { 1, 19, 1 },
-			/* 173: small */ { 2, 19, 1 },
-			/* 174: small */ { 3, 19, 1 },
-			/* 175: small */ { 4, 19, 1 },
-			/* 176: big (odd shape?) */ { 5, 10, 5 },
-			/* 177: small */ { 6, 19, 1 },
-			/* 178: small */ { 7, 19, 1 },
-			/* 179: small */ { 8, 19, 1 },
-			/* 180: small */ { 9, 19, 1 },
-			/* 181: small */ { 10, 19, 1 },
-			/* 182: small */ { 11, 19, 1 },
-			/* 183: small */ { 12, 19, 1 },
-			/* 184: small */ { 13, 19, 1 },
-			/* 185: small */ { 14, 19, 1 },
-			/* 186: small */ { 15, 19, 1 },
-			/* 187: small */ { 16, 19, 1 },
-			/* 188: small */ { 17, 19, 1 },
-			/* 189: small */ { 18, 19, 1 },
-			/* 190: small */ { 19, 19, 1 },
-			/* 191: small */ { 20, 19, 1 },
-			/* 192: small */ { 21, 19, 1 },
-			/* 193: small */ { 22, 19, 1 },
-			/* 194: small */ { 23, 19, 1 },
-			/* 195: small */ { 24, 19, 1 },
-			/* 196: small */ { 25, 19, 1 },
-			/* 197: small */ { 26, 19, 1 },
-			/* 198: small */ { 27, 19, 1 },
-			/* 199: small */ { 28, 19, 1 },
-			/* 200: small */ { 29, 19, 1 },
-			/* 201: small */ { 30, 19, 1 },
-			/* 202: small */ { 31, 19, 1 },
-			// ------------------------------------
-			/* 203: small */ { 0, 22, 1 },
-			/* 204: small */ { 1, 22, 1 },
-			/* 205: small */ { 2, 22, 1 },
-			/* 206: small */ { 3, 22, 1 },
-			/* 207: small */ { 4, 22, 1 },
-			/* 208: small */ { 5, 22, 1 },
-			/* 209: small */ { 6, 22, 1 },
-			/* 210: small */ { 7, 22, 1 },
-			/* 211: small */ { 8, 22, 1 },
-			/* 212: small */ { 9, 22, 1 },
-			/* 213: small */ { 10, 22, 1 },
-			/* 214: small */ { 11, 22, 1 },
-			/* 215: small */ { 12, 22, 1 },
-			/* 216: small */ { 13, 22, 1 },
-			/* 217: big */ { 14, 20, 5 },
-			/* 218: small */ { 1, 23, 1 },
-			/* 219: small */ { 2, 23, 1 },
-			/* 220: small */ { 3, 23, 1 },
-			/* 221: small */ { 4, 23, 1 },
-			/* 222: small */ { 5, 23, 1 },
-			/* 223: small */ { 6, 23, 1 },
-			/* 224: small */ { 7, 23, 1 },
-			/* 225: small */ { 8, 23, 1 },
-			/* 226: small */ { 9, 23, 1 },
-			/* 227: small */ { 10, 23, 1 },
-			/* 228: small */ { 11, 23, 1 },
-			/* 229: small */ { 12, 23, 1 },
-			/* 230: big */ { 19, 20, 5 },
-			/* 231: small */ { 13, 23, 1 },
-			/* 232: small */ { 0, 24, 1 },
-			/* 233: small */ { 1, 24, 1 },
-			/* 234: small */ { 2, 24, 1 },
+        /* 0: big */ { 0, 0, 5 },
+        /* 1: big */ { 5, 0, 5 },
+        /* 2: big */ { 10, 0, 5 },
+        /* 3: big */ { 15, 0, 5 },
+        /* 4: big */ { 20, 0, 5 },
+        /* 5: small */ { 30, 0, 1 },
+        /* 6: small */ { 31, 0, 1 },
+        /* 7: big */ { 25, 0, 5 },
+        /* 8: small */ { 30, 1, 1 },
+        /* 9: small */ { 31, 1, 1 },
+        /* 10: big */ { 0, 5, 5 },
+        /* 11: small, continuous */ { 0, 20, 2 },
+        /* 12: small, continuous */ { 2, 20, 2 },
+        /* 13: small, continuous */ { 4, 20, 2 },
+        /* 14: small, continuous */ { 6, 20, 2 },
+        /* 15: small, continuous */ { 8, 20, 2 },
+        /* 16: small, continuous */ { 10, 20, 2 },
+        /* 17: small, continuous */ { 12, 20, 2 },
+        /* 18: big */ { 5, 5, 5 },
+        /* 19: small */ { 31, 5, 1 },
+        /* 20: small */ { 30, 6, 1 },
+        /* 21: big */ { 10, 5, 5 },
+        /* 22: small */ { 31, 6, 1 },
+        /* 23: small */ { 30, 7, 1 },
+        /* 24: big */ { 15, 5, 5 },
+        /* 25: small */ { 31, 7, 1 },
+        /* 26: small */ { 30, 8, 1 },
+        /* 27: small */ { 31, 8, 1 },
+        /* 28: small */ { 30, 9, 1 },
+        /* 29: small */ { 31, 9, 1 },
+        /* 30: small */ { 30, 10, 1 },
+        /* 31: big */ { 20, 5, 5 },
+        /* 32: small */ { 31, 10, 1 },
+        /* 33: small */ { 30, 11, 1 },
+        /* 34: small */ { 31, 11, 1 },
+        /* 35: big */ { 25, 5, 5 },
+        /* 36: big */ { 0, 10, 5 },
+        /* 37: small */ { 30, 13, 1 },
+        /* 38: small */ { 31, 13, 1 },
+        /* 39: small */ { 30, 14, 1 },
+        /* 40: small */ { 31, 14, 1 },
+        /* 41: small */ { 0, 15, 1 },
+        /* 42: small */ { 1, 15, 1 },
+        /* 43: small */ { 2, 15, 1 },
+        /* 44: small */ { 3, 15, 1 },
+        /* 45: small */ { 4, 15, 1 },
+        /* 46: small */ { 5, 15, 1 },
+        /* 47: small */ { 6, 15, 1 },
+        /* 48: small */ { 7, 15, 1 },
+        /* 49: small */ { 8, 15, 1 },
+        /* 50: small */ { 9, 15, 1 },
+        /* 51: small */ { 10, 15, 1 },
+        /* 52: small */ { 11, 15, 1 },
+        /* 53: small */ { 12, 15, 1 },
+        /* 54: small */ { 13, 15, 1 },
+        /* 55: small */ { 14, 15, 1 },
+        /* 56: small */ { 15, 15, 1 },
+        /* 57: small */ { 16, 15, 1 },
+        /* 58: small */ { 17, 15, 1 },
+        /* 59: small */ { 18, 15, 1 },
+        /* 60: small */ { 19, 15, 1 },
+        /* 61: small */ { 20, 15, 1 },
+        /* 62: small */ { 21, 15, 1 },
+        /* 63: small */ { 22, 15, 1 },
+        /* 64: small */ { 23, 15, 1 },
+        /* 65: small */ { 24, 15, 1 },
+        /* 66: small */ { 25, 15, 1 },
+        /* 67: small */ { 26, 15, 1 },
+        /* 68: small */ { 27, 15, 1 },
+        /* 69: small */ { 28, 15, 1 },
+        /* 70: small */ { 29, 15, 1 },
+        /* 71: small */ { 30, 15, 1 },
+        /* 72: small */ { 31, 15, 1 },
+        // ------------------------------------
+        /* 73: small */ { 0, 16, 1 },
+        /* 74: small */ { 1, 16, 1 },
+        /* 75: small */ { 2, 16, 1 },
+        /* 76: small */ { 3, 16, 1 },
+        /* 77: small */ { 4, 16, 1 },
+        /* 78: small */ { 5, 16, 1 },
+        /* 79: small */ { 6, 16, 1 },
+        /* 80: small */ { 7, 16, 1 },
+        /* 81: small */ { 8, 16, 1 },
+        /* 82: small */ { 9, 16, 1 },
+        /* 83: small */ { 10, 16, 1 },
+        /* 84: small */ { 11, 16, 1 },
+        /* 85: small */ { 12, 16, 1 },
+        /* 86: small */ { 13, 16, 1 },
+        /* 87: small */ { 14, 16, 1 },
+        /* 88: small */ { 15, 16, 1 },
+        /* 89: small */ { 16, 16, 1 },
+        /* 90: small */ { 17, 16, 1 },
+        /* 91: small */ { 18, 16, 1 },
+        /* 92: small */ { 19, 16, 1 },
+        /* 93: small */ { 20, 16, 1 },
+        /* 94: small */ { 21, 16, 1 },
+        /* 95: small */ { 22, 16, 1 },
+        /* 96: small */ { 23, 16, 1 },
+        /* 97: small */ { 24, 16, 1 },
+        /* 98: small */ { 30, 16, 1 },
+        /* 99: small */ { 31, 12, 1 },
+        /* 100: small */ { 25, 12, 1 },
+        /* 101: small */ { 26, 16, 1 },
+        /* 102: small */ { 27, 16, 1 },
+        /* 103: small */ { 28, 16, 1 },
+        /* 104: small */ { 29, 16, 1 },
+        /* 105: small */ { 30, 16, 1 },
+        /* 106: small */ { 31, 16, 1 },
+        // ------------------------------------
+        /* 107: small */ { 0, 17, 1 },
+        /* 108: small */ { 1, 17, 1 },
+        /* 109: small */ { 2, 17, 1 },
+        /* 110: small */ { 3, 17, 1 },
+        /* 111: small */ { 4, 17, 1 },
+        /* 112: small */ { 5, 17, 1 },
+        /* 113: small */ { 6, 17, 1 },
+        /* 114: small */ { 7, 17, 1 },
+        /* 115: small */ { 8, 17, 1 },
+        /* 116: small */ { 9, 17, 1 },
+        /* 117: small */ { 10, 17, 1 },
+        /* 118: small */ { 11, 17, 1 },
+        /* 119: small */ { 12, 17, 1 },
+        /* 120: small */ { 13, 17, 1 },
+        /* 121: small */ { 14, 17, 1 },
+        /* 122: small */ { 15, 17, 1 },
+        /* 123: small */ { 16, 17, 1 },
+        /* 124: small */ { 17, 17, 1 },
+        /* 125: small */ { 18, 17, 1 },
+        /* 126: small */ { 19, 17, 1 },
+        /* 127: small */ { 20, 17, 1 },
+        /* 128: small */ { 21, 17, 1 },
+        /* 129: small */ { 22, 17, 1 },
+        /* 130: small */ { 23, 17, 1 },
+        /* 131: small */ { 24, 17, 1 },
+        /* 132: small */ { 25, 17, 1 },
+        /* 133: small */ { 26, 17, 1 },
+        /* 134: small */ { 27, 17, 1 },
+        /* 135: small */ { 28, 17, 1 },
+        /* 136: small */ { 29, 17, 1 },
+        /* 137: small */ { 30, 17, 1 },
+        /* 138: small */ { 31, 17, 1 },
+        // ------------------------------------
+        /* 139: small */ { 0, 18, 1 },
+        /* 140: small */ { 1, 18, 1 },
+        /* 141: small */ { 2, 18, 1 },
+        /* 142: small */ { 3, 18, 1 },
+        /* 143: small */ { 4, 18, 1 },
+        /* 144: small */ { 5, 18, 1 },
+        /* 145: small */ { 6, 18, 1 },
+        /* 146: small */ { 7, 18, 1 },
+        /* 147: small */ { 8, 18, 1 },
+        /* 148: small */ { 9, 18, 1 },
+        /* 149: small */ { 10, 18, 1 },
+        /* 150: small */ { 11, 18, 1 },
+        /* 151: small */ { 12, 18, 1 },
+        /* 152: small */ { 13, 18, 1 },
+        /* 153: small */ { 14, 18, 1 },
+        /* 154: small */ { 15, 18, 1 },
+        /* 155: small */ { 16, 18, 1 },
+        /* 156: small */ { 17, 18, 1 },
+        /* 157: small */ { 18, 18, 1 },
+        /* 158: small */ { 19, 18, 1 },
+        /* 159: small */ { 20, 18, 1 },
+        /* 160: small */ { 21, 18, 1 },
+        /* 161: small */ { 22, 18, 1 },
+        /* 162: small */ { 23, 18, 1 },
+        /* 163: small */ { 24, 18, 1 },
+        /* 164: small */ { 25, 18, 1 },
+        /* 165: small */ { 26, 18, 1 },
+        /* 166: small */ { 27, 18, 1 },
+        /* 167: small */ { 28, 18, 1 },
+        /* 168: small */ { 29, 18, 1 },
+        /* 169: small */ { 30, 18, 1 },
+        /* 170: small */ { 31, 18, 1 },
+        // ------------------------------------
+        /* 171: small */ { 0, 19, 1 },
+        /* 172: small */ { 1, 19, 1 },
+        /* 173: small */ { 2, 19, 1 },
+        /* 174: small */ { 3, 19, 1 },
+        /* 175: small */ { 4, 19, 1 },
+        /* 176: big (odd shape?) */ { 5, 10, 5 },
+        /* 177: small */ { 6, 19, 1 },
+        /* 178: small */ { 7, 19, 1 },
+        /* 179: small */ { 8, 19, 1 },
+        /* 180: small */ { 9, 19, 1 },
+        /* 181: small */ { 10, 19, 1 },
+        /* 182: small */ { 11, 19, 1 },
+        /* 183: small */ { 12, 19, 1 },
+        /* 184: small */ { 13, 19, 1 },
+        /* 185: small */ { 14, 19, 1 },
+        /* 186: small */ { 15, 19, 1 },
+        /* 187: small */ { 16, 19, 1 },
+        /* 188: small */ { 17, 19, 1 },
+        /* 189: small */ { 18, 19, 1 },
+        /* 190: small */ { 19, 19, 1 },
+        /* 191: small */ { 20, 19, 1 },
+        /* 192: small */ { 21, 19, 1 },
+        /* 193: small */ { 22, 19, 1 },
+        /* 194: small */ { 23, 19, 1 },
+        /* 195: small */ { 24, 19, 1 },
+        /* 196: small */ { 25, 19, 1 },
+        /* 197: small */ { 26, 19, 1 },
+        /* 198: small */ { 27, 19, 1 },
+        /* 199: small */ { 28, 19, 1 },
+        /* 200: small */ { 29, 19, 1 },
+        /* 201: small */ { 30, 19, 1 },
+        /* 202: small */ { 31, 19, 1 },
+        // ------------------------------------
+        /* 203: small */ { 0, 22, 1 },
+        /* 204: small */ { 1, 22, 1 },
+        /* 205: small */ { 2, 22, 1 },
+        /* 206: small */ { 3, 22, 1 },
+        /* 207: small */ { 4, 22, 1 },
+        /* 208: small */ { 5, 22, 1 },
+        /* 209: small */ { 6, 22, 1 },
+        /* 210: small */ { 7, 22, 1 },
+        /* 211: small */ { 8, 22, 1 },
+        /* 212: small */ { 9, 22, 1 },
+        /* 213: small */ { 10, 22, 1 },
+        /* 214: small */ { 11, 22, 1 },
+        /* 215: small */ { 12, 22, 1 },
+        /* 216: small */ { 13, 22, 1 },
+        /* 217: big */ { 14, 20, 5 },
+        /* 218: small */ { 1, 23, 1 },
+        /* 219: small */ { 2, 23, 1 },
+        /* 220: small */ { 3, 23, 1 },
+        /* 221: small */ { 4, 23, 1 },
+        /* 222: small */ { 5, 23, 1 },
+        /* 223: small */ { 6, 23, 1 },
+        /* 224: small */ { 7, 23, 1 },
+        /* 225: small */ { 8, 23, 1 },
+        /* 226: small */ { 9, 23, 1 },
+        /* 227: small */ { 10, 23, 1 },
+        /* 228: small */ { 11, 23, 1 },
+        /* 229: small */ { 12, 23, 1 },
+        /* 230: big */ { 19, 20, 5 },
+        /* 231: small */ { 13, 23, 1 },
+        /* 232: small */ { 0, 24, 1 },
+        /* 233: small */ { 1, 24, 1 },
+        /* 234: small */ { 2, 24, 1 },
 	};
 
 	// private static final ImageLink ALTERNATIVE_BACKGROUND = ImageLink.fromName("background");
 	public final int bufferWidth; // in map points.
 	public final int bufferHeight; // in map points.
 	private static final Map<Boolean, Integer> textures = new HashMap<>();
-	// private static final Map<Boolean, TextureHandle> textures = new HashMap<>();
+	// private static final Map<Boolean, Texture> textures = new HashMap<>();
 	public BackgroundDrawHandle handle = null;
 	private final boolean hasDGP;
 	private final IDirectGridProvider dgp;
@@ -385,15 +368,7 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
     private final AdvancedUpdateBufferCache vertexCache;
     private final ByteBuffer vertexBfr;
     private final ThreadLocal<ByteBuffer> localVertexBfr;
-    public final ShaderProgram shader;
-    public final int projectionMatrixUniform;
-    public final int viewMatrixUniform;
-    public final int heightUniform;
-    public final int texHandleUniform;
-    public final Matrix4f projectionMatrix;
-    public final Matrix4f viewMatrix;
-    public final float[] buffer;
-    public final float[] heightMatrix;
+    public final LandscapeShader shader;
     public int vaoId;
     public int vboId;
     public int textureId;
@@ -416,90 +391,7 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
         vertexCache = new AdvancedUpdateBufferCache(this::getLocalVertexBfr, BYTES_PER_FIELD, context::getGl, () -> handle.vertices, bufferWidth);
         asyncAccessContext = context;
 
-        String vertex = """
-        #version 330 core
-
-        layout(location = 0) in vec3 vertex;
-        layout(location = 1) in vec2 texcoord;
-        layout(location = 2) in float color;
-
-        uniform mat4 globalTransform;
-        uniform mat4 projection;
-        uniform mat4 height;
-
-        out float frag_color;
-        out vec2 frag_texcoord;
-
-        void main() {
-            vec4 transformed = height * vec4(vertex, 1.0);
-            transformed.z = -0.1;
-            gl_Position = projection * globalTransform * transformed;
-            frag_color = color;
-            frag_texcoord = texcoord;
-        }
-        """;
-
-        String fragment = """
-        #version 330 core
-
-        in float frag_color;
-        in vec2 frag_texcoord;
-
-        out vec4 fragColor;
-
-        uniform sampler2D texHandle;
-
-        void main() {
-            fragColor = texture(texHandle, frag_texcoord);
-            fragColor.rgb *= frag_color;
-        }
-        """;
-
-        this.shader = new ShaderProgram(vertex, fragment);
-        this.projectionMatrixUniform = GL33C.glGetUniformLocation(this.shader.id, "projection");
-        this.viewMatrixUniform = GL33C.glGetUniformLocation(this.shader.id, "globalTransform");
-        this.heightUniform = GL33C.glGetUniformLocation(this.shader.id, "height");
-        this.texHandleUniform = GL33C.glGetUniformLocation(this.shader.id, "texHandle");
-
-        // get uniform addresses for landscape shader
-        if (this.projectionMatrixUniform == -1) {
-            throw new RuntimeException("invalid projectionMatrixUniform value: %d".formatted(this.projectionMatrixUniform));
-        }
-
-        if (this.viewMatrixUniform == -1) {
-            throw new RuntimeException("invalid viewMatrixUniform value: %d".formatted(this.viewMatrixUniform));
-        }
-
-        if (this.heightUniform == -1) {
-            throw new RuntimeException("invalid heightUniform value: %d".formatted(this.heightUniform));
-        }
-
-        if (this.texHandleUniform == -1) {
-            throw new RuntimeException("invalid texHandleUniform value: %d".formatted(this.texHandleUniform));
-        }
-
-        int openglError = GL33C.glGetError();
-        if (openglError != GL33C.GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred: %d".formatted(openglError));
-        }
-
-        this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0.00f, (float) canvas.width, 0.00f, (float) canvas.height, -1.00f, 1.00f);
-        this.viewMatrix = new Matrix4f();
-        this.viewMatrix.scale(1.00f);
-        this.viewMatrix.translate(0.00f, 0.00f, 0.00f);
-        this.buffer = new float[16];
-
-        final float scaleX = 16f; // DrawConstants.DISTANCE_X
-        final float scaleY = 9f;  // DrawConstants.DISTANCE_Y
-        final int realMapHeight = this.mapHeight - 1;
-
-        this.heightMatrix = new float[] {
-            scaleX, 0.00f, 0.00f, 0.00f,
-            -0.50f * scaleX, -scaleY, 0.00f, 0.00f,
-            0.00f, 2.00f, 1.00f, 0.00f,
-            realMapHeight * scaleX * 0.50f, realMapHeight * scaleY, 0.00f, 1.00f
-        };
+        this.shader = new LandscapeShader((float) canvas.width, (float) canvas.height, this.mapHeight);
 
         return;
     }
@@ -891,7 +783,7 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
     */
 
 
-	public void generateGeometry(MapDrawContext context) throws IllegalBufferException {
+	public void generateTerrainMesh(MapDrawContext context) throws IllegalBufferException {
 
 		int vertices = this.bufferWidth * this.bufferHeight * 3 * 2;
         this.handle = context.getGl().createBackgroundDrawCall(vertices, LandscapeTexture.generateTextureAtlas(context.getGl(), true));
@@ -931,13 +823,13 @@ public class LandscapeTexture implements IGraphicsBackgroundListener {
 
 			if (maxy > bufferHeight) maxy = bufferHeight;
 			if (miny < 0) miny = 0;
-			int linestart = minx - (miny / 2);
+			int lineStart = minx - (miny / 2);
 
 			if(context.getGl() instanceof VkDrawContext) {
 				vertexCache.clearCache();
 			} else {
 				for (int y = miny; y < maxy; y++) {
-					int lineStartX = linestart + (y / 2);
+					int lineStartX = lineStart + (y / 2);
 
 					int linewidth = (width + lineStartX);
 					if (linewidth >= bufferWidth) {

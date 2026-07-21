@@ -1,6 +1,7 @@
 package org.example.mainwindow;
 
 import org.lwjgl.opengl.GL33C;
+import org.example.shaders.CanvasShader;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 
@@ -12,30 +13,12 @@ public class Framebuffer {
     public final int textureId;
     public final int depthBufferId;
     public final CanvasShader shader;
-    // public final ShaderProgram shader;
-    // public final int modelMatrixAddress;
-    // public final int viewMatrixAddress;
-    // public final int projectionMatrixAddress;
-    // public final int colorUniformAddress;
-    // public final float[] buffer;
-    // public final Matrix4f projectionMatrix;
-    // public final Matrix4f viewMatrix;
 
 
     public Framebuffer() {
 
         this.width = 800;
         this.height = 600;
-
-        /*
-        // set canvas-space matrixes (fixed at canvas resolution)
-        this.buffer = new float[16];
-        this.projectionMatrix = new Matrix4f();
-        this.projectionMatrix.ortho(0.00f, (float) this.width, 0.00f, (float) this.height, -1.00f, 1.00f);
-        this.viewMatrix = new Matrix4f();
-        this.viewMatrix.scale(1.00f);
-        this.viewMatrix.translate(0.00f, 0.00f, 0.00f);
-        */
 
         // create canvas frame buffer object
         this.framebufferId = GL33C.glGenFramebuffers();
@@ -76,103 +59,9 @@ public class Framebuffer {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
 
-        /*
-        // create canvas-space shader (renders game scene in canvas coordinates)
-        String canvasVertexSource = """
-        #version 330 core
-
-        layout (location = 0) in vec3 vertex_position;
-
-        uniform mat4 transform_matrix;
-        uniform mat4 projection_matrix;
-        uniform mat4 view_matrix;
-        uniform mat4 model_matrix;
-
-
-        void main() {
-            gl_Position = projection_matrix * view_matrix * model_matrix * vec4(vertex_position, 1.0);
-        }
-        """;
-
-        String canvasFragmentSource = """
-        #version 330 core
-
-        uniform vec4 uniform_color;
-        layout (location = 0) out vec4 fragment_color;
-
-
-        void main() {
-            fragment_color = uniform_color;
-        }
-        """;
-
-        this.shader = new ShaderProgram(canvasVertexSource, canvasFragmentSource);
-
-        // get uniform addresses from canvas-space shader
-        this.modelMatrixAddress = GL33C.glGetUniformLocation(this.shader.id, "model_matrix");
-        this.viewMatrixAddress = GL33C.glGetUniformLocation(this.shader.id, "view_matrix");
-        this.projectionMatrixAddress = GL33C.glGetUniformLocation(this.shader.id, "projection_matrix");
-        this.colorUniformAddress = GL33C.glGetUniformLocation(this.shader.id, "uniform_color");
-
-        if (this.modelMatrixAddress == -1) {
-            throw new RuntimeException("invalid modelMatrixAddress value: %d".formatted(this.modelMatrixAddress));
-        }
-
-        if (this.viewMatrixAddress == -1) {
-            throw new RuntimeException("invalid viewMatrixAddress value: %d".formatted(this.viewMatrixAddress));
-        }
-
-        if (this.projectionMatrixAddress == -1) {
-            throw new RuntimeException("invalid projectionMatrixAddress value: %d".formatted(this.projectionMatrixAddress));
-        }
-
-        if (this.colorUniformAddress == -1) {
-            throw new RuntimeException("invalid colorUniformAddress value: %d".formatted(this.colorUniformAddress));
-        }
-
-        openglError = GL33C.glGetError();
-        if (openglError != GL33C.GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
-        }
-        */
-
         this.shader = new CanvasShader((float) this.width, (float) this.height);
         this.shader.updateProjectionMatrix(this.width, this.height);
 
         return;
     }
-
-
-    /*
-    public void updateProjectionMatrix(int newWidth, int newHeight) {
-
-        // update projection matrix on the canvas-space shader
-        this.shader.activate();
-
-        this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(0, newWidth, 0, newHeight, -1, 1);
-        this.projectionMatrix.get(this.buffer);
-
-        GL33C.glUniformMatrix4fv(this.projectionMatrixAddress, false, this.buffer);
-
-        // update viewport size and position
-        GL33C.glViewport(0, 0, newWidth, newHeight);
-
-        return;
-    }
-
-
-    public void updateViewMatrix(Camera cameraView) {
-
-        this.shader.activate();
-
-        this.viewMatrix.identity();
-        this.viewMatrix.translate(cameraView.offsetX, cameraView.offsetY, 0);
-        this.viewMatrix.get(this.buffer);
-
-        GL33C.glUniformMatrix4fv(this.viewMatrixAddress, false, this.buffer);
-
-        return;
-    }
-    */
 }

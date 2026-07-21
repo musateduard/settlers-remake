@@ -9,7 +9,7 @@ import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL33C;
 import org.example.events.ResizeEvent;
-
+import org.example.shaders.ScreenShader;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 
 
@@ -23,6 +23,8 @@ public class Application {
     public float currentAspectRatio = 800.00f / 600.00f;
     public final Point cursorPosition = new Point(0, 0);
     public boolean isRunning;
+    public final ScreenShader screenShader;
+    public final VertexBuffer viewportBuffer;
 
 
     public Application() {
@@ -42,6 +44,8 @@ public class Application {
         this.renderer = new Renderer(this.window);
         this.canvas = new Framebuffer();
         this.isRunning = true;
+        this.screenShader = new ScreenShader();
+        this.viewportBuffer = new VertexBuffer();
 
         return;
     }

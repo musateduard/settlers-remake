@@ -1,7 +1,8 @@
-package org.example.mainwindow;
+package org.example.shaders;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL33C;
+import org.example.mainwindow.Camera;
 
 
 public class CanvasShader {

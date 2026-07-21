@@ -1,28 +1,14 @@
 package org.example.mainwindow;
 
-import java.io.File;
 import java.util.Arrays;
 import java.nio.IntBuffer;
-
-import jsettlers.common.images.EImageLinkType;
-import jsettlers.common.images.OriginalImageLink;
-import jsettlers.common.resources.ResourceManager;
-import jsettlers.graphics.image.SettlerImage;
-import jsettlers.graphics.map.draw.ImageProvider;
-import jsettlers.graphics.sound.SoundManager;
-import jsettlers.main.swing.resources.SwingResourceProvider;
-import jsettlers.main.swing.settings.SettingsManager;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.opengl.KHRDebug;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.opengl.GLCapabilities;
-
-import static org.lwjgl.opengl.GL33C.GL_FLOAT;
 import static org.lwjgl.opengl.GL33C.GL_NO_ERROR;
 import static org.lwjgl.opengl.GL33C.GL_DONT_CARE;
-import static org.lwjgl.opengl.GL33C.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL33C.GL_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL33C.GL_CONTEXT_FLAGS;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -32,9 +18,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  */
 public class Renderer {
 
-    public final ShaderProgram screenShader;
-    public final int viewportVBOId;
-    public final int viewportVAOId;
     public final GLCapabilities capabilities;
     public final String glslVersion;
     public final String supportedVersion;
@@ -70,85 +53,6 @@ public class Renderer {
         }
 
         int openglError = GL33C.glGetError();
-        if (openglError != GL_NO_ERROR) {
-            throw new RuntimeException("opengl error occurred %d".formatted(openglError));
-        }
-
-        // create screen shader program (projects canvas texture to screen)
-        String vertexShaderSource = """
-        #version 330 core
-
-        layout (location = 0) in vec2 vertex_coordinate;
-        layout (location = 1) in vec2 texture_offset;
-
-        out vec2 texture_coordinate;
-
-
-        void main() {
-            gl_Position = vec4(vertex_coordinate.x, vertex_coordinate.y, 0.0, 1.0);
-            texture_coordinate = texture_offset;
-        }
-        """;
-
-        String fragmentShaderSource = """
-        #version 330 core
-
-        in vec2 texture_coordinate;
-        uniform sampler2D screen_texture;
-
-        out vec4 fragment_color;
-
-
-        void main() {
-            fragment_color = texture(screen_texture, texture_coordinate);
-        }
-        """;
-
-        // String vertexPath = Renderer.class.getResource("vertex_shader.vert").getPath();
-        // String vertexShaderSource = Files.readString(new File(vertexPath).toPath(), StandardCharsets.UTF_8);
-        // String vertexShaderSource = new String(this.getClass().getResourceAsStream("vertex_shader.vert").readAllBytes(), StandardCharsets.UTF_8);
-
-        // String fragmentPath = Renderer.class.getResource("fragment_shader.frag").getPath();
-        // String fragmentShaderSource = Files.readString(new File(fragmentPath).toPath(), StandardCharsets.UTF_8);
-        // String fragmentShaderSource = new String(this.getClass().getResourceAsStream("fragment_shader.frag").readAllBytes(), StandardCharsets.UTF_8);
-
-        this.screenShader = new ShaderProgram(vertexShaderSource, fragmentShaderSource);
-
-        // create viewport vbo and vao (full-screen quad in ndc)
-        int sizeOfFloat = 4;
-        float[] viewportVertexBuffer = {
-            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
-            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
-            1.00f,  -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
-            1.00f,   1.00f, 0.00f, 1.00f, 1.00f,  // top right
-        };
-
-        // create viewport vbo and vao
-        this.viewportVBOId = GL33C.glGenBuffers();
-        this.viewportVAOId = GL33C.glGenVertexArrays();
-
-        // bind viewport vbo
-        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.viewportVBOId);
-
-        // upload vbo to gpu
-        GL33C.glBufferData(GL_ARRAY_BUFFER, viewportVertexBuffer, GL_STATIC_DRAW);
-
-        // bind viewport vao
-        GL33C.glBindVertexArray(this.viewportVAOId);
-
-        // define position attribute of viewport buffer
-        GL33C.glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * sizeOfFloat, 0);
-        GL33C.glEnableVertexAttribArray(0);
-
-        // define uv attribute of viewport buffer
-        GL33C.glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * sizeOfFloat, 3 * sizeOfFloat);
-        GL33C.glEnableVertexAttribArray(1);
-
-        // unbind viewport buffers
-        GL33C.glBindVertexArray(0);
-        GL33C.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        openglError = GL33C.glGetError();
         if (openglError != GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
@@ -199,6 +103,7 @@ public class Renderer {
     }
 
 
+    /*
     public int createVBO(float[] vertexBuffer, int bindingTarget, int usageType) {
 
         int vboId = GL33C.glGenBuffers();  // create vbo
@@ -291,7 +196,6 @@ public class Renderer {
     }
 
 
-    /*
     public void renderBuildingFrame() throws Exception {
 
         ResourceManager.setProvider(new SwingResourceProvider());

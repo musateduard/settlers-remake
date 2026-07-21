@@ -1,5 +1,6 @@
 package org.example.mainwindow;
 
+import java.util.List;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.nio.DoubleBuffer;
@@ -36,8 +37,8 @@ public class Application {
             throw new RuntimeException("Failed to initialize GLFW.");
         }
 
-        int width = 800;
-        int height = 600;
+        final int width = 800;
+        final int height = 600;
         this.viewport = new Rectangle(0, 0, width, height);
 
         this.window = new Window();
@@ -45,7 +46,23 @@ public class Application {
         this.canvas = new Framebuffer();
         this.isRunning = true;
         this.screenShader = new ScreenShader();
-        this.viewportBuffer = new VertexBuffer();
+
+        final float[] viewportVertices = {
+            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
+            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
+            1.00f,  -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
+            1.00f,   1.00f, 0.00f, 1.00f, 1.00f,  // top right
+        };
+
+        final int sizeof_float = 4;
+        final int viewportStride = 5 * sizeof_float;
+
+        final List<VertexAttribute> attributeList = List.of(
+            new VertexAttribute(0, 3, GL33C.GL_FLOAT, false, viewportStride, 0),
+            new VertexAttribute(1, 2, GL33C.GL_FLOAT, false, viewportStride, 3 * 4)
+        );
+
+        this.viewportBuffer = new VertexBuffer(viewportVertices, attributeList, GL33C.GL_STATIC_DRAW);
 
         return;
     }

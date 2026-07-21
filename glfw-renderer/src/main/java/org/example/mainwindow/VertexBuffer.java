@@ -1,54 +1,49 @@
 package org.example.mainwindow;
 
+import java.util.List;
+import java.nio.ByteBuffer;
 import org.lwjgl.opengl.GL33C;
-import static org.lwjgl.opengl.GL11C.GL_FLOAT;
 import static org.lwjgl.opengl.GL11C.GL_NO_ERROR;
 import static org.lwjgl.opengl.GL15C.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15C.GL_STATIC_DRAW;
 
 
 /**
- * this class is currently only used for the screen vertex buffer.
+ * Owns a VBO + VAO backed by a CPU-side {@code float[]} vertex array.
  */
 public class VertexBuffer {
 
+    public final float[] vertexList;
     public final int vboId;
     public final int vaoId;
 
 
-    public VertexBuffer() {
+    public VertexBuffer(float[] vertexList, List<VertexAttribute> attributeList, int usage) {
 
-        // create viewport vbo and vao (full-screen quad in ndc)
-        final int sizeof_float = 4;
-        final float[] viewportVertexBuffer = {
-            -1.00f, -1.00f, 0.00f, 0.00f, 0.00f,  // bottom left
-            -1.00f,  1.00f, 0.00f, 0.00f, 1.00f,  // top left
-            1.00f,  -1.00f, 0.00f, 1.00f, 0.00f,  // bottom right
-            1.00f,   1.00f, 0.00f, 1.00f, 1.00f,  // top right
-        };
-
-        // create viewport vbo and vao
+        this.vertexList = vertexList;
         this.vboId = GL33C.glGenBuffers();
         this.vaoId = GL33C.glGenVertexArrays();
 
-        // bind viewport vbo
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
+        GL33C.glBufferData(GL_ARRAY_BUFFER, this.vertexList, usage);
+
+        GL33C.glBindVertexArray(this.vaoId);
         GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
 
-        // upload vbo to gpu
-        GL33C.glBufferData(GL_ARRAY_BUFFER, viewportVertexBuffer, GL_STATIC_DRAW);
+        for (VertexAttribute attribute : attributeList) {
 
-        // bind viewport vao
-        GL33C.glBindVertexArray(this.vaoId);
+            GL33C.glVertexAttribPointer(
+                attribute.location(),
+                attribute.size(),
+                attribute.type(),
+                attribute.normalized(),
+                attribute.stride(),
+                attribute.pointer()
+            );
 
-        // define position attribute of viewport buffer
-        GL33C.glVertexAttribPointer(0, 3, GL_FLOAT, false, 5 * sizeof_float, 0);
-        GL33C.glEnableVertexAttribArray(0);
+            GL33C.glEnableVertexAttribArray(attribute.location());
+            continue;
+        }
 
-        // define uv attribute of viewport buffer
-        GL33C.glVertexAttribPointer(1, 2, GL_FLOAT, false, 5 * sizeof_float, 3 * sizeof_float);
-        GL33C.glEnableVertexAttribArray(1);
-
-        // unbind viewport buffers
         GL33C.glBindVertexArray(0);
         GL33C.glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -56,6 +51,15 @@ public class VertexBuffer {
         if (openglError != GL_NO_ERROR) {
             throw new RuntimeException("opengl error occurred %d".formatted(openglError));
         }
+
+        return;
+    }
+
+
+    public void updateVertexBuffer(long offset, ByteBuffer buffer) {
+
+        GL33C.glBindBuffer(GL_ARRAY_BUFFER, this.vboId);
+        GL33C.glBufferSubData(GL_ARRAY_BUFFER, offset, buffer);
 
         return;
     }

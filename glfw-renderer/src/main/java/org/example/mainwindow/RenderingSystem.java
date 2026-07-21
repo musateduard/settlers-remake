@@ -9,8 +9,6 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.shaders.ScreenShader;
 import org.example.shaders.LandscapeShader;
-import go.graphics.BackgroundDrawHandle;
-import go.graphics.IllegalBufferException;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.common.CommonConstants;
@@ -99,21 +97,18 @@ public class RenderingSystem {
 
         public static void renderLandscapeData(
             Application application,
-            BackgroundDrawHandle drawRequest,
+            LandscapeTexture landscape,
             LandscapeShader shader,
             Camera camera) {
 
             // 1) Bind the landscape texture to texture units 0 and 1.
             // Legacy drawBackground always bound the same texture twice.
-            int textureId = 0;
-            if (drawRequest.texture != null) {
-                textureId = drawRequest.texture.getTextureId();
-            }
+            int atlasTextureId = landscape.atlas != null ? landscape.atlas.id : 0;
 
             GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, textureId);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
             GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, textureId);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
 
             // activate landscape shader
             shader.activate();
@@ -147,40 +142,17 @@ public class RenderingSystem {
             GL33C.glUniformMatrix4fv(shader.heightUniform, false, shader.heightMatrix);
 
             // 3) Bind geometry.
-            // Normal path: VAO already has attrib layout from createBackgroundDrawCall.
-            // Fallback path: no VAO, so set attrib pointers every draw.
-            int vaoId = drawRequest.getVertexArrayId();
-            if (vaoId != -1) {
-                GL33C.glBindVertexArray(vaoId);
-            }
-
-            else {
-                GL33C.glEnableVertexAttribArray(0);
-                GL33C.glEnableVertexAttribArray(1);
-                GL33C.glEnableVertexAttribArray(2);
-                GL33C.glDisableVertexAttribArray(3);
-
-                int vboId = 0;
-                if (drawRequest.vertices != null) {
-                    vboId = drawRequest.vertices.getBufferId();
-                }
-
-                GL33C.glBindBuffer(GL33C.GL_ARRAY_BUFFER, vboId);
-                // Vertex layout: x, y, height, u, v, color  (6 floats)
-                GL33C.glVertexAttribPointer(0, 3, GL33C.GL_FLOAT, false, 6 * 4, 0);
-                GL33C.glVertexAttribPointer(1, 2, GL33C.GL_FLOAT, false, 6 * 4, 3 * 4);
-                GL33C.glVertexAttribPointer(2, 1, GL33C.GL_FLOAT, false, 6 * 4, 5 * 4);
-            }
+            GL33C.glBindVertexArray(landscape.mesh.vaoId);
 
             // 4) Convert interleaved [first, count, first, count, ...] into the two
             // arrays glMultiDrawArrays expects.
-            int lineCount = drawRequest.visibleLineCount;
+            int lineCount = landscape.visibleLineCount;
             int[] lineVertexOffsetList = new int[lineCount];
             int[] lineVertexCount = new int[lineCount];
 
             for (int index = 0; index < lineCount; index++) {
-                lineVertexOffsetList[index] = drawRequest.visibleLineObjectList[index * 2];
-                lineVertexCount[index] = drawRequest.visibleLineObjectList[index * 2 + 1];
+                lineVertexOffsetList[index] = landscape.visibleLineObjectList[index * 2];
+                lineVertexCount[index] = landscape.visibleLineObjectList[index * 2 + 1];
             }
 
             // 5) Draw all visible terrain lines in one multi-draw call.
@@ -200,43 +172,34 @@ public class RenderingSystem {
             // todo: getScreen().getPosition().bigger() into LandscapeTexture
             FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
 
-            if (landscape.handle == null || landscape.handle.isValid() == false) {
+            if (landscape.mesh == null) {
 
-                try {
-                    /*
-                    note:
+                /*
+                note:
 
-                    why does generateGeometry take so long?
-                    generateGeometry generates list of vertexes for each triangle
-                    this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
+                why does generateGeometry take so long?
+                generateGeometry generates list of vertexes for each triangle
+                this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
 
-                    todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
-                    note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
+                todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
+                note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
+                */
 
-                    */
-
-                    // todo: remove MapContent from generateGeometry
-                    landscape.generateTerrainMesh(map.mapContext);
-                    // context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
-                    GL33C.glUseProgram(landscape.shader.id);
-                    GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
-                }
-
-                catch (IllegalBufferException exception) {
-                    exception.printStackTrace();
-                }
+                // todo: remove MapContent from generateTerrainMesh
+                landscape.generateTerrainMesh(map.mapContext);
+                // context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
+                GL33C.glUseProgram(landscape.shader.id);
+                GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
             }
 
-            // todo: remove LWJGLDrawContext from getTextureData
-            // todo: remove MapContent from updateGeometry
             // todo: calculate visibleMapSection without MapContent
             MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
-            landscape.updateGeometry(map.mapContext, visibleMapSection);
-            landscape.handle.texture = LandscapeTexture.generateTextureAtlas(context, true);  // should this use Background.getTextureData or LandscapeTexture.getTextureData?
-            landscape.handle.visibleLineCount = visibleMapSection.getLines();
-            landscape.handle.visibleLineObjectList = new int[landscape.handle.visibleLineCount * 2];
+            landscape.updateGeometry(visibleMapSection);
+            landscape.atlas = LandscapeTexture.generateTextureAtlas(true);
+            landscape.visibleLineCount = visibleMapSection.getLines();
+            landscape.visibleLineObjectList = new int[landscape.visibleLineCount * 2];
 
-            for (int index = 0; index < landscape.handle.visibleLineCount; index++) {
+            for (int index = 0; index < landscape.visibleLineCount; index++) {
 
                 int startX = visibleMapSection.getLineStartX(index);
                 if (startX < 0) {
@@ -253,12 +216,12 @@ public class RenderingSystem {
                     continue;
                 }
 
-                landscape.handle.visibleLineObjectList[index * 2] = (landscape.bufferWidth * lineY + startX) * 2 * 3;
-                landscape.handle.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
+                landscape.visibleLineObjectList[index * 2] = (landscape.bufferWidth * lineY + startX) * 2 * 3;
+                landscape.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
                 continue;
             }
 
-            GameRenderer.renderLandscapeData(application, landscape.handle, landscape.shader, camera);
+            GameRenderer.renderLandscapeData(application, landscape, landscape.shader, camera);
             return;
         }
 

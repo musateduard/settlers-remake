@@ -66,31 +66,6 @@ public class MainLauncher {
         final MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
         final InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
 
-        /*
-        note: this is the modified glfw initialization that is able to start the game
-
-        JSettlersGameGLFW offlineGame = new JSettlersGameGLFW(selectedMap, initialGameState);
-        TaskExecutorGLFW taskExecutor = new TaskExecutorGLFW();
-
-        offlineGame.networkConnector.getGameClock().setTaskExecutor(taskExecutor);
-
-        JSettlersGameGLFW.GameRunner runner = (JSettlersGameGLFW.GameRunner) offlineGame.start();
-        SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
-        ImageProvider.getInstance().startPreloading();
-
-        // note: MapContent can only be instantiated after GameRunner.mainGrid is properly loaded
-        while (runner.getMainGrid() == null) {
-            Thread.sleep(100);
-        }
-
-        while (runner.isStartupFinished() == false) {
-            Thread.sleep(100);
-        }
-
-        ImageProvider.getInstance().waitForPreloadingFinish();
-        MapContent mapContent = new MapContent(runner, soundPlayer, ETextDrawPosition.DESKTOP);
-        */
-
         // this is the original jsettlers initialization sequence
         final SwingSoundPlayer soundPlayer = new SwingSoundPlayer(SettingsManager.getInstance());
         final JSettlersGame game = new JSettlersGame(selectedMap, initialGameState);
@@ -103,7 +78,15 @@ public class MainLauncher {
         }
 
         final MapContent mapContent = startingListener.getMap();
-        final LandscapeTexture landscape = new LandscapeTexture(application.canvas, mapContent.mapContext);
+        final LandscapeTexture landscape = new LandscapeTexture(
+            application.canvas,
+            mapContent.map.getWidth(),
+            mapContent.map.getHeight()
+        );
+
+        final LandscapeEventBus landscapeEventBus = new LandscapeEventBus();
+        final LandscapeMeshUpdater landscapeMeshUpdater = new LandscapeMeshUpdater(landscape, mapContent.map);
+        mapContent.map.setBackgroundListener(landscapeEventBus);
         camera.offsetX = -mapContent.mapContext.getScreen().getScreenCenterX();
         camera.offsetY = -mapContent.mapContext.getScreen().getScreenCenterY();
 
@@ -157,7 +140,17 @@ public class MainLauncher {
             // run game simulation
             // dispatch game events
 
-            RenderingSystem.drawFrame(frameDuration, application, userInterface, camera, landscape, context, mapContent);
+            RenderingSystem.drawFrame(
+                frameDuration,
+                application,
+                userInterface,
+                camera,
+                landscape,
+                landscapeEventBus,
+                landscapeMeshUpdater,
+                context,
+                mapContent
+            );
 
             continue;
         }

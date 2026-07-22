@@ -5,6 +5,8 @@ import imgui.ImGuiIO;
 import imgui.ImDrawList;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.util.List;
+import java.util.ArrayList;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.shaders.ScreenShader;
@@ -13,6 +15,7 @@ import go.graphics.swing.opengl.LWJGLDrawContext;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.common.CommonConstants;
 import jsettlers.common.map.IDirectGridProvider;
+import jsettlers.common.map.IGraphicsGrid;
 import jsettlers.common.map.shapes.MapRectangle;
 import jsettlers.common.position.FloatRectangle;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
@@ -26,6 +29,157 @@ import static org.lwjgl.opengl.GL33C.GL_FRAMEBUFFER;
 
 
 public class RenderingSystem {
+
+    static class LandscapeRenderer {
+
+        public static void renderLandscapeData(
+            Application application,
+            LandscapeTexture landscape,
+            LandscapeShader shader,
+            Camera camera) {
+
+            // 1) Bind the landscape texture to texture units 0 and 1.
+            // Legacy drawBackground always bound the same texture twice.
+            int atlasTextureId = landscape.atlas != null ? landscape.atlas.id : 0;
+
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
+
+            // activate landscape shader
+            shader.activate();
+
+            // update mvp matrix
+            GL33C.glUniform1i(shader.texHandleUniform, 0);
+
+            // update projection matrix
+            shader.projectionMatrix.identity();
+            shader.projectionMatrix.ortho(
+                0.00f, (float) application.canvas.width,
+                0.00f, (float) application.canvas.height,
+                -1.00f, 1.00f
+            );
+
+            shader.projectionMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.projectionMatrixUniform, false, shader.buffer);  // this needs to update only on screen resize
+
+            // update view matrix
+            shader.viewMatrix.identity();
+            shader.viewMatrix.translate(
+                camera.offsetX + (application.canvas.width / 2.00f),
+                camera.offsetY + (application.canvas.height / 2.00f),
+                0.00f
+            );
+
+            shader.viewMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.viewMatrixUniform, false, shader.buffer);
+
+            // update height matrix
+            GL33C.glUniformMatrix4fv(shader.heightUniform, false, shader.heightMatrix);
+
+            // 3) Bind geometry.
+            GL33C.glBindVertexArray(landscape.mesh.vaoId);
+
+            // 4) Convert interleaved [first, count, first, count, ...] into the two
+            // arrays glMultiDrawArrays expects.
+            int lineCount = landscape.visibleLineCount;
+            int[] lineVertexOffsetList = new int[lineCount];
+            int[] lineVertexCount = new int[lineCount];
+
+            for (int index = 0; index < lineCount; index++) {
+                lineVertexOffsetList[index] = landscape.visibleLineObjectList[index * 2];
+                lineVertexCount[index] = landscape.visibleLineObjectList[index * 2 + 1];
+            }
+
+            // 5) Draw all visible terrain lines in one multi-draw call.
+            GL33C.glMultiDrawArrays(GL33C.GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
+            return;
+        }
+
+
+        // todo: remove MapContent from drawLandscape
+        public static void drawLandscape(
+            Application application,
+            LandscapeTexture landscape,
+            LandscapeEventBus eventBus,
+            LandscapeMeshUpdater meshUpdater,
+            Camera camera,
+            MapContent map) {
+
+            FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
+            IGraphicsGrid grid = map.map;
+            List<LandscapeEventBus.LandscapeEvent> eventQueue = new ArrayList<>();  // this needs to be a queue
+
+            eventBus.lock.lock();
+
+            try {
+                eventBus.drainTo(eventQueue);  // remove this method and move its body into this block
+            }
+
+            finally {
+                eventBus.lock.unlock();
+            }
+
+            meshUpdater.applyFogOfWarEvents(eventQueue);
+
+            if (landscape.mesh == null) {
+
+                /*
+                note:
+
+                why does generateGeometry take so long?
+                generateGeometry generates list of vertexes for each triangle
+                this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
+
+                todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
+                note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
+                */
+
+                meshUpdater.generateTerrainMesh(grid);
+                GL33C.glUseProgram(landscape.shader.id);
+                GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
+            }
+
+            else {
+                // Line patches require an existing mesh; the initial full build already reflects current grid state.
+                meshUpdater.applyBackgroundLineEvents(eventQueue, grid);
+            }
+
+            // todo: calculate visibleMapSection without MapContent
+            MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
+            meshUpdater.uploadVisibleDirtyRegions(visibleMapSection);
+            landscape.atlas = LandscapeTexture.generateLandscapeAtlas(true);
+            landscape.visibleLineCount = visibleMapSection.getLines();
+            landscape.visibleLineObjectList = new int[landscape.visibleLineCount * 2];
+
+            for (int index = 0; index < landscape.visibleLineCount; index++) {
+
+                int startX = visibleMapSection.getLineStartX(index);
+                if (startX < 0) {
+                    startX = 0;
+                }
+
+                int endX = visibleMapSection.getLineEndX(index);
+                if (endX >= landscape.bufferWidth) {
+                    endX = landscape.bufferWidth;
+                }
+
+                int lineY = visibleMapSection.getLineY(index);
+                if (lineY < 0 || lineY > landscape.bufferHeight) {
+                    continue;
+                }
+
+                landscape.visibleLineObjectList[index * 2] = (landscape.bufferWidth * lineY + startX) * 2 * 3;
+                landscape.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
+                continue;
+            }
+
+            LandscapeRenderer.renderLandscapeData(application, landscape, landscape.shader, camera);
+            return;
+        }
+    }
+
 
     static class GameRenderer {
 
@@ -95,137 +249,6 @@ public class RenderingSystem {
         }
 
 
-        public static void renderLandscapeData(
-            Application application,
-            LandscapeTexture landscape,
-            LandscapeShader shader,
-            Camera camera) {
-
-            // 1) Bind the landscape texture to texture units 0 and 1.
-            // Legacy drawBackground always bound the same texture twice.
-            int atlasTextureId = landscape.atlas != null ? landscape.atlas.id : 0;
-
-            GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
-            GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
-
-            // activate landscape shader
-            shader.activate();
-
-            // update mvp matrix
-            GL33C.glUniform1i(shader.texHandleUniform, 0);
-
-            // update projection matrix
-            shader.projectionMatrix.identity();
-            shader.projectionMatrix.ortho(
-                0.00f, (float) application.canvas.width,
-                0.00f, (float) application.canvas.height,
-                -1.00f, 1.00f
-            );
-
-            shader.projectionMatrix.get(shader.buffer);
-            GL33C.glUniformMatrix4fv(shader.projectionMatrixUniform, false, shader.buffer);  // this needs to update only on screen resize
-
-            // update view matrix
-            shader.viewMatrix.identity();
-            shader.viewMatrix.translate(
-                camera.offsetX + (application.canvas.width / 2.00f),
-                camera.offsetY + (application.canvas.height / 2.00f),
-                0.00f
-            );
-
-            shader.viewMatrix.get(shader.buffer);
-            GL33C.glUniformMatrix4fv(shader.viewMatrixUniform, false, shader.buffer);
-
-            // update height matrix
-            GL33C.glUniformMatrix4fv(shader.heightUniform, false, shader.heightMatrix);
-
-            // 3) Bind geometry.
-            GL33C.glBindVertexArray(landscape.mesh.vaoId);
-
-            // 4) Convert interleaved [first, count, first, count, ...] into the two
-            // arrays glMultiDrawArrays expects.
-            int lineCount = landscape.visibleLineCount;
-            int[] lineVertexOffsetList = new int[lineCount];
-            int[] lineVertexCount = new int[lineCount];
-
-            for (int index = 0; index < lineCount; index++) {
-                lineVertexOffsetList[index] = landscape.visibleLineObjectList[index * 2];
-                lineVertexCount[index] = landscape.visibleLineObjectList[index * 2 + 1];
-            }
-
-            // 5) Draw all visible terrain lines in one multi-draw call.
-            GL33C.glMultiDrawArrays(GL33C.GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
-            return;
-        }
-
-
-        // todo: remove LWJGLDrawContext and MapContent from drawLandscape
-        public static void drawLandscape(
-            Application application,
-            LandscapeTexture landscape,
-            Camera camera,
-            LWJGLDrawContext context,
-            MapContent map) {
-
-            // todo: getScreen().getPosition().bigger() into LandscapeTexture
-            FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-
-            if (landscape.mesh == null) {
-
-                /*
-                note:
-
-                why does generateGeometry take so long?
-                generateGeometry generates list of vertexes for each triangle
-                this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
-
-                todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
-                note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
-                */
-
-                // todo: remove MapContent from generateTerrainMesh
-                landscape.generateTerrainMesh(map.mapContext);
-                // context.setHeightMatrix(map.mapContext.getConverter().getMatrixWithHeight());
-                GL33C.glUseProgram(landscape.shader.id);
-                GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
-            }
-
-            // todo: calculate visibleMapSection without MapContent
-            MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
-            landscape.updateGeometry(visibleMapSection);
-            landscape.atlas = LandscapeTexture.generateTextureAtlas(true);
-            landscape.visibleLineCount = visibleMapSection.getLines();
-            landscape.visibleLineObjectList = new int[landscape.visibleLineCount * 2];
-
-            for (int index = 0; index < landscape.visibleLineCount; index++) {
-
-                int startX = visibleMapSection.getLineStartX(index);
-                if (startX < 0) {
-                    startX = 0;
-                }
-
-                int endX = visibleMapSection.getLineEndX(index);
-                if (endX >= landscape.bufferWidth) {
-                    endX = landscape.bufferWidth;
-                }
-
-                int lineY = visibleMapSection.getLineY(index);
-                if (lineY < 0 || lineY > landscape.bufferHeight) {
-                    continue;
-                }
-
-                landscape.visibleLineObjectList[index * 2] = (landscape.bufferWidth * lineY + startX) * 2 * 3;
-                landscape.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
-                continue;
-            }
-
-            GameRenderer.renderLandscapeData(application, landscape, landscape.shader, camera);
-            return;
-        }
-
-
         public static void frameTeardownLegacy(LWJGLDrawContext context, MapContent map) {
 
             // long startTime = System.nanoTime();
@@ -278,6 +301,8 @@ public class RenderingSystem {
             Application application,
             Camera camera,
             LandscapeTexture landscape,
+            LandscapeEventBus eventBus,
+            LandscapeMeshUpdater meshUpdater,
             LWJGLDrawContext context,
             MapContent map) {
 
@@ -303,7 +328,7 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            GameRenderer.drawLandscape(application, landscape, camera, context, map);
+            LandscapeRenderer.drawLandscape(application, landscape, eventBus, meshUpdater, camera, map);
             // draw static sprites
             // draw animated sprites
             // draw settlers units
@@ -401,13 +426,15 @@ public class RenderingSystem {
         UserInterface userInterface,
         Camera camera,
         LandscapeTexture landscape,
+        LandscapeEventBus eventBus,
+        LandscapeMeshUpdater meshUpdater,
         LWJGLDrawContext context,
         MapContent settlersMap) {
 
         // activate canvas framebuffer
         RenderingSystem.activateCanvasBuffer(application.canvas);
 
-        GameRenderer.drawGameScene(frameDuration, application, camera, landscape, context, settlersMap);
+        GameRenderer.drawGameScene(frameDuration, application, camera, landscape, eventBus, meshUpdater, context, settlersMap);
         UserInterfaceRenderer.drawUI(application, userInterface);
 
         // activate screen buffer

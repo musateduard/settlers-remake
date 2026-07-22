@@ -12,6 +12,8 @@ import static org.lwjgl.opengl.GL15C.GL_ARRAY_BUFFER;
  */
 public class VertexBuffer {
 
+    // note: this member is only the initial vertex buffer uploaded to the gpu
+    // this list becomes stale if the mesh is updated at runtime
     public final float[] vertexList;
     public final int vboId;
     public final int vaoId;

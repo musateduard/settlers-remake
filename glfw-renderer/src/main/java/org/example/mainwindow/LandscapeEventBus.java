@@ -1,14 +1,14 @@
 package org.example.mainwindow;
 
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Queue;
+import java.util.ArrayDeque;
 import java.util.concurrent.locks.ReentrantLock;
 import jsettlers.common.map.IGraphicsBackgroundListener;
 
 
 /**
  * Queues background / fog-of-war change notifications from the game thread.
- * The render thread drains and applies them while holding {@link #lock}.
+ * The render thread swaps the queue out under {@link #lock} and applies events.
  */
 public class LandscapeEventBus implements IGraphicsBackgroundListener {
 
@@ -27,7 +27,7 @@ public class LandscapeEventBus implements IGraphicsBackgroundListener {
 
 
     public final ReentrantLock lock = new ReentrantLock();
-    private final ArrayList<LandscapeEvent> queue = new ArrayList<>();
+    public Queue<LandscapeEvent> queue = new ArrayDeque<>();
 
 
     @Override
@@ -59,23 +59,6 @@ public class LandscapeEventBus implements IGraphicsBackgroundListener {
         finally {
             this.lock.unlock();
         }
-
-        return;
-    }
-
-
-    /**
-     * Moves all pending events into {@code out} and clears the queue.
-     * Caller must already hold {@link #lock}.
-     */
-    public void drainTo(List<LandscapeEvent> out) {
-
-        if (this.lock.isHeldByCurrentThread() == false) {
-            throw new IllegalStateException("drainTo requires the event-bus lock");
-        }
-
-        out.addAll(this.queue);
-        this.queue.clear();
 
         return;
     }

@@ -78,14 +78,9 @@ public class MainLauncher {
         }
 
         final MapContent mapContent = startingListener.getMap();
-        final LandscapeTexture landscape = new LandscapeTexture(
-            application.canvas,
-            mapContent.map.getWidth(),
-            mapContent.map.getHeight()
-        );
+        final LandscapeTexture landscape = new LandscapeTexture(application.canvas, mapContent.map);
 
         final LandscapeEventBus landscapeEventBus = new LandscapeEventBus();
-        final LandscapeMeshUpdater landscapeMeshUpdater = new LandscapeMeshUpdater(landscape, mapContent.map);
         mapContent.map.setBackgroundListener(landscapeEventBus);
         camera.offsetX = -mapContent.mapContext.getScreen().getScreenCenterX();
         camera.offsetY = -mapContent.mapContext.getScreen().getScreenCenterY();
@@ -147,7 +142,6 @@ public class MainLauncher {
                 camera,
                 landscape,
                 landscapeEventBus,
-                landscapeMeshUpdater,
                 context,
                 mapContent
             );

@@ -1,18 +1,26 @@
 package org.example.mainwindow;
 
+import jsettlers.common.CommonConstants;
+import jsettlers.common.landscape.ELandscapeType;
+import jsettlers.common.map.IDirectGridProvider;
+import jsettlers.common.map.IGraphicsGrid;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.image.reader.DatFileReader;
 import jsettlers.graphics.image.reader.ImageArrayProvider;
 import jsettlers.graphics.image.reader.ImageMetadata;
 import jsettlers.graphics.image.reader.translator.DatBitmapTranslator;
+import jsettlers.graphics.map.draw.DrawConstants;
+import jsettlers.graphics.map.draw.ETextureOrientation;
 import jsettlers.graphics.map.draw.ImageProvider;
 import org.example.shaders.LandscapeShader;
+import org.lwjgl.opengl.GL33C;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -21,21 +29,21 @@ import java.util.Map;
  */
 public class LandscapeTexture {
 
-	static final int LANDSCAPE_SECTION = 0;
+    static final int LANDSCAPE_SECTION = 0;
 
-	/**
-	 * The base texture size.
-	 */
-	static final int TEXTURE_SIZE = 1024;
+    /**
+     * The base texture size.
+     */
+    static final int TEXTURE_SIZE = 1024;
 
-	/**
-	 * Our base texture is divided into multiple squares that all hold a single texture. Continuous textures occupy 5*5 squares
-	 */
-	static final int TEXTURE_GRID = 32;
+    /**
+     * Our base texture is divided into multiple squares that all hold a single texture. Continuous textures occupy 5*5 squares
+     */
+    static final int TEXTURE_GRID = 32;
 
-	static final int BYTES_PER_FIELD = 4 * 6 * 3 * 2; // 4 bytes per float * 6 components(x,y,z,t,v,color) * 3 points per triangle * 2 triangles per field
+    static final int BYTES_PER_FIELD = 4 * 6 * 3 * 2; // 4 bytes per float * 6 components(x,y,z,t,v,color) * 3 points per triangle * 2 triangles per field
 
-	static final int[][] TEXTURE_POSITIONS = {
+    static final int[][] TEXTURE_POSITIONS = {
         /* 0: big */ { 0, 0, 5 },
         /* 1: big */ { 5, 0, 5 },
         /* 2: big */ { 10, 0, 5 },
@@ -276,30 +284,355 @@ public class LandscapeTexture {
         /* 232: small */ { 0, 24, 1 },
         /* 233: small */ { 1, 24, 1 },
         /* 234: small */ { 2, 24, 1 },
-	};
+    };
 
-	public final int bufferWidth; // in map points.
-	public final int bufferHeight; // in map points.
-	final int mapWidth;
-	final int mapHeight;
-	private static final Map<Boolean, Texture> textures = new HashMap<>();
-	public final LandscapeShader shader;
-	public Texture atlas;
-	public VertexBuffer mesh;
-	public int visibleLineCount;
-	public int[] visibleLineObjectList;
+    public final int bufferWidth; // in map points.
+    public final int bufferHeight; // in map points.
+    final int mapWidth;
+    final int mapHeight;
+    private static final Map<Boolean, Texture> textures = new HashMap<>();
+    public final LandscapeShader shader;
+    public Texture atlas;
+    public VertexBuffer mesh;
+    public int visibleLineCount;
+    public int[] visibleLineObjectList;
+    public final boolean hasDirectGridProvider;
+    public boolean fowEnabled;
+    /** Reusable upload scratch for one map line of fields (not a full-map staging buffer). */
+    public final ByteBuffer buffer;
+
+    private record TextureIntersections(
+        ELandscapeType type1,
+        ELandscapeType type1alt,
+        ELandscapeType type2,
+        int baseIndex) {
+
+        TextureIntersections(ELandscapeType type1, ELandscapeType type2, int baseIndex) {
+            this(type1, type1, type2, baseIndex);
+        }
+    }
+
+    private static final TextureIntersections[] BORDER_TEXTURES = {
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.WATER1, 37),
+
+        // TODO find use for 41
+        // TODO find use for 45
+        // TODO find use for 49-51 textures
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.SAND, ELandscapeType.RIVER1, 52),
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.SAND, ELandscapeType.RIVER2, 56),
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.SAND, ELandscapeType.RIVER3, 60),
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.SAND, ELandscapeType.RIVER4, 64),
+
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.RIVER1, 68),
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.RIVER2, 72),
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.RIVER3, 76),
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.RIVER4, 80),
+
+        new TextureIntersections(ELandscapeType.WATER1, ELandscapeType.WATER2, 84),
+        new TextureIntersections(ELandscapeType.WATER2, ELandscapeType.WATER3, 88),
+        new TextureIntersections(ELandscapeType.WATER3, ELandscapeType.WATER4, 92),
+        new TextureIntersections(ELandscapeType.WATER4, ELandscapeType.WATER5, 96),
+        new TextureIntersections(ELandscapeType.WATER5, ELandscapeType.WATER6, 100),
+        new TextureIntersections(ELandscapeType.WATER6, ELandscapeType.WATER7, 104),
+        new TextureIntersections(ELandscapeType.WATER7, ELandscapeType.WATER8, 108),
+
+        new TextureIntersections(ELandscapeType.SAND, ELandscapeType.GRASS, 112),
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.MOUNTAINBORDEROUTER, 116),
+        new TextureIntersections(ELandscapeType.MOUNTAINBORDEROUTER, ELandscapeType.MOUNTAINBORDER, 120),
+        new TextureIntersections(ELandscapeType.MOUNTAIN, ELandscapeType.MOUNTAINBORDER, 124),
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.DESERTBORDEROUTER, 128),
+        new TextureIntersections(ELandscapeType.DESERTBORDEROUTER, ELandscapeType.DESERTBORDER, 132),
+        new TextureIntersections(ELandscapeType.DESERT, ELandscapeType.DESERTBORDER, 136),
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.MUDBORDEROUTER, 140),
+        new TextureIntersections(ELandscapeType.MUDBORDEROUTER, ELandscapeType.MUDBORDER, 144),
+        new TextureIntersections(ELandscapeType.MUD, ELandscapeType.MUDBORDER, 148),
+
+        // TODO find use for 152
+
+        new TextureIntersections(ELandscapeType.MOUNTAIN, ELandscapeType.SNOWBORDEROUTER, 156),
+        new TextureIntersections(ELandscapeType.SNOWBORDEROUTER, ELandscapeType.SNOWBORDER, 160),
+        new TextureIntersections(ELandscapeType.SNOW, ELandscapeType.SNOWBORDER, 164),
+
+        // some original maps have this
+        new TextureIntersections(ELandscapeType.MOUNTAIN, ELandscapeType.SNOW, 156),
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.EARTH, 168),
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.FLATTENED, 172),
+
+        // TODO find use for 176 landscape
+        // TODO find use for 177 border
+        // 181 is a duplicate of 172
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.ROAD, 185),
+
+        // 189 is another duplicate of 172
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.DRY_GRASS, 193),
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.DRY_EARTH, 197),
+
+        new TextureIntersections(ELandscapeType.GRASS, ELandscapeType.MOORBORDEROUTER, 201),
+        new TextureIntersections(ELandscapeType.MOORBORDEROUTER, ELandscapeType.MOORBORDER, 205),
+        new TextureIntersections(ELandscapeType.MOOR, ELandscapeType.MOORBORDER, 209),
+
+        // TODO find use for 213
+        new TextureIntersections(ELandscapeType.DESERT, ELandscapeType.SHARP_FLATTENED_DESERT, 218),
+        new TextureIntersections(ELandscapeType.DESERT, ELandscapeType.FLATTENED_DESERT, 222),
+        // TODO find use for 226
+        new TextureIntersections(ELandscapeType.MOUNTAIN, ELandscapeType.GRAVEL, 231),
+    };
 
 
-	public LandscapeTexture(Framebuffer canvas, int mapWidth, int mapHeight) {
+    public LandscapeTexture(Framebuffer canvas, IGraphicsGrid map) {
 
-        this.mapWidth = mapWidth;
-		this.mapHeight = mapHeight;
-		this.bufferWidth = mapWidth - 1;
-		this.bufferHeight = mapHeight - 1;
-		this.shader = new LandscapeShader((float) canvas.width, (float) canvas.height, this.mapHeight);
+        this.mapWidth = map.getWidth();
+        this.mapHeight = map.getHeight();
+        this.bufferWidth = this.mapWidth - 1;
+        this.bufferHeight = this.mapHeight - 1;
+        this.shader = new LandscapeShader((float) canvas.width, (float) canvas.height, this.mapHeight);
+        this.hasDirectGridProvider = map instanceof IDirectGridProvider;
+        this.fowEnabled = this.hasDirectGridProvider && ((IDirectGridProvider) map).isFoWEnabled();
+        this.buffer = ByteBuffer
+            .allocateDirect(BYTES_PER_FIELD * this.bufferWidth)
+            .order(ByteOrder.nativeOrder());
+        this.atlas = generateLandscapeAtlas(true);
+        this.mesh = generateTerrainMesh(this, map);
 
         return;
-	}
+    }
+
+
+    /**
+     * Builds the full terrain mesh from the current grid and returns a GPU vertex buffer.
+     */
+    public static VertexBuffer generateTerrainMesh(LandscapeTexture landscape, IGraphicsGrid map) {
+
+        int vertexCount = landscape.bufferWidth * landscape.bufferHeight * 3 * 2;
+        final int stride = 6 * 4;
+        float[] meshVertices = new float[vertexCount * 6];
+        List<VertexAttribute> attributes = List.of(
+            new VertexAttribute(0, 3, GL33C.GL_FLOAT, false, stride, 0),
+            new VertexAttribute(1, 2, GL33C.GL_FLOAT, false, stride, 3 * 4),
+            new VertexAttribute(2, 1, GL33C.GL_FLOAT, false, stride, 5 * 4)
+        );
+        VertexBuffer mesh = new VertexBuffer(meshVertices, attributes, GL33C.GL_DYNAMIC_DRAW);
+
+        ByteBuffer bufferLine = landscape.buffer;
+
+        for (int offsetY = 0; offsetY < landscape.bufferHeight; offsetY += 1) {
+            bufferLine.clear();
+            for (int offsetX = 0; offsetX < landscape.bufferWidth; offsetX += 1) {
+                addTrianglesToGeometry(landscape, map, bufferLine, offsetX, offsetY);
+            }
+            bufferLine.flip();
+            mesh.updateVertexBuffer((long) BYTES_PER_FIELD * landscape.bufferWidth * offsetY, bufferLine);
+        }
+
+        return mesh;
+    }
+
+
+    /**
+     * Writes fields [{@code x1}, {@code x2}) on map line {@code y} into {@link #buffer}
+     * and uploads that span to the GPU mesh immediately.
+     */
+    static void uploadLineSpan(LandscapeTexture landscape, IGraphicsGrid map, int y, int x1, int x2) {
+
+        ByteBuffer buffer = landscape.buffer;
+        buffer.clear();
+        for (int i = x1; i != x2; i++) {
+            addTrianglesToGeometry(landscape, map, buffer, i, y);
+        }
+
+        buffer.flip();
+        landscape.mesh.updateVertexBuffer(((long) y * landscape.bufferWidth + x1) * BYTES_PER_FIELD, buffer);
+
+        return;
+    }
+
+
+    static void addTrianglesToGeometry(
+        LandscapeTexture landscape,
+        IGraphicsGrid map,
+        ByteBuffer buffer,
+        int x,
+        int y) {
+
+        addTriangleToGeometry(landscape, map, buffer, x, y, true, x * 37 + y * 17);
+        addTriangleToGeometry(landscape, map, buffer, x, y, false, x);
+        return;
+    }
+
+
+    private static void addTriangleToGeometry(
+        LandscapeTexture landscape,
+        IGraphicsGrid map,
+        ByteBuffer buffer,
+        int x1,
+        int y,
+        boolean up,
+        int useSecondParameter) {
+
+        int y1 = y + (up ? 1 : 0);
+        int x2 = x1 + (up ? 0 : 1);
+        int y2 = y + (up ? 0 : 1);
+        int x3 = x1 + 1;
+        int y3 = y + (up ? 1 : 0);
+
+        ELandscapeType leftLandscape = map.getVisibleLandscapeTypeAt(x1, y1);
+        ELandscapeType aLandscape = map.getVisibleLandscapeTypeAt(x2, y2);
+        ELandscapeType rightLandscape = map.getVisibleLandscapeTypeAt(x3, y3);
+
+        float[] texturePos;
+        int textureIndex;
+        int orientationIndex = up ? 0 : 1;
+
+        if (aLandscape == leftLandscape && aLandscape == rightLandscape) {
+            textureIndex = aLandscape.getImageNumber();
+            texturePos = ETextureOrientation.CONTINUOS[orientationIndex];
+        } else {
+            textureIndex = leftLandscape.getImageNumber();
+
+            for (TextureIntersections intersect : BORDER_TEXTURES) {
+                int type1count = 0;
+                int type1acount = 0;
+                int type2count = 0;
+
+                if (leftLandscape == intersect.type1) {
+                    type1count++;
+                } else if (leftLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
+
+                if (aLandscape == intersect.type1) {
+                    type1count++;
+                } else if (aLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
+
+                if (rightLandscape == intersect.type1) {
+                    type1count++;
+                } else if (rightLandscape == intersect.type1alt) {
+                    type1acount++;
+                }
+
+                if (leftLandscape == intersect.type2) {
+                    type2count++;
+                }
+                if (aLandscape == intersect.type2) {
+                    type2count++;
+                }
+                if (rightLandscape == intersect.type2) {
+                    type2count++;
+                }
+
+                if (type1count + type1acount + type2count != 3 || type1acount == 2 || type2count == 0) {
+                    continue;
+                }
+
+                textureIndex = intersect.baseIndex;
+                textureIndex += (type2count == 2) ? 2 : 0;
+                textureIndex += useSecondParameter & 1;
+                break;
+            }
+
+            if (leftLandscape == rightLandscape) {
+                texturePos = ETextureOrientation.ORIENTATION[orientationIndex];
+            } else if (leftLandscape == aLandscape) {
+                texturePos = ETextureOrientation.LEFT[orientationIndex];
+            } else {
+                texturePos = ETextureOrientation.RIGHT[orientationIndex];
+            }
+        }
+
+        int[] positions = TEXTURE_POSITIONS[textureIndex];
+        int addDx = 0;
+        int addDy = 0;
+
+        if (positions[2] >= 2) {
+            addDx = x1 * DrawConstants.DISTANCE_X - y * DrawConstants.DISTANCE_X / 2;
+            addDy = y * DrawConstants.TEXTUREUNIT_Y;
+            addDx = realModulo(addDx, (positions[2] - 1) * TEXTURE_GRID);
+            addDy = realModulo(addDy, (positions[2] - 1) * TEXTURE_GRID);
+        }
+
+        addDx += positions[0] * TEXTURE_GRID;
+        addDy += positions[1] * TEXTURE_GRID;
+
+        {
+            float u = (texturePos[0] + addDx) / (float) TEXTURE_SIZE;
+            float v = (texturePos[1] + addDy) / (float) TEXTURE_SIZE;
+            addPointToGeometry(landscape, map, buffer, up ? x2 : x1, up ? y2 : y1, u, v);
+        }
+        {
+            float u = (texturePos[2] + addDx) / (float) TEXTURE_SIZE;
+            float v = (texturePos[3] + addDy) / (float) TEXTURE_SIZE;
+            addPointToGeometry(landscape, map, buffer, up ? x1 : x2, up ? y1 : y2, u, v);
+        }
+        {
+            float u = (texturePos[4] + addDx) / (float) TEXTURE_SIZE;
+            float v = (texturePos[5] + addDy) / (float) TEXTURE_SIZE;
+            addPointToGeometry(landscape, map, buffer, x3, y3, u, v);
+        }
+        return;
+    }
+
+
+    private static void addPointToGeometry(
+        LandscapeTexture landscape,
+        IGraphicsGrid map,
+        ByteBuffer buffer,
+        int x,
+        int y,
+        float u,
+        float v) {
+
+        int height = getHeight(map, x, y);
+        byte visibleStatus = map.getVisibleStatus(x, y);
+
+        float color = 0;
+        if (x > 0 && x < landscape.mapWidth - 2
+            && y > 0 && y < landscape.mapHeight - 2
+            && (visibleStatus > 0 || !landscape.fowEnabled)) {
+
+            int dHeight = getHeight(map, x, y - 1) - height;
+            color = 0.875f + dHeight * .125f;
+
+            if (color < 0.4f) {
+                color = 0.4f;
+            }
+
+            if (landscape.fowEnabled) {
+                color *= visibleStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            }
+        }
+
+        buffer.putFloat(x);
+        buffer.putFloat(y);
+        buffer.putFloat(height);
+        buffer.putFloat(u);
+        buffer.putFloat(v);
+        buffer.putFloat(color);
+        return;
+    }
+
+
+    private static int getHeight(IGraphicsGrid map, int x, int y) {
+        if (x >= 0 && x < map.getWidth() && y >= 0 && y < map.getHeight()) {
+            return map.getVisibleHeightAt(x, y);
+        }
+        return 0;
+    }
+
+
+    private static int realModulo(int number, int modulo) {
+        if (number >= 0) {
+            return number % modulo;
+        }
+        return number % modulo + modulo;
+    }
 
 
     public static Texture generateLandscapeAtlas(boolean original) {
@@ -337,82 +670,82 @@ public class LandscapeTexture {
     }
 
 
-	private static class ImageWriter implements ImageArrayProvider {
-		int arrayOffset;
-		int cellSize;
-		int maxOffset;
-		int[] data;
+    private static class ImageWriter implements ImageArrayProvider {
+        int arrayOffset;
+        int cellSize;
+        int maxOffset;
+        int[] data;
 
-		// nothing to do. We assume images are a rectangle and have the right size.
-		@Override
-		public void startImage(int width, int height) {
+        // nothing to do. We assume images are a rectangle and have the right size.
+        @Override
+        public void startImage(int width, int height) {
             return;
-		}
+        }
 
-		@Override
-		public void writeLine(int[] data, int length) {
-			if (arrayOffset < maxOffset) {
-				for (int i = 0; i < cellSize; i++) {
-					this.data[arrayOffset + i] = data[i % length];
-				}
-				arrayOffset += TEXTURE_SIZE;
-			}
-		}
-	}
+        @Override
+        public void writeLine(int[] data, int length) {
+            if (arrayOffset < maxOffset) {
+                for (int i = 0; i < cellSize; i++) {
+                    this.data[arrayOffset + i] = data[i % length];
+                }
+                arrayOffset += TEXTURE_SIZE;
+            }
+        }
+    }
 
-	/**
-	 * Generates the texture data.
-	 *
-	 * @param data The texture data buffer.
+    /**
+     * Generates the texture data.
      *
-	 * @throws IOException If the necessary file reader is missing
-	 */
-	private static void decodeImage(int[] data) throws IOException {
+     * @param data The texture data buffer.
+     *
+     * @throws IOException If the necessary file reader is missing
+     */
+    private static void decodeImage(int[] data) throws IOException {
 
-		DatFileReader assetFile = ImageProvider.getInstance().getFileReader(LANDSCAPE_SECTION);
+        DatFileReader assetFile = ImageProvider.getInstance().getFileReader(LANDSCAPE_SECTION);
 
-		if (assetFile == null) {
-			throw new IOException("Could not get a file reader for the file.");
-		}
+        if (assetFile == null) {
+            throw new IOException("Could not get a file reader for the file.");
+        }
 
-		ImageWriter imageWriter = new ImageWriter();
-		imageWriter.data = data;
+        ImageWriter imageWriter = new ImageWriter();
+        imageWriter.data = data;
 
-		ImageMetadata meta = new ImageMetadata();
+        ImageMetadata meta = new ImageMetadata();
 
-		DatBitmapTranslator<SingleImage> translator = assetFile.getLandscapeTranslator();
+        DatBitmapTranslator<SingleImage> translator = assetFile.getLandscapeTranslator();
 
-		for (int index = 0; index < TEXTURE_POSITIONS.length; index++) {
+        for (int index = 0; index < TEXTURE_POSITIONS.length; index++) {
 
-			int[] position = TEXTURE_POSITIONS[index];
-			int x = position[0] * TEXTURE_GRID;
-			int y = position[1] * TEXTURE_GRID;
-			int start = y * TEXTURE_SIZE + x;
-			int cellSize = position[2] * TEXTURE_GRID;
-			int end = (y + cellSize) * TEXTURE_SIZE + x;
+            int[] position = TEXTURE_POSITIONS[index];
+            int x = position[0] * TEXTURE_GRID;
+            int y = position[1] * TEXTURE_GRID;
+            int start = y * TEXTURE_SIZE + x;
+            int cellSize = position[2] * TEXTURE_GRID;
+            int end = (y + cellSize) * TEXTURE_SIZE + x;
 
-			imageWriter.arrayOffset = start;
-			imageWriter.cellSize = cellSize;
-			imageWriter.maxOffset = end;
+            imageWriter.arrayOffset = start;
+            imageWriter.cellSize = cellSize;
+            imageWriter.maxOffset = end;
 
-			long dataPos = assetFile.readImageHeader(translator, meta, assetFile.getOffsetForLandscape(index));
-			assetFile.readCompressedData(translator, meta, imageWriter, dataPos);
+            long dataPos = assetFile.readImageHeader(translator, meta, assetFile.getOffsetForLandscape(index));
+            assetFile.readCompressedData(translator, meta, imageWriter, dataPos);
 
-			// freaky stuff
-			int arrayOffset = imageWriter.arrayOffset;
-			int l = arrayOffset - start;
-			while (arrayOffset < end) {
-				System.arraycopy(data, arrayOffset - l, data, arrayOffset, cellSize);
-				arrayOffset += TEXTURE_SIZE;
-			}
-		}
-	}
+            // freaky stuff
+            int arrayOffset = imageWriter.arrayOffset;
+            int l = arrayOffset - start;
+            while (arrayOffset < end) {
+                System.arraycopy(data, arrayOffset - l, data, arrayOffset, cellSize);
+                arrayOffset += TEXTURE_SIZE;
+            }
+        }
+    }
 
 
-	/**
-	 * Invalidates the background texture.
-	 */
-	static void invalidateTexture() {
-		LandscapeTexture.textures.clear();
-	}
+    /**
+     * Invalidates the background texture.
+     */
+    static void invalidateTexture() {
+        LandscapeTexture.textures.clear();
+    }
 }

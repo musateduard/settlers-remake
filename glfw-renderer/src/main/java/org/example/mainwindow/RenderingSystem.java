@@ -5,8 +5,9 @@ import imgui.ImGuiIO;
 import imgui.ImDrawList;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.shaders.ScreenShader;
@@ -98,58 +99,33 @@ public class RenderingSystem {
         }
 
 
-        // todo: remove MapContent from drawLandscape
+        // todo: remove MapContent from drawLandscape (screen → MapRectangle still needs mapContext)
         public static void drawLandscape(
             Application application,
             LandscapeTexture landscape,
             LandscapeEventBus eventBus,
-            LandscapeMeshUpdater meshUpdater,
             Camera camera,
             MapContent map) {
 
             FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
             IGraphicsGrid grid = map.map;
-            List<LandscapeEventBus.LandscapeEvent> eventQueue = new ArrayList<>();  // this needs to be a queue
+            Queue<LandscapeEventBus.LandscapeEvent> events;
 
             eventBus.lock.lock();
 
             try {
-                eventBus.drainTo(eventQueue);  // remove this method and move its body into this block
+                events = eventBus.queue;
+                eventBus.queue = new ArrayDeque<>();
             }
 
             finally {
                 eventBus.lock.unlock();
             }
 
-            meshUpdater.applyFogOfWarEvents(eventQueue);
-
-            if (landscape.mesh == null) {
-
-                /*
-                note:
-
-                why does generateGeometry take so long?
-                generateGeometry generates list of vertexes for each triangle
-                this causes a map grid vertex to be generated 6 times, once for each triangle meeting at that point
-
-                todo: optimize generateGeometry to generate only 1 vertex for each tile intersection and reuse vertexes for triangles
-                note: use vertex index buffer for all vertexes and list of triangles where each triangle is expressed as 3 vertex indexes
-                */
-
-                meshUpdater.generateTerrainMesh(grid);
-                GL33C.glUseProgram(landscape.shader.id);
-                GL33C.glUniformMatrix4fv(landscape.shader.heightUniform, false, landscape.shader.heightMatrix);
-            }
-
-            else {
-                // Line patches require an existing mesh; the initial full build already reflects current grid state.
-                meshUpdater.applyBackgroundLineEvents(eventQueue, grid);
-            }
+            LandscapeRenderer.updateLandscapeMesh(landscape, events, grid);
 
             // todo: calculate visibleMapSection without MapContent
             MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
-            meshUpdater.uploadVisibleDirtyRegions(visibleMapSection);
-            landscape.atlas = LandscapeTexture.generateLandscapeAtlas(true);
             landscape.visibleLineCount = visibleMapSection.getLines();
             landscape.visibleLineObjectList = new int[landscape.visibleLineCount * 2];
 
@@ -176,6 +152,65 @@ public class RenderingSystem {
             }
 
             LandscapeRenderer.renderLandscapeData(application, landscape, landscape.shader, camera);
+            return;
+        }
+
+
+        /**
+         * Applies FoW flag changes and immediately uploads every background-line mesh patch.
+         */
+        public static void updateLandscapeMesh(
+            LandscapeTexture landscape,
+            Queue<LandscapeEventBus.LandscapeEvent> events,
+            IGraphicsGrid grid) {
+
+            for (LandscapeEventBus.LandscapeEvent event : events) {
+
+                if (event instanceof LandscapeEventBus.FogOfWarEnabledChanged fow) {
+                    landscape.fowEnabled = landscape.hasDirectGridProvider && fow.enabled();
+                    continue;
+                }
+
+                if (event instanceof LandscapeEventBus.BackgroundLineChanged line) {
+                    LandscapeRenderer.applyBackgroundLineChanged(
+                        landscape,
+                        grid,
+                        line.x(),
+                        line.y(),
+                        line.length()
+                    );
+                }
+            }
+
+            return;
+        }
+
+
+        private static void applyBackgroundLineChanged(LandscapeTexture landscape, IGraphicsGrid map, int x, int y, int length) {
+
+            if (y == landscape.bufferHeight) {
+                return;
+            }
+
+            int x2 = x + length;
+            if (x != 0) {
+                x = x - 1;
+            }
+            if (x2 < landscape.bufferWidth) {
+                x2 = x2 + 1;
+            }
+            if (x2 > landscape.bufferWidth) {
+                x2 = landscape.bufferWidth;
+            }
+
+            LandscapeTexture.uploadLineSpan(landscape, map, y, x, x2);
+            if (y > 0) {
+                LandscapeTexture.uploadLineSpan(landscape, map, y - 1, x, x2);
+            }
+            if (y < landscape.bufferHeight - 1) {
+                LandscapeTexture.uploadLineSpan(landscape, map, y + 1, x, x2);
+            }
+
             return;
         }
     }
@@ -302,7 +337,6 @@ public class RenderingSystem {
             Camera camera,
             LandscapeTexture landscape,
             LandscapeEventBus eventBus,
-            LandscapeMeshUpdater meshUpdater,
             LWJGLDrawContext context,
             MapContent map) {
 
@@ -328,7 +362,7 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            LandscapeRenderer.drawLandscape(application, landscape, eventBus, meshUpdater, camera, map);
+            LandscapeRenderer.drawLandscape(application, landscape, eventBus, camera, map);
             // draw static sprites
             // draw animated sprites
             // draw settlers units
@@ -427,14 +461,13 @@ public class RenderingSystem {
         Camera camera,
         LandscapeTexture landscape,
         LandscapeEventBus eventBus,
-        LandscapeMeshUpdater meshUpdater,
         LWJGLDrawContext context,
         MapContent settlersMap) {
 
         // activate canvas framebuffer
         RenderingSystem.activateCanvasBuffer(application.canvas);
 
-        GameRenderer.drawGameScene(frameDuration, application, camera, landscape, eventBus, meshUpdater, context, settlersMap);
+        GameRenderer.drawGameScene(frameDuration, application, camera, landscape, eventBus, context, settlersMap);
         UserInterfaceRenderer.drawUI(application, userInterface);
 
         // activate screen buffer

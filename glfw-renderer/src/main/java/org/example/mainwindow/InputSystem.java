@@ -189,6 +189,16 @@ public class InputSystem {
 
             switch (event.button()) {
 
+                /*
+                note:
+
+                if the first event when game starts is GLFW_MOUSE_BUTTON_RIGHT and
+                camera previous cursor x and y are still 0 it's possible that panning results in
+                a massive movement because it calculates delta based on 0 and scree cursor position
+                this is unlikely but possible
+                one fix is to set previous cursor to current cursor on this event
+                */
+
                 case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> {
                     camera.rmbPressed = event.action() == GLFW.GLFW_PRESS;
                     return false;  // return false for testing; don't return false unconditionally
@@ -219,27 +229,23 @@ public class InputSystem {
             deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
             */
 
-            float deltaX = (float) event.offsetX() - camera.prevCursorX;
-            float deltaY = camera.prevCursorY - (float) event.offsetY();  // deltaY needs to be inverted so that moves up are positive
+            float deltaX = (float) event.offsetX() - camera.previousCursorX;
+            float deltaY = camera.previousCursorY - (float) event.offsetY();  // deltaY needs to be inverted so that moves up are positive
 
+            // when panning using rmb apply delta negatively to simulate moving the camera
             if (camera.rmbPressed) {
-
-                // note: when panning using rmb we apply delta negatively to simulate moving the camera
-
-                camera.offsetX -= deltaX;
-                camera.offsetY -= deltaY;
+                camera.pendingPanX -= deltaX;
+                camera.pendingPanY -= deltaY;
             }
 
+            // when panning using mmb apply delta positively to simulate dragging the map
             else if (camera.mmbPressed) {
-
-                // note: when panning using mmb we apply delta positively to simulate dragging the map
-
-                camera.offsetX += deltaX;
-                camera.offsetY += deltaY;
+                camera.pendingPanX += deltaX;
+                camera.pendingPanY += deltaY;
             }
 
-            camera.prevCursorX = (float) event.offsetX();
-            camera.prevCursorY = (float) event.offsetY();
+            camera.previousCursorX = (float) event.offsetX();
+            camera.previousCursorY = (float) event.offsetY();
             return false;
         }
 

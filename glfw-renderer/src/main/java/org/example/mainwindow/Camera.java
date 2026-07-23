@@ -1,20 +1,24 @@
 package org.example.mainwindow;
 
-import org.example.events.MouseEvent;
-import org.example.events.CursorEvent;
-import org.example.events.KeyEvent;
-import org.lwjgl.glfw.GLFW;
+import jsettlers.graphics.map.draw.DrawConstants;
 
 
 /**
- * this class handles all camera related functions like panning and zooming.
+ * this class handles all camera movement.
  */
 public class Camera {
 
+    private static final float TOP_BORDER = 100.00f;
+
+    public final float mapWidth; // Map width in screen pixels (tiles * DrawConstants.DISTANCE_X)
+    public final float mapHeight;  // Map height in screen pixels (tiles * DrawConstants.DISTANCE_Y)
+    public final float incline;  // Parallelogram side incline: DISTANCE_X / 2 / DISTANCE_Y
     public float offsetX;
     public float offsetY;
-    public float prevCursorX;
-    public float prevCursorY;
+    public float pendingPanX;
+    public float pendingPanY;
+    public float previousCursorX;
+    public float previousCursorY;
     public boolean rmbPressed;
     public boolean mmbPressed;
     public boolean keyUpPressed;
@@ -23,12 +27,21 @@ public class Camera {
     public boolean keyRightPressed;
 
 
-    public Camera() {
+    /**
+     * @param tilesWidth  map width in tiles
+     * @param tilesHeight map height in tiles
+     */
+    public Camera(int tilesWidth, int tilesHeight) {
 
+        this.mapWidth = tilesWidth * DrawConstants.DISTANCE_X;
+        this.mapHeight = tilesHeight * DrawConstants.DISTANCE_Y;
+        this.incline = DrawConstants.DISTANCE_X / 2.00f / DrawConstants.DISTANCE_Y;
         this.offsetX = 0;
         this.offsetY = 0;
-        this.prevCursorX = 0;
-        this.prevCursorY = 0;
+        this.previousCursorX = 0;
+        this.previousCursorY = 0;
+        this.pendingPanX = 0;
+        this.pendingPanY = 0;
         this.rmbPressed = false;
         this.mmbPressed = false;
         this.keyUpPressed = false;
@@ -40,141 +53,71 @@ public class Camera {
     }
 
 
-    /*
-    public void handleMouseButtonEvent(MouseEvent event) {
+    public float clamp(float min, float max, float value) {
 
-        if (event.action() == GLFW.GLFW_PRESS) {
-
-            switch (event.button()) {
-
-                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = true;
-                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = true;
-                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = true;
-
-                default -> {
-                    // do nothing
-                }
-            }
+        if (min > max) {
+            return (min + max) / 2.00f;
         }
 
-        else {
-
-            switch (event.button()) {
-
-                case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> this.rmbPressed = false;
-                case GLFW.GLFW_MOUSE_BUTTON_LEFT -> this.lmbPressed = false;
-                case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> this.mmbPressed = false;
-
-                default -> {
-                    // do nothing
-                }
-            }
+        if (value < min) {
+            return min;
         }
 
-        return;
+        return Math.min(value, max);
     }
 
 
-    public void handleCursorEvent(CursorEvent event) {
+    /**
+     * Returns how much of {@code deltaY} can be applied without leaving the map.
+     * Uses the same convention as legacy {@code ScreenPosition}: offset = -screenCenter.
+     */
+    public float clampToMapHeight(float deltaY, float viewHeight) {
 
-        // note:
-        //
-        // glfw screen coordinates are calculated from top-left to bottom right
-        // opengl coordinates are bottom-left to top-right
-        // deltaY needs to be calculated inverted (i.e. previous - current) so that moves up are positive and down are negative
+        float top = this.mapHeight + TOP_BORDER;
+        float bottom = 0.00f;
+        float minCenterY = bottom + viewHeight / 2.00f;
+        float maxCenterY = top - viewHeight / 2.00f;
 
-        float deltaX = (float) event.xpos() - this.prevCursorX;
-        float deltaY = this.prevCursorY - (float) event.ypos();  // deltaY needs to be inverted so that moves up are positive
+        float proposedCenterY = -(this.offsetY + deltaY);
+        float clampedCenterY = this.clamp(minCenterY, maxCenterY, proposedCenterY);
 
-        if (this.rmbPressed) {
-
-            // note: when panning using rmb we apply delta negatively to simulate moving the camera
-
-            this.offsetX -= deltaX;
-            this.offsetY -= deltaY;
-        }
-
-        else if (this.mmbPressed) {
-
-            // note: when panning using mmb we apply delta positively to simulate dragging the map
-
-            this.offsetX += deltaX;
-            this.offsetY += deltaY;
-        }
-
-        this.prevCursorX = (float) event.xpos();
-        this.prevCursorY = (float) event.ypos();
-
-        return;
+        return (-clampedCenterY) - this.offsetY;
     }
 
 
-    public void handleKeyEvent(KeyEvent event) {
+    /**
+     * Returns how much of {@code deltaX} can be applied without leaving the map.
+     * X limits depend on the current Y (isometric parallelogram), so apply Y first.
+     */
+    public float clampToMapWidth(float deltaX, float viewWidth, float viewHeight) {
 
-        if (event.action() == GLFW.GLFW_PRESS) {
+        float centerY = -this.offsetY;
+        float minY = centerY - viewHeight / 2.00f;
+        float maxY = minY + viewHeight;
 
-            switch (event.key()) {
+        float left = this.incline * minY;
+        float right = this.incline * maxY + this.mapWidth;
+        float minCenterX = left + viewWidth / 2.00f;
+        float maxCenterX = right - viewWidth / 2.00f;
 
-                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = true;
-                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = true;
-                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = true;
-                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = true;
+        float proposedCenterX = -(this.offsetX + deltaX);
+        float clampedCenterX = this.clamp(minCenterX, maxCenterX, proposedCenterX);
 
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-
-        else if (event.action() == GLFW.GLFW_RELEASE) {
-
-            switch (event.key()) {
-
-                case GLFW.GLFW_KEY_UP -> this.keyUpPressed = false;
-                case GLFW.GLFW_KEY_DOWN -> this.keyDownPressed = false;
-                case GLFW.GLFW_KEY_LEFT -> this.keyLeftPressed = false;
-                case GLFW.GLFW_KEY_RIGHT -> this.keyRightPressed = false;
-
-                default -> {
-                    // do nothing
-                }
-            }
-        }
-
-        else {
-            // do nothing
-        }
-
-        return;
+        return (-clampedCenterX) - this.offsetX;
     }
-    */
 
 
-    public void updateCameraPosition(long frameDuration) {
-
-        // update based on key press
-        // update based on mouse movement while pressed
-        // how do i detect a key was pressed/released within a single frame?
+    public void updateCameraPosition(long frameDuration, float canvasWidth, float canvasHeight) {
 
         float vectorX = 0.00f;
         float vectorY = 0.00f;
 
-        if (this.keyUpPressed) {
-            vectorY -= 1.00f;
-        }
+        if (this.keyUpPressed) vectorY    -= 1.00f;
+        if (this.keyDownPressed) vectorY  += 1.00f;
+        if (this.keyLeftPressed) vectorX  += 1.00f;
+        if (this.keyRightPressed) vectorX -= 1.00f;
 
-        if (this.keyDownPressed) {
-            vectorY += 1.00f;
-        }
-
-        if (this.keyLeftPressed) {
-            vectorX += 1.00f;
-        }
-
-        if (this.keyRightPressed) {
-            vectorX -= 1.00f;
-        }
-
+        // handle keyboard pan
         if (vectorX != 0 || vectorY != 0) {
 
             final float frameDurationMs = frameDuration / 1_000_000.00f;
@@ -190,9 +133,21 @@ public class Camera {
             float deltaX = normalX * distance;
             float deltaY = normalY * distance;
 
-            this.offsetX += deltaX;
-            this.offsetY += deltaY;
+            // delta y needs to be applied before delta x
+            // x bounds depend on the current vertical position
+            this.offsetY += this.clampToMapHeight(deltaY, canvasHeight);
+            this.offsetX += this.clampToMapWidth(deltaX, canvasWidth, canvasHeight);
         }
+
+        // todo: fix panning scaling when window is maximized
+
+        // handle mouse pan
+        this.offsetY += this.clampToMapHeight(this.pendingPanY, canvasHeight);
+        this.offsetX += this.clampToMapWidth(this.pendingPanX, canvasWidth, canvasHeight);
+        this.pendingPanX = 0;
+        this.pendingPanY = 0;
+
+        // note: delta x and y need to be cumulative based on all input: keyboard, mmb, rmb
 
         return;
     }

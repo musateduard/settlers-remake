@@ -43,7 +43,6 @@ public class MainLauncher {
 
         final Application application = new Application();
         final UserInterface userInterface = new UserInterface(application.window, application.renderer);
-        final Camera camera = new Camera();
 
         // create map instance
         // SettlersMap newGameMap = new SettlersMap();  // deprecated
@@ -78,6 +77,7 @@ public class MainLauncher {
         }
 
         final MapContent mapContent = startingListener.getMap();
+        final Camera camera = new Camera(mapContent.map.getWidth(), mapContent.map.getHeight());
         final LandscapeTexture landscape = new LandscapeTexture(application.canvas, mapContent.map);
 
         final LandscapeEventBus landscapeEventBus = new LandscapeEventBus();

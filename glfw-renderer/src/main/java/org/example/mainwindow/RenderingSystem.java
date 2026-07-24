@@ -5,9 +5,7 @@ import imgui.ImGuiIO;
 import imgui.ImDrawList;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.ArrayDeque;
 import java.util.Queue;
-
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.shaders.ScreenShader;
@@ -105,24 +103,13 @@ public class RenderingSystem {
             LandscapeTexture landscape,
             LandscapeEventBus eventBus,
             Camera camera,
-            MapContent map) {
+            MapContent map,
+            IGraphicsGrid mapGrid) {
 
             FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            IGraphicsGrid grid = map.map;
-            Queue<LandscapeEventBus.LandscapeEvent> events;
+            Queue<LandscapeEvent> events = eventBus.drainEventQueue();
 
-            eventBus.lock.lock();
-
-            try {
-                events = eventBus.queue;
-                eventBus.queue = new ArrayDeque<>();
-            }
-
-            finally {
-                eventBus.lock.unlock();
-            }
-
-            LandscapeRenderer.updateLandscapeMesh(landscape, events, grid);
+            LandscapeRenderer.updateLandscapeMesh(landscape, events, mapGrid);
 
             // todo: calculate visibleMapSection without MapContent
             MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
@@ -161,24 +148,18 @@ public class RenderingSystem {
          */
         public static void updateLandscapeMesh(
             LandscapeTexture landscape,
-            Queue<LandscapeEventBus.LandscapeEvent> events,
-            IGraphicsGrid grid) {
+            Queue<LandscapeEvent> events,
+            IGraphicsGrid mapGrid) {
 
-            for (LandscapeEventBus.LandscapeEvent event : events) {
+            for (LandscapeEvent event : events) {
 
-                if (event instanceof LandscapeEventBus.FogOfWarEnabledChanged fow) {
+                if (event instanceof FogOfWarEnabledChanged fow) {
                     landscape.fowEnabled = landscape.hasDirectGridProvider && fow.enabled();
                     continue;
                 }
 
-                if (event instanceof LandscapeEventBus.BackgroundLineChanged line) {
-                    LandscapeRenderer.applyBackgroundLineChanged(
-                        landscape,
-                        grid,
-                        line.x(),
-                        line.y(),
-                        line.length()
-                    );
+                if (event instanceof BackgroundLineChanged line) {
+                    LandscapeRenderer.applyBackgroundLineChanged(landscape, mapGrid, line.offsetX(), line.offsetY(), line.length());
                 }
             }
 
@@ -186,15 +167,20 @@ public class RenderingSystem {
         }
 
 
-        private static void applyBackgroundLineChanged(LandscapeTexture landscape, IGraphicsGrid map, int x, int y, int length) {
+        private static void applyBackgroundLineChanged(
+            LandscapeTexture landscape,
+            IGraphicsGrid mapGrid,
+            int offsetX,
+            int offsetY,
+            int length) {
 
-            if (y == landscape.bufferHeight) {
+            if (offsetY == landscape.bufferHeight) {
                 return;
             }
 
-            int x2 = x + length;
-            if (x != 0) {
-                x = x - 1;
+            int x2 = offsetX + length;
+            if (offsetX != 0) {
+                offsetX = offsetX - 1;
             }
             if (x2 < landscape.bufferWidth) {
                 x2 = x2 + 1;
@@ -203,12 +189,14 @@ public class RenderingSystem {
                 x2 = landscape.bufferWidth;
             }
 
-            LandscapeTexture.uploadLineSpan(landscape, map, y, x, x2);
-            if (y > 0) {
-                LandscapeTexture.uploadLineSpan(landscape, map, y - 1, x, x2);
+            LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY, offsetX, x2);
+
+            if (offsetY > 0) {
+                LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY - 1, offsetX, x2);
             }
-            if (y < landscape.bufferHeight - 1) {
-                LandscapeTexture.uploadLineSpan(landscape, map, y + 1, x, x2);
+
+            if (offsetY < landscape.bufferHeight - 1) {
+                LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY + 1, offsetX, x2);
             }
 
             return;
@@ -369,7 +357,7 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            LandscapeRenderer.drawLandscape(application, landscape, eventBus, camera, map);
+            LandscapeRenderer.drawLandscape(application, landscape, eventBus, camera, map, map.map);
             // draw static sprites
             // draw animated sprites
             // draw settlers units

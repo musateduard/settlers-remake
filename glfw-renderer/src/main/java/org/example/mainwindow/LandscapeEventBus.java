@@ -2,7 +2,6 @@ package org.example.mainwindow;
 
 import java.util.Queue;
 import java.util.ArrayDeque;
-import java.util.concurrent.locks.ReentrantLock;
 import jsettlers.common.map.IGraphicsBackgroundListener;
 
 
@@ -12,35 +11,26 @@ import jsettlers.common.map.IGraphicsBackgroundListener;
  */
 public class LandscapeEventBus implements IGraphicsBackgroundListener {
 
-    public sealed interface LandscapeEvent permits BackgroundLineChanged, FogOfWarEnabledChanged {}
-
-    public record BackgroundLineChanged(
-        int x,
-        int y,
-        int length
-    ) implements LandscapeEvent {}
-
-
-    public record FogOfWarEnabledChanged(
-        boolean enabled
-    ) implements LandscapeEvent {}
-
-
-    public final ReentrantLock lock = new ReentrantLock();
     public Queue<LandscapeEvent> queue = new ArrayDeque<>();
+
+
+    public Queue<LandscapeEvent> drainEventQueue() {
+
+        synchronized (this) {
+
+            Queue<LandscapeEvent> events = this.queue;
+            this.queue = new ArrayDeque<>();
+
+            return events;
+        }
+    }
 
 
     @Override
     public void backgroundLineChangedAt(int x, int y, int length) {
 
-        this.lock.lock();
-
-        try {
+        synchronized (this) {
             this.queue.add(new BackgroundLineChanged(x, y, length));
-        }
-
-        finally {
-            this.lock.unlock();
         }
 
         return;
@@ -50,14 +40,8 @@ public class LandscapeEventBus implements IGraphicsBackgroundListener {
     @Override
     public void fogOfWarEnabledStatusChanged(boolean enabled) {
 
-        this.lock.lock();
-
-        try {
+        synchronized (this) {
             this.queue.add(new FogOfWarEnabledChanged(enabled));
-        }
-
-        finally {
-            this.lock.unlock();
         }
 
         return;

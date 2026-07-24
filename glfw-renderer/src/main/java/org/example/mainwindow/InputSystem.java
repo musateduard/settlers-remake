@@ -1,9 +1,6 @@
 package org.example.mainwindow;
 
 import java.awt.Point;
-import java.util.ArrayDeque;
-import java.util.Queue;
-
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.flag.ImGuiMouseButton;
@@ -23,37 +20,10 @@ import org.example.events.ResizeEvent;
 
 public class InputSystem {
 
-    private static InputSystem instance = null;
-    public final Queue<InputEvent> queue = new ArrayDeque<>();
-
-
-    private InputSystem() {
-
-        // note: this class is a singleton and is not meant to be instantiated
-        // instead you use getInstance() to get the current running instance
-        // don't call this method from threads other than main
-        // you can also use glfwSetWindowUserPointer to pass an instance to glfw that you can access during the callbacks
-        // use glfwGetWindowUserPointer to get the instance pointer
-        // for this project a singleton is sufficient
-
-        return;
-    }
-
-
-    public static InputSystem getInstance() {
-
-        if (InputSystem.instance == null) {
-            InputSystem.instance = new InputSystem();
-        }
-
-        return InputSystem.instance;
-    }
-
-
     public static void addKeyEvent(long windowId, int key, int scanCode, int action, int modifiers) {
 
         KeyEvent event = new KeyEvent(windowId, key, scanCode, action, modifiers);
-        InputSystem.getInstance().queue.add(event);
+        InputEventBus.getInstance().queue.add(event);
 
         return;
     }
@@ -62,7 +32,7 @@ public class InputSystem {
     public static void addMouseButtonEvent(long windowId, int button, int action, int modifiers) {
 
         MouseEvent event = new MouseEvent(windowId, button, action, modifiers);
-        InputSystem.getInstance().queue.add(event);
+        InputEventBus.getInstance().queue.add(event);
 
         return;
     }
@@ -71,7 +41,7 @@ public class InputSystem {
     public static void addCursorEvent(long windowId, double offsetX, double offsetY) {
 
         CursorEvent event = new CursorEvent(windowId, offsetX, offsetY);
-        InputSystem.getInstance().queue.add(event);
+        InputEventBus.getInstance().queue.add(event);
 
         return;
     }
@@ -80,7 +50,7 @@ public class InputSystem {
     public static void addResizeEvent(long windowId, int newWidth, int newHeight) {
 
         ResizeEvent event = new ResizeEvent(windowId, newWidth, newHeight);
-        InputSystem.getInstance().queue.add(event);
+        InputEventBus.getInstance().queue.add(event);
 
         return;
     }
@@ -392,7 +362,7 @@ public class InputSystem {
         GLFWGOEventConverter eventConverter,
         MapContent map) {
 
-        InputSystem input = InputSystem.getInstance();
+        InputEventBus input = InputEventBus.getInstance();
 
         // gather input events
         GLFW.glfwPollEvents();

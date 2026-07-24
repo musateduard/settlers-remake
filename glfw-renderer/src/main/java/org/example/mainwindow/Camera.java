@@ -8,8 +8,6 @@ import jsettlers.graphics.map.draw.DrawConstants;
  */
 public class Camera {
 
-    private static final float TOP_BORDER = 100.00f;
-
     public final float mapWidth; // Map width in screen pixels (tiles * DrawConstants.DISTANCE_X)
     public final float mapHeight;  // Map height in screen pixels (tiles * DrawConstants.DISTANCE_Y)
     public final float incline;  // Parallelogram side incline: DISTANCE_X / 2 / DISTANCE_Y
@@ -55,6 +53,8 @@ public class Camera {
 
     public float clamp(float min, float max, float value) {
 
+        // todo: inline this function at its call sites
+
         if (min > max) {
             return (min + max) / 2.00f;
         }
@@ -73,15 +73,17 @@ public class Camera {
      */
     public float clampToMapHeight(float deltaY, float viewHeight) {
 
-        float top = this.mapHeight + TOP_BORDER;
-        float bottom = 0.00f;
-        float minCenterY = bottom + viewHeight / 2.00f;
-        float maxCenterY = top - viewHeight / 2.00f;
+        float padding = 100.00f;
+        float topBorder = this.mapHeight + padding;
+        float bottomBorder = 0.00f - padding;
 
-        float proposedCenterY = -(this.offsetY + deltaY);
-        float clampedCenterY = this.clamp(minCenterY, maxCenterY, proposedCenterY);
+        float minCameraCenterY = bottomBorder + viewHeight / 2.00f;
+        float maxCameraCenterY = topBorder - viewHeight / 2.00f;
 
-        return (-clampedCenterY) - this.offsetY;
+        float proposedCameraY = -(this.offsetY + deltaY);
+        float clampedCameraY = this.clamp(minCameraCenterY, maxCameraCenterY, proposedCameraY);
+
+        return (-clampedCameraY) - this.offsetY;
     }
 
 
@@ -107,7 +109,14 @@ public class Camera {
     }
 
 
-    public void updateCameraPosition(long frameDuration, float canvasWidth, float canvasHeight) {
+    public void updateCameraPosition(
+        long frameDuration,
+        float canvasWidth,
+        float canvasHeight,
+        float viewportWidth,
+        float viewportHeight) {
+
+        float viewScale = viewportWidth / canvasWidth;
 
         float vectorX = 0.00f;
         float vectorY = 0.00f;
@@ -139,11 +148,9 @@ public class Camera {
             this.offsetX += this.clampToMapWidth(deltaX, canvasWidth, canvasHeight);
         }
 
-        // todo: fix panning scaling when window is maximized
-
         // handle mouse pan
-        this.offsetY += this.clampToMapHeight(this.pendingPanY, canvasHeight);
-        this.offsetX += this.clampToMapWidth(this.pendingPanX, canvasWidth, canvasHeight);
+        this.offsetY += this.clampToMapHeight(this.pendingPanY / viewScale, canvasHeight);
+        this.offsetX += this.clampToMapWidth(this.pendingPanX / viewScale, canvasWidth, canvasHeight);
         this.pendingPanX = 0;
         this.pendingPanY = 0;
 

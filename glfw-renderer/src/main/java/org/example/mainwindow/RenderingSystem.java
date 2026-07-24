@@ -357,7 +357,9 @@ public class RenderingSystem {
             camera.updateCameraPosition(
                 frameDuration,
                 (float) application.canvas.width,
-                (float) application.canvas.height
+                (float) application.canvas.height,
+                (float) application.viewport.width,
+                (float) application.viewport.height
             );
 
             application.canvas.shader.updateViewMatrix(camera);  // view matrix should only change when camera moves

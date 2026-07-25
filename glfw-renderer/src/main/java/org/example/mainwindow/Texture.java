@@ -7,10 +7,18 @@ import org.lwjgl.opengl.GL33C;
 public class Texture {
 
     public final int id;
+    public final int width;
+    public final int height;
+    public final int offsetX;
+    public final int offsetY;
 
 
-    public Texture(int width, int height, IntBuffer pixelBuffer) {
+    public Texture(int width, int height, int offsetX, int offsetY, IntBuffer pixelBuffer) {
 
+        this.width = width;
+        this.height = height;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
         this.id = GL33C.glGenTextures();
 
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, this.id);

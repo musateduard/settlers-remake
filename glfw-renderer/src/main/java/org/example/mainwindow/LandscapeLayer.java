@@ -20,15 +20,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 /**
  * OpenGL landscape resources: atlas layout, texture atlas, mesh handle, and draw lists.
  */
-public class LandscapeTexture {
+public class LandscapeLayer {
 
     static final int LANDSCAPE_SECTION = 0;
 
@@ -291,9 +289,7 @@ public class LandscapeTexture {
     public final int bufferHeight; // in map tiles
     final int mapWidth;
     final int mapHeight;
-    private static final Map<Boolean, Texture> textures = new HashMap<>();
     public final LandscapeShader shader;
-    public Texture atlas;
     public VertexBuffer mesh;
     public int visibleLineCount;
     public IntBuffer lineVertexOffsetList = MemoryUtil.memAllocInt(0);  // Vertex start indices for glMultiDrawArrays
@@ -387,20 +383,29 @@ public class LandscapeTexture {
     };
 
 
-    public LandscapeTexture(Framebuffer canvas, IGraphicsGrid map) {
+    public LandscapeLayer(Framebuffer canvas, IGraphicsGrid mapGrid) {
 
-        this.mapWidth = map.getWidth();
-        this.mapHeight = map.getHeight();
+        this.mapWidth = mapGrid.getWidth();
+        this.mapHeight = mapGrid.getHeight();
         this.bufferWidth = this.mapWidth - 1;
         this.bufferHeight = this.mapHeight - 1;
         this.shader = new LandscapeShader((float) canvas.width, (float) canvas.height, this.mapHeight);
-        this.hasDirectGridProvider = map instanceof IDirectGridProvider;
-        this.fowEnabled = this.hasDirectGridProvider && ((IDirectGridProvider) map).isFoWEnabled();
+        this.hasDirectGridProvider = mapGrid instanceof IDirectGridProvider;
+        this.fowEnabled = this.hasDirectGridProvider && ((IDirectGridProvider) mapGrid).isFoWEnabled();
+
         this.buffer = ByteBuffer
             .allocateDirect(BYTES_PER_FIELD * this.bufferWidth)
             .order(ByteOrder.nativeOrder());
-        this.atlas = generateLandscapeAtlas(true);
-        this.mesh = generateTerrainMesh(this, map);
+
+        this.mesh = LandscapeLayer.generateTerrainMesh(
+            this.buffer,
+            this.bufferWidth,
+            this.bufferHeight,
+            this.mapWidth,
+            this.mapHeight,
+            this.fowEnabled,
+            mapGrid
+        );
 
         return;
     }
@@ -409,9 +414,16 @@ public class LandscapeTexture {
     /**
      * Builds the full terrain mesh from the current grid and returns a GPU vertex buffer.
      */
-    public static VertexBuffer generateTerrainMesh(LandscapeTexture landscape, IGraphicsGrid map) {
+    public static VertexBuffer generateTerrainMesh(
+        ByteBuffer bufferLine,
+        int bufferWidth,
+        int bufferHeight,
+        int mapWidth,
+        int mapHeight,
+        boolean fowEnabled,
+        IGraphicsGrid map) {
 
-        int vertexCount = landscape.bufferWidth * landscape.bufferHeight * 3 * 2;
+        int vertexCount = bufferWidth * bufferHeight * 3 * 2;
         final int stride = 6 * 4;
         float[] meshVertices = new float[vertexCount * 6];
         List<VertexAttribute> attributes = List.of(
@@ -421,15 +433,17 @@ public class LandscapeTexture {
         );
         VertexBuffer mesh = new VertexBuffer(meshVertices, attributes, GL33C.GL_DYNAMIC_DRAW);
 
-        ByteBuffer bufferLine = landscape.buffer;
+        for (int offsetY = 0; offsetY < bufferHeight; offsetY += 1) {
 
-        for (int offsetY = 0; offsetY < landscape.bufferHeight; offsetY += 1) {
             bufferLine.clear();
-            for (int offsetX = 0; offsetX < landscape.bufferWidth; offsetX += 1) {
-                addTrianglesToGeometry(landscape, map, bufferLine, offsetX, offsetY);
+            for (int offsetX = 0; offsetX < bufferWidth; offsetX += 1) {
+                LandscapeLayer.addTrianglesToGeometry(
+                    map, bufferLine, offsetX, offsetY, mapWidth, mapHeight, fowEnabled
+                );
             }
+
             bufferLine.flip();
-            mesh.updateVertexBuffer((long) BYTES_PER_FIELD * landscape.bufferWidth * offsetY, bufferLine);
+            mesh.updateVertexBuffer((long) BYTES_PER_FIELD * bufferWidth * offsetY, bufferLine);
         }
 
         return mesh;
@@ -440,42 +454,55 @@ public class LandscapeTexture {
      * Writes fields [{@code x1}, {@code x2}) on map line {@code y} into {@link #buffer}
      * and uploads that span to the GPU mesh immediately.
      */
-    static void uploadLineSpan(LandscapeTexture landscape, IGraphicsGrid map, int y, int x1, int x2) {
+    public void uploadLineSpan(IGraphicsGrid map, int y, int x1, int x2) {
 
-        ByteBuffer buffer = landscape.buffer;
+        ByteBuffer buffer = this.buffer;
         buffer.clear();
+
         for (int i = x1; i != x2; i++) {
-            addTrianglesToGeometry(landscape, map, buffer, i, y);
+            LandscapeLayer.addTrianglesToGeometry(
+                map, buffer, i, y, this.mapWidth, this.mapHeight, this.fowEnabled
+            );
         }
 
         buffer.flip();
-        landscape.mesh.updateVertexBuffer(((long) y * landscape.bufferWidth + x1) * BYTES_PER_FIELD, buffer);
+        this.mesh.updateVertexBuffer(((long) y * this.bufferWidth + x1) * BYTES_PER_FIELD, buffer);
 
         return;
     }
 
 
-    static void addTrianglesToGeometry(
-        LandscapeTexture landscape,
+    public static void addTrianglesToGeometry(
         IGraphicsGrid map,
         ByteBuffer buffer,
         int x,
-        int y) {
+        int y,
+        int mapWidth,
+        int mapHeight,
+        boolean fowEnabled) {
 
-        addTriangleToGeometry(landscape, map, buffer, x, y, true, x * 37 + y * 17);
-        addTriangleToGeometry(landscape, map, buffer, x, y, false, x);
+        LandscapeLayer.addTriangleToGeometry(
+            map, buffer, x, y, true, x * 37 + y * 17, mapWidth, mapHeight, fowEnabled
+        );
+
+        LandscapeLayer.addTriangleToGeometry(
+            map, buffer, x, y, false, x, mapWidth, mapHeight, fowEnabled
+        );
+
         return;
     }
 
 
-    private static void addTriangleToGeometry(
-        LandscapeTexture landscape,
+    public static void addTriangleToGeometry(
         IGraphicsGrid map,
         ByteBuffer buffer,
         int x1,
         int y,
         boolean up,
-        int useSecondParameter) {
+        int useSecondParameter,
+        int mapWidth,
+        int mapHeight,
+        boolean fowEnabled) {
 
         int y1 = y + (up ? 1 : 0);
         int x2 = x1 + (up ? 0 : 1);
@@ -566,38 +593,46 @@ public class LandscapeTexture {
         {
             float u = (texturePos[0] + addDx) / (float) TEXTURE_SIZE;
             float v = (texturePos[1] + addDy) / (float) TEXTURE_SIZE;
-            addPointToGeometry(landscape, map, buffer, up ? x2 : x1, up ? y2 : y1, u, v);
+            LandscapeLayer.addPointToGeometry(
+                map, buffer, up ? x2 : x1, up ? y2 : y1, u, v, mapWidth, mapHeight, fowEnabled
+            );
         }
         {
             float u = (texturePos[2] + addDx) / (float) TEXTURE_SIZE;
             float v = (texturePos[3] + addDy) / (float) TEXTURE_SIZE;
-            addPointToGeometry(landscape, map, buffer, up ? x1 : x2, up ? y1 : y2, u, v);
+            LandscapeLayer.addPointToGeometry(
+                map, buffer, up ? x1 : x2, up ? y1 : y2, u, v, mapWidth, mapHeight, fowEnabled
+            );
         }
         {
             float u = (texturePos[4] + addDx) / (float) TEXTURE_SIZE;
             float v = (texturePos[5] + addDy) / (float) TEXTURE_SIZE;
-            addPointToGeometry(landscape, map, buffer, x3, y3, u, v);
+            LandscapeLayer.addPointToGeometry(
+                map, buffer, x3, y3, u, v, mapWidth, mapHeight, fowEnabled
+            );
         }
         return;
     }
 
 
-    private static void addPointToGeometry(
-        LandscapeTexture landscape,
+    public static void addPointToGeometry(
         IGraphicsGrid map,
         ByteBuffer buffer,
         int x,
         int y,
         float u,
-        float v) {
+        float v,
+        int mapWidth,
+        int mapHeight,
+        boolean fowEnabled) {
 
         int height = getHeight(map, x, y);
         byte visibleStatus = map.getVisibleStatus(x, y);
 
         float color = 0;
-        if (x > 0 && x < landscape.mapWidth - 2
-            && y > 0 && y < landscape.mapHeight - 2
-            && (visibleStatus > 0 || !landscape.fowEnabled)) {
+        if (x > 0 && x < mapWidth - 2
+            && y > 0 && y < mapHeight - 2
+            && (visibleStatus > 0 || !fowEnabled)) {
 
             int dHeight = getHeight(map, x, y - 1) - height;
             color = 0.875f + dHeight * .125f;
@@ -606,7 +641,7 @@ public class LandscapeTexture {
                 color = 0.4f;
             }
 
-            if (landscape.fowEnabled) {
+            if (fowEnabled) {
                 color *= visibleStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
             }
         }
@@ -621,7 +656,7 @@ public class LandscapeTexture {
     }
 
 
-    private static int getHeight(IGraphicsGrid map, int x, int y) {
+    public static int getHeight(IGraphicsGrid map, int x, int y) {
         if (x >= 0 && x < map.getWidth() && y >= 0 && y < map.getHeight()) {
             return map.getVisibleHeightAt(x, y);
         }
@@ -629,46 +664,11 @@ public class LandscapeTexture {
     }
 
 
-    private static int realModulo(int number, int modulo) {
+    public static int realModulo(int number, int modulo) {
         if (number >= 0) {
             return number % modulo;
         }
         return number % modulo + modulo;
-    }
-
-
-    public static Texture generateLandscapeAtlas(boolean original) {
-
-        Texture existing = textures.get(original);
-
-        if (existing != null) {
-            return existing;
-        }
-
-        long startTime = System.currentTimeMillis();
-        int[] data = new int[TEXTURE_SIZE * TEXTURE_SIZE];
-
-        try {
-            LandscapeTexture.decodeImage(data);
-        }
-
-        catch (IOException exception) {
-            exception.printStackTrace();
-        }
-
-        IntBuffer pixelBuffer = ByteBuffer
-            .allocateDirect(TEXTURE_SIZE * TEXTURE_SIZE * 4)
-            .order(ByteOrder.nativeOrder())
-            .asIntBuffer();
-
-        pixelBuffer.put(data).rewind();
-
-        Texture atlas = new Texture(TEXTURE_SIZE, TEXTURE_SIZE, pixelBuffer);
-        LandscapeTexture.textures.put(original, atlas);
-
-        System.out.println("Background texture generated in " + (System.currentTimeMillis() - startTime) + "ms");
-
-        return atlas;
     }
 
 
@@ -702,9 +702,9 @@ public class LandscapeTexture {
      *
      * @throws IOException If the necessary file reader is missing
      */
-    private static void decodeImage(int[] data) throws IOException {
+    public static void decodeImage(int[] data) throws IOException {
 
-        DatFileReader assetFile = ImageProvider.getInstance().getFileReader(LANDSCAPE_SECTION);
+        DatFileReader assetFile = ImageProvider.getInstance().getFileReader(LandscapeLayer.LANDSCAPE_SECTION);
 
         if (assetFile == null) {
             throw new IOException("Could not get a file reader for the file.");
@@ -741,13 +741,5 @@ public class LandscapeTexture {
                 arrayOffset += TEXTURE_SIZE;
             }
         }
-    }
-
-
-    /**
-     * Invalidates the background texture.
-     */
-    static void invalidateTexture() {
-        LandscapeTexture.textures.clear();
     }
 }

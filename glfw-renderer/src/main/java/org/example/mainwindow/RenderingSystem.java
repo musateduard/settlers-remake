@@ -10,12 +10,16 @@ import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
 import org.example.shaders.ScreenShader;
 import org.example.shaders.LandscapeShader;
+import org.example.shaders.SpriteShader;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.graphics.map.draw.DrawConstants;
+import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.common.CommonConstants;
+import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.map.IDirectGridProvider;
 import jsettlers.common.map.IGraphicsGrid;
+import jsettlers.common.mapobject.IMapObject;
 import jsettlers.common.position.FloatRectangle;
 import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
@@ -36,7 +40,7 @@ public class RenderingSystem {
          * this function updates all terrain mesh triangles based on the event queue filled by the game thread.
          */
         public static void updateLandscapeMesh(
-            LandscapeTexture landscape,
+            LandscapeLayer landscape,
             Queue<LandscapeEvent> events,
             IGraphicsGrid mapGrid) {
 
@@ -69,14 +73,14 @@ public class RenderingSystem {
                         x2 = landscape.bufferWidth;
                     }
 
-                    LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY, offsetX, x2);
+                    landscape.uploadLineSpan(mapGrid, offsetY, offsetX, x2);
 
                     if (offsetY > 0) {
-                        LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY - 1, offsetX, x2);
+                        landscape.uploadLineSpan(mapGrid, offsetY - 1, offsetX, x2);
                     }
 
                     if (offsetY < landscape.bufferHeight - 1) {
-                        LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY + 1, offsetX, x2);
+                        landscape.uploadLineSpan(mapGrid, offsetY + 1, offsetX, x2);
                     }
                 }
             }
@@ -90,7 +94,7 @@ public class RenderingSystem {
          */
         private static void calculateVisibleLines(
             Application application,
-            LandscapeTexture landscape,
+            LandscapeLayer landscape,
             Camera camera) {
 
             float centerX = -camera.offsetX;
@@ -178,9 +182,10 @@ public class RenderingSystem {
 
         public static void drawLandscape(
             Application application,
+            AssetManager assetManager,
             Camera camera,
             IGraphicsGrid mapGrid,
-            LandscapeTexture landscape,
+            LandscapeLayer landscape,
             LandscapeEventBus eventBus) {
 
             Queue<LandscapeEvent> events = eventBus.drainEventQueue();
@@ -192,9 +197,9 @@ public class RenderingSystem {
             // 1) Bind the landscape texture to texture units 0 and 1.
             // Legacy drawBackground always bound the same texture twice.
             GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, landscape.atlas.id);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, assetManager.landscapeAtlas.id);
             GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, landscape.atlas.id);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, assetManager.landscapeAtlas.id);
 
             // activate landscape shader
             shader.activate();
@@ -241,6 +246,321 @@ public class RenderingSystem {
             );
 
             return;
+        }
+    }
+
+
+    static class SpriteRenderer {
+
+        public static void drawSprites(
+            Application application,
+            Camera camera,
+            SpriteLayer sprites,
+            AssetManager assets,
+            IGraphicsGrid grid) {
+
+            int screenPadding = 50;
+            int tallSpriteOverdraw = 50;
+            float heightYDisplacement = 2.00f;
+
+            float centerX = -camera.offsetX;
+            float centerY = -camera.offsetY;
+            float halfWidth = application.canvas.width / 2.00f;
+            float halfHeight = application.canvas.height / 2.00f;
+
+            float screenMinX = centerX - halfWidth - screenPadding;
+            float screenMinY = centerY - halfHeight - screenPadding;
+            float screenMaxX = centerX + halfWidth + screenPadding;
+            float screenMaxY = centerY + halfHeight + screenPadding;
+
+            float scaleX = DrawConstants.DISTANCE_X;
+            float scaleY = DrawConstants.DISTANCE_Y;
+            int mapHeight = grid.getHeight();
+            int mapWidth = grid.getWidth();
+            float realMapHeight = mapHeight - 1;
+            float maxMountainHeight = heightYDisplacement * Byte.MAX_VALUE;
+
+            int mapMinX = (int) (screenMinX / scaleX + screenMaxY * (-0.50f / scaleY));
+            int mapMaxX = (int) (screenMaxX / scaleX + screenMinY * (-0.50f / scaleY) + maxMountainHeight / scaleY);
+            int mapMinY = (int) (screenMaxY * (-1.00f / scaleY) + realMapHeight);
+            int mapMaxY = (int) (screenMinY * (-1.00f / scaleY) + maxMountainHeight * (2.00f / scaleY) + realMapHeight);
+
+            int visibleWidth = mapMaxX - mapMinX;
+            int visibleHeight = mapMaxY - mapMinY;
+            if (visibleWidth < 0) {
+                visibleWidth = 0;
+            }
+            if (visibleHeight < 0) {
+                visibleHeight = 0;
+            }
+
+            float zPerY = 1.00f / (mapHeight * 100.00f);
+
+            SpriteShader shader = sprites.shader;
+            shader.activate();
+
+            shader.projectionMatrix.identity();
+            shader.projectionMatrix.ortho(
+                0.00f, (float) application.canvas.width,
+                0.00f, (float) application.canvas.height,
+                -1.00f, 1.00f
+            );
+            shader.projectionMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.projectionMatrixUniform, false, shader.buffer);
+
+            shader.viewMatrix.identity();
+            shader.viewMatrix.translate(
+                camera.offsetX + (application.canvas.width / 2.00f),
+                camera.offsetY + (application.canvas.height / 2.00f),
+                0.00f
+            );
+            shader.viewMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.viewMatrixUniform, false, shader.buffer);
+
+            GL33C.glUniform1i(shader.textureUniform, 0);
+            GL33C.glActiveTexture(GL_TEXTURE0);
+
+            GL33C.glEnable(GL33C.GL_BLEND);
+            GL33C.glBlendFunc(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA);
+            GL33C.glDisable(GL_DEPTH_TEST);
+
+            GL33C.glBindVertexArray(sprites.quad.vaoId);
+
+            int lineCount = visibleHeight + tallSpriteOverdraw;
+            for (int line = 0; line < lineCount; line++) {
+                int tileY = mapMinY + line;
+                if (tileY < 0 || tileY >= mapHeight) {
+                    continue;
+                }
+
+                int startX = mapMinX + (line / 2);
+                int endX = startX + visibleWidth;
+                if (startX < 0) {
+                    startX = 0;
+                }
+                if (endX > mapWidth) {
+                    endX = mapWidth;
+                }
+
+                for (int tileX = startX; tileX < endX; tileX++) {
+                    byte fogStatus = grid.getVisibleStatus(tileX, tileY);
+                    if (fogStatus == 0) {
+                        continue;
+                    }
+
+                    IMapObject object = grid.getVisibleMapObjectsAt(tileX, tileY);
+                    while (object != null) {
+
+                        SpriteDrawRequest request = resolveMapObject(
+                            assets,
+                            grid,
+                            tileX,
+                            tileY,
+                            object,
+                            fogStatus,
+                            screenMinX,
+                            screenMinY,
+                            screenMaxX,
+                            screenMaxY,
+                            zPerY
+                        );
+
+                        if (request != null) {
+                            drawSingleSprite(sprites, request);
+                        }
+
+                        object = object.getNextObject();
+                        continue;
+                    }
+                }
+            }
+
+            GL33C.glBindVertexArray(0);
+            GL33C.glBindTexture(GL_TEXTURE_2D, 0);
+            GL33C.glDisable(GL33C.GL_BLEND);
+            GL33C.glEnable(GL_DEPTH_TEST);
+            return;
+        }
+
+
+        static SpriteDrawRequest resolveMapObject(
+            AssetManager assets,
+            IGraphicsGrid grid,
+            int tileX,
+            int tileY,
+            IMapObject object,
+            byte fogStatus,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float zPerY) {
+
+            int objectsFile = 1;
+            int animalsFile = 6;
+            int stoneSequence = 31;
+            int decorationSequence = 27;
+            int fishSequence = 7;
+            int[] treeSequences = { 1, 2, 4, 7, 8, 16, 17 };
+
+            int file;
+            int sequence;
+            int frame;
+
+            switch (object.getObjectType()) {
+
+                case STONE: {
+
+                    file = objectsFile;
+                    sequence = stoneSequence;
+                    int availableStones = (int) object.getStateProgress();
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+                    frame = seqLength - availableStones - 1;
+
+                    if (frame < 0) {
+                        frame = 0;
+                    }
+
+                    if (frame >= seqLength) {
+                        frame = Math.max(0, seqLength - 1);
+                    }
+
+                    break;
+                }
+
+                case CUT_OFF_STONE: {
+                    file = objectsFile;
+                    sequence = stoneSequence;
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+                    frame = Math.max(0, seqLength - 1);
+                    break;
+                }
+
+                case PLANT_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 8;
+                    break;
+                }
+
+                case DESERT_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 5 + 10;
+                    break;
+                }
+
+                case SWAMP_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 6 + 27;
+                    break;
+                }
+
+                case TREE_ADULT: {
+                    file = objectsFile;
+                    int treeTypes = 7;
+                    int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeTypes;
+                    sequence = treeSequences[treeType];
+                    frame = 0;
+                    break;
+                }
+
+                case FISH_DECORATION: {
+                    file = animalsFile;
+                    sequence = fishSequence;
+                    frame = 0;
+                    break;
+                }
+
+                default: {
+                    return null;
+                }
+            }
+
+            AssetLocator locator = new AssetLocator(
+                file,
+                EImageLinkType.SETTLER.ordinal(),
+                sequence,
+                Math.max(0, frame)
+            );
+
+            Texture texture = assets.getOrCreateTexture(locator);
+            if (texture == null) {
+                return null;
+            }
+
+            float fow = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+
+            int height = grid.getVisibleHeightAt(tileX, tileY) & 0xFF;
+            int mapHeight = grid.getHeight();
+            float realMapHeight = mapHeight - 1;
+            float scaleX = DrawConstants.DISTANCE_X;
+            float scaleY = DrawConstants.DISTANCE_Y;
+            float heightYDisplacement = 2.00f;
+
+            // Port of MapCoordinateConverter.getViewX / getViewY with DrawConstants tile spacing.
+            float viewX = tileX * scaleX + tileY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
+            float viewY = tileY * (-scaleY) + height * heightYDisplacement + realMapHeight * scaleY;
+            float z = tileY * zPerY;
+
+            // Legacy quad: left=offsetX, top=-offsetY, right=offsetX+w, bottom=-offsetY-h
+            // todo: use Sprite instead of Texture; textures don't have offsetX
+            float offsetX = texture.offsetX;
+            float offsetY = texture.offsetY;
+            float fullWidth = texture.width;
+            float fullHeight = texture.height;
+
+            float left = viewX + offsetX;
+            float top = viewY - offsetY;
+            float right = left + fullWidth;
+            float bottom = top - fullHeight;
+
+            float clipLeft = Math.max(left, screenMinX);
+            float clipRight = Math.min(right, screenMaxX);
+            float clipBottom = Math.max(bottom, screenMinY);
+            float clipTop = Math.min(top, screenMaxY);
+
+            if (clipLeft >= clipRight || clipBottom >= clipTop) {
+                return null;
+            }
+
+            float u0 = (clipLeft - left) / fullWidth;
+            float u1 = (clipRight - left) / fullWidth;
+            // Texture is uploaded flipped (GL v=0 = image bottom); map clip from top into GL V.
+            float v0 = 1.00f - (top - clipTop) / fullHeight;
+            float v1 = 1.00f - (top - clipBottom) / fullHeight;
+
+            return new SpriteDrawRequest(
+                texture,
+                clipLeft,
+                clipTop,
+                z,
+                clipRight - clipLeft,
+                clipTop - clipBottom,
+                fow,
+                u0,
+                v0,
+                u1,
+                v1
+            );
+        }
+
+
+        static void drawSingleSprite(SpriteLayer sprites, SpriteDrawRequest request) {
+            GL33C.glBindTexture(GL_TEXTURE_2D, request.texture().id);
+
+            SpriteShader shader = sprites.shader;
+            shader.modelMatrix.identity();
+            shader.modelMatrix.translate(request.x(), request.y(), request.z());
+            shader.modelMatrix.scale(request.width(), request.height(), 1.00f);
+            shader.modelMatrix.get(shader.buffer);
+            GL33C.glUniformMatrix4fv(shader.modelMatrixUniform, false, shader.buffer);
+
+            GL33C.glUniform1f(shader.fowUniform, request.fow());
+            GL33C.glUniform4f(shader.uvRectUniform, request.u0(), request.v0(), request.u1(), request.v1());
+
+            GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
     }
 
@@ -322,7 +642,7 @@ public class RenderingSystem {
             // long backgroundDuration = System.nanoTime() - startTime;
 
             // startTime = System.nanoTime();
-            map.drawMapObjects(screen);
+            // map.drawMapObjects(screen);
 
             if (map.scrollMarker != null) {
                 map.drawGotoMarker();
@@ -363,8 +683,11 @@ public class RenderingSystem {
         public static void drawGameScene(
             long frameDuration,
             Application application,
+            AssetManager assetManager,
             Camera camera,
-            LandscapeTexture landscape,
+            LandscapeLayer landscape,
+            SpriteLayer sprites,
+            AssetManager assets,
             LandscapeEventBus eventBus,
             LWJGLDrawContext context,
             MapContent map) {
@@ -398,8 +721,8 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            LandscapeRenderer.drawLandscape(application, camera, map.map, landscape, eventBus);
-            // draw static sprites
+            LandscapeRenderer.drawLandscape(application, assetManager, camera, map.map, landscape, eventBus);
+            SpriteRenderer.drawSprites(application, camera, sprites, assets, map.map);
             // draw animated sprites
             // draw settlers units
 
@@ -495,7 +818,9 @@ public class RenderingSystem {
         Application application,
         UserInterface userInterface,
         Camera camera,
-        LandscapeTexture landscape,
+        LandscapeLayer landscape,
+        SpriteLayer sprites,
+        AssetManager assets,
         LandscapeEventBus eventBus,
         LWJGLDrawContext context,
         MapContent settlersMap) {
@@ -503,7 +828,9 @@ public class RenderingSystem {
         // activate canvas framebuffer
         RenderingSystem.activateCanvasBuffer(application.canvas);
 
-        GameRenderer.drawGameScene(frameDuration, application, camera, landscape, eventBus, context, settlersMap);
+        GameRenderer.drawGameScene(
+            frameDuration, application, assets, camera, landscape, sprites, assets, eventBus, context, settlersMap
+        );
         UserInterfaceRenderer.drawUI(application, userInterface);
 
         // activate screen buffer

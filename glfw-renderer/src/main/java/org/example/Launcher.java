@@ -19,20 +19,19 @@ import jsettlers.main.JSettlersGame;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
 import org.example.mainwindow.Application;
+import org.example.mainwindow.AssetManager;
 import org.example.mainwindow.Camera;
 import org.example.mainwindow.GLFWGOEventConverter;
 import org.example.mainwindow.GLFWStartingGameListener;
 import org.example.mainwindow.InputSystem;
 import org.example.mainwindow.LandscapeEventBus;
-import org.example.mainwindow.LandscapeTexture;
+import org.example.mainwindow.LandscapeLayer;
 import org.example.mainwindow.RenderingSystem;
+import org.example.mainwindow.SpriteLayer;
 import org.example.mainwindow.UserInterface;
 
 
 public class Launcher {
-
-    public static final long GAME_START_TIME_MS = System.currentTimeMillis();
-
 
     public static void main(String[] args) throws Exception {
 
@@ -69,6 +68,7 @@ public class Launcher {
         };
 
         final File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\384-2-Brueckenkopf.map");
+        // final File file = new File("C:\\games\\Settlers 3 Ultimate\\Map\\User\\0_test_tiles.map");
         final MapLoader selectedMap = MapLoader.getLoaderForListedMap(new DirectoryMapLister.ListedMapFile(file));
         final InitialGameState initialGameState = new InitialGameState(playerId, playerSettings, randomSeed, EMapStartResources.MEDIUM_GOODS);
 
@@ -85,7 +85,9 @@ public class Launcher {
 
         final MapContent mapContent = startingListener.getMap();
         final Camera camera = new Camera(mapContent.map.getWidth(), mapContent.map.getHeight());
-        final LandscapeTexture landscape = new LandscapeTexture(application.canvas, mapContent.map);
+        final AssetManager assets = new AssetManager();
+        final LandscapeLayer landscape = new LandscapeLayer(application.canvas, mapContent.map);
+        final SpriteLayer sprites = new SpriteLayer(application.canvas);
 
         final LandscapeEventBus landscapeEventBus = new LandscapeEventBus();
         mapContent.map.setBackgroundListener(landscapeEventBus);
@@ -148,6 +150,8 @@ public class Launcher {
                 userInterface,
                 camera,
                 landscape,
+                sprites,
+                assets,
                 landscapeEventBus,
                 context,
                 mapContent

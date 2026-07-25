@@ -14,6 +14,7 @@ import jsettlers.graphics.map.draw.ETextureOrientation;
 import jsettlers.graphics.map.draw.ImageProvider;
 import org.example.shaders.LandscapeShader;
 import org.lwjgl.opengl.GL33C;
+import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -286,8 +287,8 @@ public class LandscapeTexture {
         /* 234: small */ { 2, 24, 1 },
     };
 
-    public final int bufferWidth; // in map points.
-    public final int bufferHeight; // in map points.
+    public final int bufferWidth; // in map tiles
+    public final int bufferHeight; // in map tiles
     final int mapWidth;
     final int mapHeight;
     private static final Map<Boolean, Texture> textures = new HashMap<>();
@@ -295,11 +296,12 @@ public class LandscapeTexture {
     public Texture atlas;
     public VertexBuffer mesh;
     public int visibleLineCount;
-    public int[] visibleLineObjectList;
+    public IntBuffer lineVertexOffsetList = MemoryUtil.memAllocInt(0);  // Vertex start indices for glMultiDrawArrays
+    public IntBuffer lineVertexCount = MemoryUtil.memAllocInt(0);  // Vertex counts for glMultiDrawArrays
     public final boolean hasDirectGridProvider;
     public boolean fowEnabled;
-    /** Reusable upload scratch for one map line of fields (not a full-map staging buffer). */
-    public final ByteBuffer buffer;
+    public final ByteBuffer buffer;  // Reusable upload scratch for one map line of fields
+
 
     private record TextureIntersections(
         ELandscapeType type1,

@@ -10,7 +10,7 @@ public class LandscapeShader {
     public final int projectionMatrixUniform;
     public final int viewMatrixUniform;
     public final int heightUniform;
-    public final int texHandleUniform;
+    public final int textureHandleUniform;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
     public final float[] heightMatrix;
@@ -62,7 +62,7 @@ public class LandscapeShader {
         this.projectionMatrixUniform = GL33C.glGetUniformLocation(this.id, "projection");
         this.viewMatrixUniform = GL33C.glGetUniformLocation(this.id, "globalTransform");
         this.heightUniform = GL33C.glGetUniformLocation(this.id, "height");
-        this.texHandleUniform = GL33C.glGetUniformLocation(this.id, "texHandle");
+        this.textureHandleUniform = GL33C.glGetUniformLocation(this.id, "texHandle");
 
         // get uniform addresses for landscape shader
         if (this.projectionMatrixUniform == -1) {
@@ -77,8 +77,8 @@ public class LandscapeShader {
             throw new RuntimeException("invalid heightUniform value: %d".formatted(this.heightUniform));
         }
 
-        if (this.texHandleUniform == -1) {
-            throw new RuntimeException("invalid texHandleUniform value: %d".formatted(this.texHandleUniform));
+        if (this.textureHandleUniform == -1) {
+            throw new RuntimeException("invalid texHandleUniform value: %d".formatted(this.textureHandleUniform));
         }
 
         int openglError = GL33C.glGetError();

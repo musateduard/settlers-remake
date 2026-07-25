@@ -12,11 +12,12 @@ import org.example.shaders.ScreenShader;
 import org.example.shaders.LandscapeShader;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import jsettlers.graphics.map.MapContent;
+import jsettlers.graphics.map.draw.DrawConstants;
 import jsettlers.common.CommonConstants;
 import jsettlers.common.map.IDirectGridProvider;
 import jsettlers.common.map.IGraphicsGrid;
-import jsettlers.common.map.shapes.MapRectangle;
 import jsettlers.common.position.FloatRectangle;
+import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
@@ -31,26 +32,175 @@ public class RenderingSystem {
 
     static class LandscapeRenderer {
 
-        public static void renderLandscapeData(
+        /**
+         * this function updates all terrain mesh triangles based on the event queue filled by the game thread.
+         */
+        public static void updateLandscapeMesh(
+            LandscapeTexture landscape,
+            Queue<LandscapeEvent> events,
+            IGraphicsGrid mapGrid) {
+
+            for (LandscapeEvent event : events) {
+
+                if (event instanceof FogOfWarEnabledChanged fow) {
+                    landscape.fowEnabled = landscape.hasDirectGridProvider && fow.enabled();
+                    continue;
+                }
+
+                if (event instanceof BackgroundLineChanged line) {
+
+                    int offsetX = line.offsetX();
+                    int offsetY = line.offsetY();
+
+                    if (offsetY == landscape.bufferHeight) {
+                        continue;
+                    }
+
+                    int x2 = offsetX + line.length();
+                    if (offsetX != 0) {
+                        offsetX = offsetX - 1;
+                    }
+
+                    if (x2 < landscape.bufferWidth) {
+                        x2 = x2 + 1;
+                    }
+
+                    if (x2 > landscape.bufferWidth) {
+                        x2 = landscape.bufferWidth;
+                    }
+
+                    LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY, offsetX, x2);
+
+                    if (offsetY > 0) {
+                        LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY - 1, offsetX, x2);
+                    }
+
+                    if (offsetY < landscape.bufferHeight - 1) {
+                        LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY + 1, offsetX, x2);
+                    }
+                }
+            }
+
+            return;
+        }
+
+
+        /**
+         * this function calculates the culling for all visible terrain lines on the screen.
+         */
+        private static void calculateVisibleLines(
             Application application,
             LandscapeTexture landscape,
-            LandscapeShader shader,
             Camera camera) {
+
+            float centerX = -camera.offsetX;
+            float centerY = -camera.offsetY;
+            float halfWidth = application.canvas.width / 2.00f;
+            float halfHeight = application.canvas.height / 2.00f;
+            float screenPadding = 50.00f;
+
+            float screenMinX = centerX - halfWidth - screenPadding;
+            float screenMinY = centerY - halfHeight - screenPadding;
+            float screenMaxX = centerX + halfWidth + screenPadding;
+            float screenMaxY = centerY + halfHeight + screenPadding;
+
+            float scaleX = DrawConstants.DISTANCE_X;
+            float scaleY = DrawConstants.DISTANCE_Y;
+            float realMapHeight = landscape.mapHeight - 1;
+            float heightDisplacementY = 2.00f;
+            float maxMountainHeight = heightDisplacementY * Byte.MAX_VALUE;
+
+            // Port of MapCoordinateConverter.getMapForScreen (inverse height matrix).
+            int mapMinX = (int) (screenMinX / scaleX + screenMaxY * (-0.50f / scaleY));
+            int mapMaxX = (int) (screenMaxX / scaleX + screenMinY * (-0.50f / scaleY) + maxMountainHeight / scaleY);
+            int mapMinY = (int) (screenMaxY * (-1.00f / scaleY) + realMapHeight);
+            int mapMaxY = (int) (screenMinY * (-1.00f / scaleY) + maxMountainHeight * (2.00f / scaleY) + realMapHeight);
+
+            int mapWidth = mapMaxX - mapMinX;
+            int mapHeight = mapMaxY - mapMinY;
+            if (mapWidth < 0) {
+                mapWidth = 0;
+            }
+            if (mapHeight < 0) {
+                mapHeight = 0;
+            }
+
+            landscape.visibleLineCount = mapHeight;
+            if (landscape.visibleLineCount > landscape.lineVertexOffsetList.capacity()) {
+
+                landscape.lineVertexOffsetList = MemoryUtil.memRealloc(
+                    landscape.lineVertexOffsetList,
+                    landscape.visibleLineCount
+                );
+
+                landscape.lineVertexCount = MemoryUtil.memRealloc(
+                    landscape.lineVertexCount,
+                    landscape.visibleLineCount
+                );
+            }
+
+            landscape.lineVertexOffsetList.clear();
+            landscape.lineVertexCount.clear();
+
+            for (int index = 0; index < landscape.visibleLineCount; index++) {
+
+                int lineY = mapMinY + index;
+                if (lineY < 0 || lineY > landscape.bufferHeight) {
+                    landscape.lineVertexOffsetList.put(index, 0);
+                    landscape.lineVertexCount.put(index, 0);
+                    continue;
+                }
+
+                // Port of MapRectangle line stagger: startX shifts by line/2.
+                int startX = mapMinX + (index / 2);
+                if (startX < 0) {
+                    startX = 0;
+                }
+
+                int endX = startX + mapWidth - 1;
+                if (endX >= landscape.bufferWidth) {
+                    endX = landscape.bufferWidth;
+                }
+
+                if (endX < startX) {
+                    landscape.lineVertexOffsetList.put(index, 0);
+                    landscape.lineVertexCount.put(index, 0);
+                    continue;
+                }
+
+                landscape.lineVertexOffsetList.put(index, (landscape.bufferWidth * lineY + startX) * 2 * 3);
+                landscape.lineVertexCount.put(index, (endX - startX) * 2 * 3);
+            }
+
+            return;
+        }
+
+
+        public static void drawLandscape(
+            Application application,
+            Camera camera,
+            IGraphicsGrid mapGrid,
+            LandscapeTexture landscape,
+            LandscapeEventBus eventBus) {
+
+            Queue<LandscapeEvent> events = eventBus.drainEventQueue();
+            LandscapeShader shader = landscape.shader;
+
+            LandscapeRenderer.updateLandscapeMesh(landscape, events, mapGrid);
+            LandscapeRenderer.calculateVisibleLines(application, landscape, camera);
 
             // 1) Bind the landscape texture to texture units 0 and 1.
             // Legacy drawBackground always bound the same texture twice.
-            int atlasTextureId = landscape.atlas != null ? landscape.atlas.id : 0;
-
             GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, landscape.atlas.id);
             GL33C.glActiveTexture(GL33C.GL_TEXTURE1);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, atlasTextureId);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, landscape.atlas.id);
 
             // activate landscape shader
             shader.activate();
 
             // update mvp matrix
-            GL33C.glUniform1i(shader.texHandleUniform, 0);
+            GL33C.glUniform1i(shader.textureHandleUniform, 0);
 
             // update projection matrix
             shader.projectionMatrix.identity();
@@ -80,124 +230,15 @@ public class RenderingSystem {
             // 3) Bind geometry.
             GL33C.glBindVertexArray(landscape.mesh.vaoId);
 
-            // 4) Convert interleaved [first, count, first, count, ...] into the two
-            // arrays glMultiDrawArrays expects.
-            int lineCount = landscape.visibleLineCount;
-            int[] lineVertexOffsetList = new int[lineCount];
-            int[] lineVertexCount = new int[lineCount];
+            // 4) Draw all visible terrain lines in one multi-draw call.
+            landscape.lineVertexOffsetList.limit(landscape.visibleLineCount).position(0);  // resize to line count
+            landscape.lineVertexCount.limit(landscape.visibleLineCount).position(0);
 
-            for (int index = 0; index < lineCount; index++) {
-                lineVertexOffsetList[index] = landscape.visibleLineObjectList[index * 2];
-                lineVertexCount[index] = landscape.visibleLineObjectList[index * 2 + 1];
-            }
-
-            // 5) Draw all visible terrain lines in one multi-draw call.
-            GL33C.glMultiDrawArrays(GL33C.GL_TRIANGLES, lineVertexOffsetList, lineVertexCount);
-            return;
-        }
-
-
-        // todo: remove MapContent from drawLandscape (screen → MapRectangle still needs mapContext)
-        public static void drawLandscape(
-            Application application,
-            LandscapeTexture landscape,
-            LandscapeEventBus eventBus,
-            Camera camera,
-            MapContent map,
-            IGraphicsGrid mapGrid) {
-
-            FloatRectangle screen = map.mapContext.getScreen().getPosition().bigger(MapContent.SCREEN_PADDING);
-            Queue<LandscapeEvent> events = eventBus.drainEventQueue();
-
-            LandscapeRenderer.updateLandscapeMesh(landscape, events, mapGrid);
-
-            // todo: calculate visibleMapSection without MapContent
-            MapRectangle visibleMapSection = map.mapContext.getConverter().getMapForScreen(screen);
-            landscape.visibleLineCount = visibleMapSection.getLines();
-            landscape.visibleLineObjectList = new int[landscape.visibleLineCount * 2];
-
-            for (int index = 0; index < landscape.visibleLineCount; index++) {
-
-                int startX = visibleMapSection.getLineStartX(index);
-                if (startX < 0) {
-                    startX = 0;
-                }
-
-                int endX = visibleMapSection.getLineEndX(index);
-                if (endX >= landscape.bufferWidth) {
-                    endX = landscape.bufferWidth;
-                }
-
-                int lineY = visibleMapSection.getLineY(index);
-                if (lineY < 0 || lineY > landscape.bufferHeight) {
-                    continue;
-                }
-
-                landscape.visibleLineObjectList[index * 2] = (landscape.bufferWidth * lineY + startX) * 2 * 3;
-                landscape.visibleLineObjectList[index * 2 + 1] = (endX - startX) * 2 * 3;
-                continue;
-            }
-
-            LandscapeRenderer.renderLandscapeData(application, landscape, landscape.shader, camera);
-            return;
-        }
-
-
-        /**
-         * Applies FoW flag changes and immediately uploads every background-line mesh patch.
-         */
-        public static void updateLandscapeMesh(
-            LandscapeTexture landscape,
-            Queue<LandscapeEvent> events,
-            IGraphicsGrid mapGrid) {
-
-            for (LandscapeEvent event : events) {
-
-                if (event instanceof FogOfWarEnabledChanged fow) {
-                    landscape.fowEnabled = landscape.hasDirectGridProvider && fow.enabled();
-                    continue;
-                }
-
-                if (event instanceof BackgroundLineChanged line) {
-                    LandscapeRenderer.applyBackgroundLineChanged(landscape, mapGrid, line.offsetX(), line.offsetY(), line.length());
-                }
-            }
-
-            return;
-        }
-
-
-        private static void applyBackgroundLineChanged(
-            LandscapeTexture landscape,
-            IGraphicsGrid mapGrid,
-            int offsetX,
-            int offsetY,
-            int length) {
-
-            if (offsetY == landscape.bufferHeight) {
-                return;
-            }
-
-            int x2 = offsetX + length;
-            if (offsetX != 0) {
-                offsetX = offsetX - 1;
-            }
-            if (x2 < landscape.bufferWidth) {
-                x2 = x2 + 1;
-            }
-            if (x2 > landscape.bufferWidth) {
-                x2 = landscape.bufferWidth;
-            }
-
-            LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY, offsetX, x2);
-
-            if (offsetY > 0) {
-                LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY - 1, offsetX, x2);
-            }
-
-            if (offsetY < landscape.bufferHeight - 1) {
-                LandscapeTexture.uploadLineSpan(landscape, mapGrid, offsetY + 1, offsetX, x2);
-            }
+            GL33C.glMultiDrawArrays(
+                GL33C.GL_TRIANGLES,
+                landscape.lineVertexOffsetList,
+                landscape.lineVertexCount
+            );
 
             return;
         }
@@ -357,7 +398,7 @@ public class RenderingSystem {
 
             GameRenderer.frameSetupLegacy(application, context, map);
 
-            LandscapeRenderer.drawLandscape(application, landscape, eventBus, camera, map, map.map);
+            LandscapeRenderer.drawLandscape(application, camera, map.map, landscape, eventBus);
             // draw static sprites
             // draw animated sprites
             // draw settlers units

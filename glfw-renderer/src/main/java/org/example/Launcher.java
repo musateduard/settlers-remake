@@ -1,4 +1,4 @@
-package org.example.mainwindow;
+package org.example;
 
 import java.io.File;
 import go.graphics.swing.opengl.LWJGLDrawContext;
@@ -18,11 +18,18 @@ import jsettlers.logic.player.PlayerSetting;
 import jsettlers.main.JSettlersGame;
 import jsettlers.main.swing.resources.SwingResourceProvider;
 import jsettlers.main.swing.settings.SettingsManager;
-import org.example.gamemap.SettlersMap;
-import org.example.gamesimulation.SettlersGame;
+import org.example.mainwindow.Application;
+import org.example.mainwindow.Camera;
+import org.example.mainwindow.GLFWGOEventConverter;
+import org.example.mainwindow.GLFWStartingGameListener;
+import org.example.mainwindow.InputSystem;
+import org.example.mainwindow.LandscapeEventBus;
+import org.example.mainwindow.LandscapeTexture;
+import org.example.mainwindow.RenderingSystem;
+import org.example.mainwindow.UserInterface;
 
 
-public class MainLauncher {
+public class Launcher {
 
     public static final long GAME_START_TIME_MS = System.currentTimeMillis();
 

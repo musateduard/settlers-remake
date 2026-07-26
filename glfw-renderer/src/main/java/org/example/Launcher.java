@@ -21,6 +21,7 @@ import jsettlers.main.swing.settings.SettingsManager;
 import org.example.mainwindow.Application;
 import org.example.mainwindow.AssetManager;
 import org.example.mainwindow.Camera;
+import org.example.mainwindow.DrawRequestArena;
 import org.example.mainwindow.GLFWGOEventConverter;
 import org.example.mainwindow.GLFWStartingGameListener;
 import org.example.mainwindow.InputSystem;
@@ -88,6 +89,7 @@ public class Launcher {
         final AssetManager assets = new AssetManager();
         final LandscapeLayer landscape = new LandscapeLayer(application.canvas, mapContent.map);
         final SpriteLayer sprites = new SpriteLayer(application.canvas);
+        final DrawRequestArena requestArena = new DrawRequestArena();
 
         final LandscapeEventBus landscapeEventBus = new LandscapeEventBus();
         mapContent.map.setBackgroundListener(landscapeEventBus);
@@ -151,6 +153,7 @@ public class Launcher {
                 camera,
                 landscape,
                 sprites,
+                requestArena,
                 assets,
                 landscapeEventBus,
                 context,

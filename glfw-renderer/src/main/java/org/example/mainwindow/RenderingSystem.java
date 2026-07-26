@@ -250,6 +250,19 @@ public class RenderingSystem {
     }
 
 
+    static class AnimationSystem {
+
+        public static void resolveSpriteFrames(DrawRequestArena requestArena) {
+
+            requestArena.clearRequestCount();
+
+            // todo: finish implementing resolveSpriteFrames
+
+            return;
+        }
+    }
+
+
     static class SpriteRenderer {
 
         public static void drawSprites(
@@ -687,6 +700,7 @@ public class RenderingSystem {
             Camera camera,
             LandscapeLayer landscape,
             SpriteLayer sprites,
+            DrawRequestArena requestArena,
             AssetManager assets,
             LandscapeEventBus eventBus,
             LWJGLDrawContext context,
@@ -722,9 +736,8 @@ public class RenderingSystem {
             GameRenderer.frameSetupLegacy(application, context, map);
 
             LandscapeRenderer.drawLandscape(application, assetManager, camera, map.map, landscape, eventBus);
+            AnimationSystem.resolveSpriteFrames(requestArena);
             SpriteRenderer.drawSprites(application, camera, sprites, assets, map.map);
-            // draw animated sprites
-            // draw settlers units
 
             context.invalidateDrawState();  // this forces the LWJGLDrawContext managed variables to update their state
             GameRenderer.frameTeardownLegacy(context, map);
@@ -820,6 +833,7 @@ public class RenderingSystem {
         Camera camera,
         LandscapeLayer landscape,
         SpriteLayer sprites,
+        DrawRequestArena requestArena,
         AssetManager assets,
         LandscapeEventBus eventBus,
         LWJGLDrawContext context,
@@ -829,8 +843,19 @@ public class RenderingSystem {
         RenderingSystem.activateCanvasBuffer(application.canvas);
 
         GameRenderer.drawGameScene(
-            frameDuration, application, assets, camera, landscape, sprites, assets, eventBus, context, settlersMap
+            frameDuration,
+            application,
+            assets,
+            camera,
+            landscape,
+            sprites,
+            requestArena,
+            assets,
+            eventBus,
+            context,
+            settlersMap
         );
+
         UserInterfaceRenderer.drawUI(application, userInterface);
 
         // activate screen buffer

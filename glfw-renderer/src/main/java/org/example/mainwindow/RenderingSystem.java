@@ -404,9 +404,9 @@ public class RenderingSystem {
             int[] treeChangingSequences = { 3, 3, 6, 9, 9, 18, 18 };
             float heightYDisplacement = 2.00f;
 
-            int file;
-            int sequence;
-            int frame;
+            int fileIndex;
+            int sequenceIndex;
+            int frameIndex;
             DrawRequestType requestType;
             float heightOffset = 0.00f;
             EMapObjectType objectType = object.getObjectType();
@@ -417,80 +417,80 @@ public class RenderingSystem {
             switch (objectType) {
 
                 case STONE -> {
-                    file = objectsFile;
-                    sequence = stoneSequence;
+                    fileIndex = objectsFile;
+                    sequenceIndex = stoneSequence;
                     int availableStones = (int) progress;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
-                    frame = seqLength - availableStones - 1;
-                    if (frame < 0) {
-                        frame = 0;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
+                    frameIndex = seqLength - availableStones - 1;
+                    if (frameIndex < 0) {
+                        frameIndex = 0;
                     }
-                    if (frame >= seqLength) {
-                        frame = Math.max(0, seqLength - 1);
+                    if (frameIndex >= seqLength) {
+                        frameIndex = Math.max(0, seqLength - 1);
                     }
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case CUT_OFF_STONE -> {
-                    file = objectsFile;
-                    sequence = stoneSequence;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
-                    frame = Math.max(0, seqLength - 1);
+                    fileIndex = objectsFile;
+                    sequenceIndex = stoneSequence;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
+                    frameIndex = Math.max(0, seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case PLANT_DECORATION -> {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 8;
+                    fileIndex = objectsFile;
+                    sequenceIndex = decorationSequence;
+                    frameIndex = (tileX * 13 + tileY * 233) % 8;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case DESERT_DECORATION -> {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 5 + 10;
+                    fileIndex = objectsFile;
+                    sequenceIndex = decorationSequence;
+                    frameIndex = (tileX * 13 + tileY * 233) % 5 + 10;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case SWAMP_DECORATION -> {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 6 + 27;
+                    fileIndex = objectsFile;
+                    sequenceIndex = decorationSequence;
+                    frameIndex = (tileX * 13 + tileY * 233) % 6 + 27;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case TREE_ADULT -> {
-                    file = objectsFile;
+                    fileIndex = objectsFile;
                     int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeSequences.length;
-                    sequence = treeSequences[treeType];
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    sequenceIndex = treeSequences[treeType];
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     // Randomize keyframe by position so trees are not all in sync.
-                    frame = positionAnimationStep % seqLength;
+                    frameIndex = positionAnimationStep % seqLength;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
                 case TREE_GROWING -> {
-                    file = objectsFile;
+                    fileIndex = objectsFile;
                     if (progress < 0.33f) {
-                        sequence = smallGrowingTreeSequence;
-                        frame = 0;
+                        sequenceIndex = smallGrowingTreeSequence;
+                        frameIndex = 0;
                     } else {
                         int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeChangingSequences.length;
-                        sequence = treeChangingSequences[treeType];
+                        sequenceIndex = treeChangingSequences[treeType];
                         if (progress < 0.66f) {
-                            frame = treeSmallFrame;
+                            frameIndex = treeSmallFrame;
                         } else {
-                            frame = treeMediumFrame;
+                            frameIndex = treeMediumFrame;
                         }
                     }
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case TREE_DEAD -> {
-                    file = objectsFile;
+                    fileIndex = objectsFile;
                     int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeChangingSequences.length;
-                    sequence = treeChangingSequences[treeType];
+                    sequenceIndex = treeChangingSequences[treeType];
                     int imageStep;
                     if (progress < treeCut1) {
                         imageStep = (int) (progress * treeFallingSpeed);
@@ -507,262 +507,262 @@ public class RenderingSystem {
                         int relativeStep = (int) ((progress - treeTaken) / (1 - treeTaken) * treeRotImages);
                         imageStep = relativeStep + treeFallImages + 3;
                     }
-                    frame = imageStep;
+                    frameIndex = imageStep;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case TREE_BURNING -> {
-                    file = objectsFile;
-                    sequence = 124;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 124;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = (positionAnimationStep * 5) % seqLength;
+                    frameIndex = (positionAnimationStep * 5) % seqLength;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
                 case CORN_GROWING -> {
-                    file = objectsFile;
-                    sequence = cornSequence;
-                    frame = (int) (progress * cornGrowSteps);
+                    fileIndex = objectsFile;
+                    sequenceIndex = cornSequence;
+                    frameIndex = (int) (progress * cornGrowSteps);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case CORN_ADULT -> {
-                    file = objectsFile;
-                    sequence = cornSequence;
-                    frame = cornGrowSteps;
+                    fileIndex = objectsFile;
+                    sequenceIndex = cornSequence;
+                    frameIndex = cornGrowSteps;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case CORN_DEAD -> {
-                    file = objectsFile;
-                    sequence = cornSequence;
-                    frame = cornDeadStep;
+                    fileIndex = objectsFile;
+                    sequenceIndex = cornSequence;
+                    frameIndex = cornDeadStep;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case WINE_GROWING -> {
-                    file = objectsFile;
-                    sequence = wineSequence;
-                    frame = (int) (progress * wineGrowSteps);
+                    fileIndex = objectsFile;
+                    sequenceIndex = wineSequence;
+                    frameIndex = (int) (progress * wineGrowSteps);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case WINE_HARVESTABLE -> {
-                    file = objectsFile;
-                    sequence = wineSequence;
-                    frame = wineGrowSteps;
+                    fileIndex = objectsFile;
+                    sequenceIndex = wineSequence;
+                    frameIndex = wineGrowSteps;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case WINE_DEAD -> {
-                    file = objectsFile;
-                    sequence = wineSequence;
-                    frame = wineDeadStep;
+                    fileIndex = objectsFile;
+                    sequenceIndex = wineSequence;
+                    frameIndex = wineDeadStep;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case RICE_GROWING -> {
-                    file = objectsFile;
-                    sequence = riceSequence;
-                    frame = (int) (progress * riceGrowSteps);
+                    fileIndex = objectsFile;
+                    sequenceIndex = riceSequence;
+                    frameIndex = (int) (progress * riceGrowSteps);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case RICE_HARVESTABLE -> {
-                    file = objectsFile;
-                    sequence = riceSequence;
-                    frame = riceGrowSteps;
+                    fileIndex = objectsFile;
+                    sequenceIndex = riceSequence;
+                    frameIndex = riceGrowSteps;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case RICE_DEAD -> {
-                    file = objectsFile;
-                    sequence = riceSequence;
-                    frame = riceDeadStep;
+                    fileIndex = objectsFile;
+                    sequenceIndex = riceSequence;
+                    frameIndex = riceDeadStep;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case HIVE_EMPTY -> {
-                    file = animalsFile;
-                    sequence = hiveEmptySequence;
-                    frame = 0;
+                    fileIndex = animalsFile;
+                    sequenceIndex = hiveEmptySequence;
+                    frameIndex = 0;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case HIVE_GROWING -> {
-                    file = animalsFile;
-                    sequence = hiveGrowSequence;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = animalsFile;
+                    sequenceIndex = hiveGrowSequence;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = positionAnimationStep % seqLength;
+                    frameIndex = positionAnimationStep % seqLength;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
                 case HIVE_HARVESTABLE -> {
-                    file = animalsFile;
-                    sequence = hiveHarvestableSequence;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = animalsFile;
+                    sequenceIndex = hiveHarvestableSequence;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = positionAnimationStep % seqLength;
+                    frameIndex = positionAnimationStep % seqLength;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
                 case MANNA_BOWL -> {
                     IMannaBowlObject mannaBowl = (IMannaBowlObject) object;
-                    file = imageProvider.getGFXBuildingFileIndex(mannaBowl.getCivilisation());
-                    sequence = imageProvider.getMannaBowlSequence(mannaBowl.getCivilisation());
-                    frame = (int) (progress * (wineBowlImages - 1));
+                    fileIndex = imageProvider.getGFXBuildingFileIndex(mannaBowl.getCivilisation());
+                    sequenceIndex = imageProvider.getMannaBowlSequence(mannaBowl.getCivilisation());
+                    frameIndex = (int) (progress * (wineBowlImages - 1));
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_COAL -> {
-                    file = objectsFile;
-                    sequence = 94;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 94;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_GEMSTONE -> {
-                    file = objectsFile;
-                    sequence = 95;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 95;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_GOLD -> {
-                    file = objectsFile;
-                    sequence = 96;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 96;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_IRON -> {
-                    file = objectsFile;
-                    sequence = 97;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 97;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_BRIMSTONE -> {
-                    file = objectsFile;
-                    sequence = 98;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 98;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case FOUND_NOTHING -> {
-                    file = objectsFile;
-                    sequence = 99;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 99;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case BUILDINGSITE_SIGN -> {
-                    file = objectsFile;
-                    sequence = 93;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 93;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case BUILDINGSITE_POST -> {
-                    file = objectsFile;
-                    sequence = 92;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 92;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case WORKAREA_MARK -> {
-                    file = objectsFile;
-                    sequence = 91;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = 91;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case CONSTRUCTION_MARK -> {
-                    file = markerFile;
-                    sequence = 6;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = markerFile;
+                    sequenceIndex = 6;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case BUILDING_DECONSTRUCTION_SMOKE -> {
-                    file = buildingsFile;
-                    sequence = 38;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = buildingsFile;
+                    sequenceIndex = 38;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case SMOKE -> {
-                    file = buildingsFile;
-                    sequence = 42;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = buildingsFile;
+                    sequenceIndex = 42;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     heightOffset = smokeHeight;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case SMOKE_WITH_FIRE -> {
-                    file = buildingsFile;
-                    sequence = 43;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = buildingsFile;
+                    sequenceIndex = 43;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = Math.min((int) (progress * seqLength), seqLength - 1);
+                    frameIndex = Math.min((int) (progress * seqLength), seqLength - 1);
                     heightOffset = smokeHeight;
                     requestType = DrawRequestType.STATIC;
                 }
@@ -773,31 +773,31 @@ public class RenderingSystem {
                     if (elements <= 0) {
                         return;
                     }
-                    file = objectsFile;
-                    sequence = stack.getMaterialType().getStackIndex();
-                    frame = elements - 1;
+                    fileIndex = objectsFile;
+                    sequenceIndex = stack.getMaterialType().getStackIndex();
+                    frameIndex = elements - 1;
                     requestType = DrawRequestType.STATIC;
                 }
 
                 case PIG -> {
-                    file = animalsFile;
-                    sequence = pigSequence;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = animalsFile;
+                    sequenceIndex = pigSequence;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = (positionAnimationStep / 2) % seqLength;
+                    frameIndex = (positionAnimationStep / 2) % seqLength;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
                 case WAVES -> {
-                    file = objectsFile;
-                    sequence = wavesSequence;
-                    int seqLength = imageProvider.getSettlerSequence(file, sequence).length();
+                    fileIndex = objectsFile;
+                    sequenceIndex = wavesSequence;
+                    int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
                     if (seqLength < 1) {
                         return;
                     }
-                    frame = (animationStep / 2 + tileX / 2 + tileY / 2) % seqLength;
+                    frameIndex = (animationStep / 2 + tileX / 2 + tileY / 2) % seqLength;
                     requestType = DrawRequestType.WAVE;
                 }
 
@@ -806,10 +806,10 @@ public class RenderingSystem {
                     if (substep >= 15) {
                         return;
                     }
-                    file = animalsFile;
-                    sequence = fishSequence;
+                    fileIndex = animalsFile;
+                    sequenceIndex = fishSequence;
                     int subseq = (positionAnimationStep / 1024) % 4;
-                    frame = subseq * 15 + substep;
+                    frameIndex = subseq * 15 + substep;
                     requestType = DrawRequestType.ANIMATED;
                 }
 
@@ -819,18 +819,18 @@ public class RenderingSystem {
             }
 
             AssetLocator locator = new AssetLocator(
-                file,
+                fileIndex,
                 EImageLinkType.SETTLER.ordinal(),
-                sequence,
-                Math.max(0, frame)
+                sequenceIndex,
+                Math.max(0, frameIndex)
             );
 
-            Texture texture = assets.getOrCreateTexture(locator);
-            if (texture == null) {
+            Texture sprite = assets.getOrCreateTexture(locator);
+            if (sprite == null) {
                 return;
             }
 
-            float fow = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            float fowLevel = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
 
             int height = grid.getVisibleHeightAt(tileX, tileY) & 0xFF;
             int mapHeight = grid.getHeight();
@@ -842,38 +842,56 @@ public class RenderingSystem {
             float viewX = tileX * scaleX + tileY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
             float viewY = tileY * (-scaleY) + (height + heightOffset) * heightYDisplacement + realMapHeight * scaleY;
 
+            // Shadow then body into the same request list (painter's order within the bucket).
+            Texture shadow = assets.getSpriteShadow(locator);
+            if (shadow != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, requestType, shadow, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+                );
+            }
+
+            AnimationSystem.addClippedDrawRequest(
+                arena, requestType, sprite, viewX, viewY,
+                screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+            );
+
+            return;
+        }
+
+
+        /**
+         * Appends a full-size sprite quad, or skips it when completely outside the visible screen.
+         * Partial off-screen overlap is left to OpenGL clipping.
+         */
+        static void addClippedDrawRequest(
+            DrawRequestArena arena,
+            DrawRequestType requestType,
+            Texture texture,
+            float viewX,
+            float viewY,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float fowLevel) {
+
             // Legacy quad: left=offsetX, top=-offsetY, right=offsetX+w, bottom=-offsetY-h
             // todo: use Sprite instead of Texture; textures don't have offsetX
-            float offsetX = texture.offsetX;
-            float offsetY = texture.offsetY;
-            float fullWidth = texture.width;
-            float fullHeight = texture.height;
+            float left = viewX + texture.offsetX;
+            float top = viewY - texture.offsetY;
+            float right = left + texture.width;
+            float bottom = top - texture.height;
 
-            float left = viewX + offsetX;
-            float top = viewY - offsetY;
-            float right = left + fullWidth;
-            float bottom = top - fullHeight;
-
-            float clipLeft = Math.max(left, screenMinX);
-            float clipRight = Math.min(right, screenMaxX);
-            float clipBottom = Math.max(bottom, screenMinY);
-            float clipTop = Math.min(top, screenMaxY);
-
-            if (clipLeft >= clipRight || clipBottom >= clipTop) {
+            // check if sprite is fully clipped
+            if (right <= screenMinX || left >= screenMaxX || top <= screenMinY || bottom >= screenMaxY) {
                 return;
             }
 
-            float u0 = (clipLeft - left) / fullWidth;
-            float u1 = (clipRight - left) / fullWidth;
-            // Texture is uploaded flipped (GL v=0 = image bottom); map clip from top into GL V.
-            float v0 = 1.00f - (top - clipTop) / fullHeight;
-            float v1 = 1.00f - (top - clipBottom) / fullHeight;
-
             arena.addDrawRequest(
-                requestType,
-                texture, clipLeft, clipTop,
-                clipRight - clipLeft, clipTop - clipBottom,
-                fow, u0, v0, u1, v1
+                requestType, texture, left, top,
+                texture.width, texture.height, fowLevel,
+                0.00f, 1.00f, 1.00f, 0.00f
             );
 
             return;
@@ -891,6 +909,8 @@ public class RenderingSystem {
 
             // todo: use batched instanced rendering instead of single sprite rendering
             // todo: fix problem with tree species not resolving to correct sprite
+            // todo: fix settlers appearing on top of buildings even when behind
+            // this is caused by settlers draw requests being handled after building draw requests
 
             SpriteRenderer.beginSpritePass(application, camera, sprites);
 

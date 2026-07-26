@@ -3,6 +3,7 @@ package org.example.mainwindow;
 import go.graphics.ImageData;
 import jsettlers.graphics.image.Image;
 import jsettlers.graphics.image.NullImage;
+import jsettlers.graphics.image.SettlerImage;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.map.draw.ImageProvider;
 
@@ -22,11 +23,20 @@ import java.util.HashMap;
  */
 public class AssetManager {
 
+    /** Cache-key bit distinguishing a shadow texture from its body (bits 0–47 hold the locator). */
+    // this bit stores whether a sprite locator has shadow or not
+    private static final long SHADOW_CACHE_BIT = 1L << 48;
+
     public final HashMap<Long, Texture> textureList;
     public final Texture landscapeAtlas;
 
 
     public AssetManager() {
+
+        // todo: introduce sprite - shadow mapping lists
+        // this is because not all sprite sequences have a corresponding shadow sequence
+        // some sprites have fewer shadows, some sprite sequences have misaligned shadow sequences
+        // es.: asset file 13, sprite sequence 0 corresponds to shadow sequence 3
 
         this.textureList = new HashMap<>();
         this.landscapeAtlas = AssetManager.generateLandscapeAtlas();
@@ -74,16 +84,64 @@ public class AssetManager {
      */
     public Texture getOrCreateTexture(AssetLocator locator) {
 
-        Texture cached = this.textureList.get(locator.toHash());
+        long locatorHash = locator.toHash();
+        Texture cached = this.textureList.get(locatorHash);
 
         if (cached != null) {
             return cached;
         }
 
-        // Temporary: pull pixels from the legacy ImageProvider until AssetManager owns DAT decoding.
         Image image = ImageProvider.getInstance()
             .getSettlerSequence(locator.fileIndex(), locator.sequenceIndex())
             .getImageSafe(locator.spriteIndex(), null);
+
+        return this.createAndCacheTexture(locatorHash, image);
+    }
+
+
+    /**
+     * Returns the paired shadow texture for the body frame identified by {@code locator},
+     * or {@code null} when that frame has no shadow.
+     * <p>
+     * Shadow pairing comes from the legacy DAT loader via {@link SettlerImage#getShadow()}.
+     */
+    public Texture getSpriteShadow(AssetLocator locator) {
+
+        // todo: don't alter the locator hash; use the locator as is and only use the hash when inserting into textureList
+        // todo: do we really need to include the shadow bit into the locator hash?
+        long shadowLocator = locator.toHash() | SHADOW_CACHE_BIT;
+
+        if (this.textureList.containsKey(shadowLocator)) {
+            return this.textureList.get(shadowLocator);
+        }
+
+        Image image = ImageProvider.getInstance()
+            .getSettlerSequence(locator.fileIndex(), locator.sequenceIndex())
+            .getImageSafe(locator.spriteIndex(), null);
+
+        SingleImage shadowImage = null;
+        if (image instanceof SettlerImage settlerImage) {
+            shadowImage = settlerImage.getShadow();
+        }
+
+        Texture shadow = this.createAndCacheTexture(shadowLocator, shadowImage);
+        // Record a miss so we do not re-probe SettlerImage every frame.
+        if (shadow == null) {
+            this.textureList.put(shadowLocator, null);
+        }
+
+        return shadow;
+    }
+
+
+    private Texture createAndCacheTexture(long locatorHash, Image image) {
+
+        // todo: make createAndCacheTexture get an AssetLocator not locator hash
+        // note: this is a temporary solution because now the shadow bit is baked into the locator hash
+        // this is because we don't have any way to resolve a shadow locator from a sprite locator
+        // we currently use ImageProvider to get the SingleImage based on the locator
+        // SingleImage contains both the sprite pixel data and the shadow pixel data
+        // later we'll need to write a spite - shadow mapping table and resolve shadows based on sprite locators
 
         if ((image instanceof SingleImage) == false || image instanceof NullImage) {
             return null;
@@ -122,8 +180,7 @@ public class AssetManager {
         pixelBuffer.rewind();
 
         Texture texture = new Texture(width, height, singleImage.getOffsetX(), singleImage.getOffsetY(), pixelBuffer);
-
-        this.textureList.put(locator.toHash(), texture);
+        this.textureList.put(locatorHash, texture);
         return texture;
     }
 }

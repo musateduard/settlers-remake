@@ -8,6 +8,7 @@ import java.awt.Rectangle;
 import java.util.Queue;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL33C;
+import org.lwjgl.system.MemoryUtil;
 import org.example.shaders.ScreenShader;
 import org.example.shaders.LandscapeShader;
 import org.example.shaders.SpriteShader;
@@ -17,11 +18,11 @@ import jsettlers.graphics.map.draw.DrawConstants;
 import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.common.CommonConstants;
 import jsettlers.common.images.EImageLinkType;
+import jsettlers.common.mapobject.EMapObjectType;
 import jsettlers.common.map.IDirectGridProvider;
 import jsettlers.common.map.IGraphicsGrid;
 import jsettlers.common.mapobject.IMapObject;
 import jsettlers.common.position.FloatRectangle;
-import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
@@ -46,21 +47,26 @@ public class RenderingSystem {
 
             for (LandscapeEvent event : events) {
 
-                if (event instanceof FogOfWarEnabledChanged fow) {
-                    landscape.fowEnabled = landscape.hasDirectGridProvider && fow.enabled();
+                if (event instanceof FogOfWarEnabledChanged) {
+
+                    FogOfWarEnabledChanged fowEvent = (FogOfWarEnabledChanged) event;
+                    landscape.fowEnabled = landscape.hasDirectGridProvider && fowEvent.enabled();
+
                     continue;
                 }
 
-                if (event instanceof BackgroundLineChanged line) {
+                if (event instanceof BackgroundLineChanged) {
 
-                    int offsetX = line.offsetX();
-                    int offsetY = line.offsetY();
+                    BackgroundLineChanged lineEvent = (BackgroundLineChanged) event;
+
+                    int offsetX = lineEvent.offsetX();
+                    int offsetY = lineEvent.offsetY();
 
                     if (offsetY == landscape.bufferHeight) {
                         continue;
                     }
 
-                    int x2 = offsetX + line.length();
+                    int x2 = offsetX + lineEvent.length();
                     if (offsetX != 0) {
                         offsetX = offsetX - 1;
                     }
@@ -252,29 +258,21 @@ public class RenderingSystem {
 
     static class AnimationSystem {
 
-        public static void resolveSpriteFrames(DrawRequestArena requestArena) {
-
-            requestArena.clearRequestCount();
-
-            // todo: finish implementing resolveSpriteFrames
-
-            return;
-        }
-    }
-
-
-    static class SpriteRenderer {
-
-        public static void drawSprites(
+        public static void resolveSpriteKeyframes(
+            DrawRequestArena requestArena,
             Application application,
             Camera camera,
-            SpriteLayer sprites,
             AssetManager assets,
             IGraphicsGrid grid) {
+
+            requestArena.clearRequestIndex();
 
             int screenPadding = 50;
             int tallSpriteOverdraw = 50;
             float heightYDisplacement = 2.00f;
+
+            long currentTimeMillis = System.currentTimeMillis();
+            int animationStep = ((int) (currentTimeMillis / 100L)) & 0x7fffffff;
 
             float centerX = -camera.offsetX;
             float centerY = -camera.offsetY;
@@ -303,11 +301,277 @@ public class RenderingSystem {
             if (visibleWidth < 0) {
                 visibleWidth = 0;
             }
+
             if (visibleHeight < 0) {
                 visibleHeight = 0;
             }
 
-            float zPerY = 1.00f / (mapHeight * 100.00f);
+            int lineCount = visibleHeight + tallSpriteOverdraw;
+            for (int line = 0; line < lineCount; line++) {
+
+                int tileY = mapMinY + line;
+                if (tileY < 0 || tileY >= mapHeight) {
+                    continue;
+                }
+
+                int startX = mapMinX + (line / 2);
+                int endX = startX + visibleWidth;
+                if (startX < 0) {
+                    startX = 0;
+                }
+
+                if (endX > mapWidth) {
+                    endX = mapWidth;
+                }
+
+                for (int tileX = startX; tileX < endX; tileX++) {
+
+                    byte fogStatus = grid.getVisibleStatus(tileX, tileY);
+                    if (fogStatus == 0) {
+                        continue;
+                    }
+
+                    IMapObject object = grid.getVisibleMapObjectsAt(tileX, tileY);
+                    while (object != null) {
+
+                        resolveObjectKeyframe(
+                            requestArena, assets, grid,
+                            tileX, tileY, object, fogStatus,
+                            screenMinX, screenMinY, screenMaxX, screenMaxY,
+                            animationStep
+                        );
+
+                        object = object.getNextObject();
+                        continue;
+                    }
+                }
+            }
+
+            return;
+        }
+
+
+        static void resolveObjectKeyframe(
+            DrawRequestArena arena,
+            AssetManager assets,
+            IGraphicsGrid grid,
+            int tileX,
+            int tileY,
+            IMapObject object,
+            byte fogStatus,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            int animationStep) {
+
+            int objectsFile = 1;
+            int animalsFile = 6;
+            int stoneSequence = 31;
+            int decorationSequence = 27;
+            int fishSequence = 7;
+            int wavesSequence = 26;
+            int[] treeSequences = { 1, 2, 4, 7, 8, 16, 17 };
+            float heightYDisplacement = 2.00f;
+
+            int file;
+            int sequence;
+            int frame;
+            DrawRequestType requestType;
+            EMapObjectType objectType = object.getObjectType();
+
+            switch (objectType) {
+
+                case STONE: {
+                    file = objectsFile;
+                    sequence = stoneSequence;
+                    int availableStones = (int) object.getStateProgress();
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+                    frame = seqLength - availableStones - 1;
+                    if (frame < 0) {
+                        frame = 0;
+                    }
+                    if (frame >= seqLength) {
+                        frame = Math.max(0, seqLength - 1);
+                    }
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                case CUT_OFF_STONE: {
+                    file = objectsFile;
+                    sequence = stoneSequence;
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+                    frame = Math.max(0, seqLength - 1);
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                case PLANT_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 8;
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                case DESERT_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 5 + 10;
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                case SWAMP_DECORATION: {
+                    file = objectsFile;
+                    sequence = decorationSequence;
+                    frame = (tileX * 13 + tileY * 233) % 6 + 27;
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                case TREE_ADULT: {
+
+                    file = objectsFile;
+                    int treeTypes = treeSequences.length;
+                    int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeTypes;
+                    sequence = treeSequences[treeType];
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+
+                    // this randomizes keyframe based on position so that trees don't appear all in sync
+                    frame = (0xfffffff & (animationStep + tileX * 167 + tileY * 1223)) % seqLength;
+
+                    requestType = DrawRequestType.ANIMATED;
+                    break;
+                }
+
+                case WAVES: {
+                    file = objectsFile;
+                    sequence = wavesSequence;
+                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
+                    if (seqLength < 1) {
+                        return;
+                    }
+                    frame = (animationStep / 2 + tileX / 2 + tileY / 2) % seqLength;
+                    requestType = DrawRequestType.WAVE;
+                    break;
+                }
+
+                case FISH_DECORATION: {
+                    file = animalsFile;
+                    sequence = fishSequence;
+                    frame = 0;
+                    requestType = DrawRequestType.STATIC;
+                    break;
+                }
+
+                default: {
+                    return;
+                }
+            }
+
+            AssetLocator locator = new AssetLocator(
+                file,
+                EImageLinkType.SETTLER.ordinal(),
+                sequence,
+                Math.max(0, frame)
+            );
+
+            Texture texture = assets.getOrCreateTexture(locator);
+            if (texture == null) {
+                return;
+            }
+
+            float fow = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+
+            int height = grid.getVisibleHeightAt(tileX, tileY) & 0xFF;
+            int mapHeight = grid.getHeight();
+            float realMapHeight = mapHeight - 1;
+            float scaleX = DrawConstants.DISTANCE_X;
+            float scaleY = DrawConstants.DISTANCE_Y;
+
+            // Port of MapCoordinateConverter.getViewX / getViewY with DrawConstants tile spacing.
+            float viewX = tileX * scaleX + tileY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
+            float viewY = tileY * (-scaleY) + height * heightYDisplacement + realMapHeight * scaleY;
+
+            // Legacy quad: left=offsetX, top=-offsetY, right=offsetX+w, bottom=-offsetY-h
+            // todo: use Sprite instead of Texture; textures don't have offsetX
+            float offsetX = texture.offsetX;
+            float offsetY = texture.offsetY;
+            float fullWidth = texture.width;
+            float fullHeight = texture.height;
+
+            float left = viewX + offsetX;
+            float top = viewY - offsetY;
+            float right = left + fullWidth;
+            float bottom = top - fullHeight;
+
+            float clipLeft = Math.max(left, screenMinX);
+            float clipRight = Math.min(right, screenMaxX);
+            float clipBottom = Math.max(bottom, screenMinY);
+            float clipTop = Math.min(top, screenMaxY);
+
+            if (clipLeft >= clipRight || clipBottom >= clipTop) {
+                return;
+            }
+
+            float u0 = (clipLeft - left) / fullWidth;
+            float u1 = (clipRight - left) / fullWidth;
+            // Texture is uploaded flipped (GL v=0 = image bottom); map clip from top into GL V.
+            float v0 = 1.00f - (top - clipTop) / fullHeight;
+            float v1 = 1.00f - (top - clipBottom) / fullHeight;
+
+            arena.addDrawRequest(
+                requestType,
+                texture, clipLeft, clipTop,
+                clipRight - clipLeft, clipTop - clipBottom,
+                fow, u0, v0, u1, v1
+            );
+
+            return;
+        }
+    }
+
+
+    static class SpriteRenderer {
+
+        public static void drawSprites(
+            Application application,
+            Camera camera,
+            SpriteLayer sprites,
+            DrawRequestArena arena) {
+
+            // todo: use batched instanced rendering instead of single sprite rendering
+
+            SpriteRenderer.beginSpritePass(application, camera, sprites);
+
+            for (int index = 0; index < arena.waveRequestIndex; index++) {
+                SpriteRenderer.drawSingleSprite(sprites, arena.waveRequestList.get(index));
+                continue;
+            }
+
+            for (int index = 0; index < arena.staticRequestIndex; index++) {
+                SpriteRenderer.drawSingleSprite(sprites, arena.staticRequestList.get(index));
+                continue;
+            }
+
+            for (int index = 0; index < arena.animatedRequestIndex; index++) {
+                SpriteRenderer.drawSingleSprite(sprites, arena.animatedRequestList.get(index));
+                continue;
+            }
+
+            for (int index = 0; index < arena.unitRequestIndex; index++) {
+                SpriteRenderer.drawSingleSprite(sprites, arena.unitRequestList.get(index));
+                continue;
+            }
+
+            SpriteRenderer.endSpritePass();
+            return;
+        }
+
+
+        static void beginSpritePass(Application application, Camera camera, SpriteLayer sprites) {
 
             SpriteShader shader = sprites.shader;
             shader.activate();
@@ -338,242 +602,38 @@ public class RenderingSystem {
             GL33C.glDisable(GL_DEPTH_TEST);
 
             GL33C.glBindVertexArray(sprites.quad.vaoId);
+            return;
+        }
 
-            int lineCount = visibleHeight + tallSpriteOverdraw;
-            for (int line = 0; line < lineCount; line++) {
-                int tileY = mapMinY + line;
-                if (tileY < 0 || tileY >= mapHeight) {
-                    continue;
-                }
 
-                int startX = mapMinX + (line / 2);
-                int endX = startX + visibleWidth;
-                if (startX < 0) {
-                    startX = 0;
-                }
-                if (endX > mapWidth) {
-                    endX = mapWidth;
-                }
-
-                for (int tileX = startX; tileX < endX; tileX++) {
-                    byte fogStatus = grid.getVisibleStatus(tileX, tileY);
-                    if (fogStatus == 0) {
-                        continue;
-                    }
-
-                    IMapObject object = grid.getVisibleMapObjectsAt(tileX, tileY);
-                    while (object != null) {
-
-                        SpriteDrawRequest request = resolveMapObject(
-                            assets,
-                            grid,
-                            tileX,
-                            tileY,
-                            object,
-                            fogStatus,
-                            screenMinX,
-                            screenMinY,
-                            screenMaxX,
-                            screenMaxY,
-                            zPerY
-                        );
-
-                        if (request != null) {
-                            drawSingleSprite(sprites, request);
-                        }
-
-                        object = object.getNextObject();
-                        continue;
-                    }
-                }
-            }
+        static void endSpritePass() {
 
             GL33C.glBindVertexArray(0);
             GL33C.glBindTexture(GL_TEXTURE_2D, 0);
             GL33C.glDisable(GL33C.GL_BLEND);
             GL33C.glEnable(GL_DEPTH_TEST);
+
             return;
         }
 
 
-        static SpriteDrawRequest resolveMapObject(
-            AssetManager assets,
-            IGraphicsGrid grid,
-            int tileX,
-            int tileY,
-            IMapObject object,
-            byte fogStatus,
-            float screenMinX,
-            float screenMinY,
-            float screenMaxX,
-            float screenMaxY,
-            float zPerY) {
-
-            int objectsFile = 1;
-            int animalsFile = 6;
-            int stoneSequence = 31;
-            int decorationSequence = 27;
-            int fishSequence = 7;
-            int[] treeSequences = { 1, 2, 4, 7, 8, 16, 17 };
-
-            int file;
-            int sequence;
-            int frame;
-
-            switch (object.getObjectType()) {
-
-                case STONE: {
-
-                    file = objectsFile;
-                    sequence = stoneSequence;
-                    int availableStones = (int) object.getStateProgress();
-                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
-                    frame = seqLength - availableStones - 1;
-
-                    if (frame < 0) {
-                        frame = 0;
-                    }
-
-                    if (frame >= seqLength) {
-                        frame = Math.max(0, seqLength - 1);
-                    }
-
-                    break;
-                }
-
-                case CUT_OFF_STONE: {
-                    file = objectsFile;
-                    sequence = stoneSequence;
-                    int seqLength = ImageProvider.getInstance().getSettlerSequence(file, sequence).length();
-                    frame = Math.max(0, seqLength - 1);
-                    break;
-                }
-
-                case PLANT_DECORATION: {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 8;
-                    break;
-                }
-
-                case DESERT_DECORATION: {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 5 + 10;
-                    break;
-                }
-
-                case SWAMP_DECORATION: {
-                    file = objectsFile;
-                    sequence = decorationSequence;
-                    frame = (tileX * 13 + tileY * 233) % 6 + 27;
-                    break;
-                }
-
-                case TREE_ADULT: {
-                    file = objectsFile;
-                    int treeTypes = 7;
-                    int treeType = (tileX + tileX / 5 + tileY / 3 + tileY + tileY / 7) % treeTypes;
-                    sequence = treeSequences[treeType];
-                    frame = 0;
-                    break;
-                }
-
-                case FISH_DECORATION: {
-                    file = animalsFile;
-                    sequence = fishSequence;
-                    frame = 0;
-                    break;
-                }
-
-                default: {
-                    return null;
-                }
-            }
-
-            AssetLocator locator = new AssetLocator(
-                file,
-                EImageLinkType.SETTLER.ordinal(),
-                sequence,
-                Math.max(0, frame)
-            );
-
-            Texture texture = assets.getOrCreateTexture(locator);
-            if (texture == null) {
-                return null;
-            }
-
-            float fow = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
-
-            int height = grid.getVisibleHeightAt(tileX, tileY) & 0xFF;
-            int mapHeight = grid.getHeight();
-            float realMapHeight = mapHeight - 1;
-            float scaleX = DrawConstants.DISTANCE_X;
-            float scaleY = DrawConstants.DISTANCE_Y;
-            float heightYDisplacement = 2.00f;
-
-            // Port of MapCoordinateConverter.getViewX / getViewY with DrawConstants tile spacing.
-            float viewX = tileX * scaleX + tileY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
-            float viewY = tileY * (-scaleY) + height * heightYDisplacement + realMapHeight * scaleY;
-            float z = tileY * zPerY;
-
-            // Legacy quad: left=offsetX, top=-offsetY, right=offsetX+w, bottom=-offsetY-h
-            // todo: use Sprite instead of Texture; textures don't have offsetX
-            float offsetX = texture.offsetX;
-            float offsetY = texture.offsetY;
-            float fullWidth = texture.width;
-            float fullHeight = texture.height;
-
-            float left = viewX + offsetX;
-            float top = viewY - offsetY;
-            float right = left + fullWidth;
-            float bottom = top - fullHeight;
-
-            float clipLeft = Math.max(left, screenMinX);
-            float clipRight = Math.min(right, screenMaxX);
-            float clipBottom = Math.max(bottom, screenMinY);
-            float clipTop = Math.min(top, screenMaxY);
-
-            if (clipLeft >= clipRight || clipBottom >= clipTop) {
-                return null;
-            }
-
-            float u0 = (clipLeft - left) / fullWidth;
-            float u1 = (clipRight - left) / fullWidth;
-            // Texture is uploaded flipped (GL v=0 = image bottom); map clip from top into GL V.
-            float v0 = 1.00f - (top - clipTop) / fullHeight;
-            float v1 = 1.00f - (top - clipBottom) / fullHeight;
-
-            return new SpriteDrawRequest(
-                texture,
-                clipLeft,
-                clipTop,
-                z,
-                clipRight - clipLeft,
-                clipTop - clipBottom,
-                fow,
-                u0,
-                v0,
-                u1,
-                v1
-            );
-        }
-
-
         static void drawSingleSprite(SpriteLayer sprites, SpriteDrawRequest request) {
-            GL33C.glBindTexture(GL_TEXTURE_2D, request.texture().id);
+
+            GL33C.glBindTexture(GL_TEXTURE_2D, request.texture.id);
 
             SpriteShader shader = sprites.shader;
             shader.modelMatrix.identity();
-            shader.modelMatrix.translate(request.x(), request.y(), request.z());
-            shader.modelMatrix.scale(request.width(), request.height(), 1.00f);
+            shader.modelMatrix.translate(request.x, request.y, 0.00f);
+            shader.modelMatrix.scale(request.width, request.height, 1.00f);
             shader.modelMatrix.get(shader.buffer);
             GL33C.glUniformMatrix4fv(shader.modelMatrixUniform, false, shader.buffer);
 
-            GL33C.glUniform1f(shader.fowUniform, request.fow());
-            GL33C.glUniform4f(shader.uvRectUniform, request.u0(), request.v0(), request.u1(), request.v1());
+            GL33C.glUniform1f(shader.fowUniform, request.fow);
+            GL33C.glUniform4f(shader.uvRectUniform, request.u0, request.v0, request.u1, request.v1);
 
             GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+            return;
         }
     }
 
@@ -736,8 +796,8 @@ public class RenderingSystem {
             GameRenderer.frameSetupLegacy(application, context, map);
 
             LandscapeRenderer.drawLandscape(application, assetManager, camera, map.map, landscape, eventBus);
-            AnimationSystem.resolveSpriteFrames(requestArena);
-            SpriteRenderer.drawSprites(application, camera, sprites, assets, map.map);
+            AnimationSystem.resolveSpriteKeyframes(requestArena, application, camera, assets, map.map);
+            SpriteRenderer.drawSprites(application, camera, sprites, requestArena);
 
             context.invalidateDrawState();  // this forces the LWJGLDrawContext managed variables to update their state
             GameRenderer.frameTeardownLegacy(context, map);

@@ -35,3 +35,4 @@ out/
 
 productionStats/*.png
 productionStats/*.log
+.cursor

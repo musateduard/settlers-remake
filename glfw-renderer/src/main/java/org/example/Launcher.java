@@ -48,6 +48,7 @@ public class Launcher {
         todo: pass renderer as argument to gui constructor
         */
 
+        final File rootFolder = new File("C:\\games\\Settlers 3 Ultimate");
         final Application application = new Application();
         final UserInterface userInterface = new UserInterface(application.window, application.renderer);
 

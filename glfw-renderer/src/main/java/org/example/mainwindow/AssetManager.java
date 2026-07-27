@@ -1,11 +1,13 @@
 package org.example.mainwindow;
 
 import go.graphics.ImageData;
+import jsettlers.common.images.EImageLinkType;
 import jsettlers.graphics.image.Image;
 import jsettlers.graphics.image.NullImage;
 import jsettlers.graphics.image.SettlerImage;
 import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.map.draw.ImageProvider;
+import org.example.assetmanager.AssetType;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,9 +25,13 @@ import java.util.HashMap;
  */
 public class AssetManager {
 
-    /** Cache-key bit distinguishing a shadow texture from its body (bits 0–47 hold the locator). */
-    // this bit stores whether a sprite locator has shadow or not
-    private static final long SHADOW_CACHE_BIT = 1L << 48;
+    /**
+     * Sparse sprite-sequence → shadow-sequence remaps.
+     * Key: {@link AssetLocator#toSequenceHash()} (file + section + sequence).
+     * Value: absolute shadow sequence, or {@code -1} for no shadow.
+     * Missing key: naive identity (same sequence index).
+     */
+    public final HashMap<Long, Integer> shadowLookupTable;
 
     public final HashMap<Long, Texture> textureList;
     public final Texture landscapeAtlas;
@@ -39,9 +45,91 @@ public class AssetManager {
         // es.: asset file 13, sprite sequence 0 corresponds to shadow sequence 3
 
         this.textureList = new HashMap<>();
+        this.shadowLookupTable = AssetManager.buildShadowLookupTable();
         this.landscapeAtlas = AssetManager.generateLandscapeAtlas();
+    }
 
-        return;
+
+    /**
+     * Ports legacy {@code ShadowMapping*} + {@code AdvancedDatFileReader} shadow hacks
+     * into a flat sequence-hash → absolute shadow-sequence map.
+     */
+    private static HashMap<Long, Integer> buildShadowLookupTable() {
+
+        // todo: cleanup this function
+
+        HashMap<Long, Integer> table = new HashMap<>();
+
+        // File 1 — ShadowMapping1 (gaps at 26 and 33; later indices shift down)
+        table.put(seqKey(1, 26), -1);
+        for (int seq = 27; seq <= 32; seq++) {
+            table.put(seqKey(1, seq), seq - 1);
+        }
+        table.put(seqKey(1, 33), -1);
+        for (int seq = 34; seq < 512; seq++) {
+            table.put(seqKey(1, seq), seq - 2);
+        }
+
+        // File 6 — ShadowMapping6 (donkey fix)
+        for (int seq = 15; seq < 512; seq++) {
+            table.put(seqKey(6, seq), seq - 8);
+        }
+
+        // File 11 — specialist shift (settlerStarts.length == 239)
+        for (int seq = 13; seq <= 171; seq++) {
+            table.put(seqKey(11, seq), seq - 13);
+        }
+
+        // File 13 — building shadow realignment (shadowDifference == 26)
+        for (int seq = 0; seq < 27; seq++) {
+            table.put(seqKey(13, seq), seq + 3);
+        }
+        for (int seq = 27; seq < 36; seq++) {
+            table.put(seqKey(13, seq), seq == 28 ? -1 : seq + 2);
+        }
+        for (int seq = 36; seq < 44; seq++) {
+            table.put(seqKey(13, seq), -1);
+        }
+        table.put(seqKey(13, 44), 38); // dock
+        table.put(seqKey(13, 45), 39); // harbour
+        for (int seq = 46; seq < 512; seq++) {
+            table.put(seqKey(13, seq), -1);
+        }
+
+        // File 22 — ShadowMapping22
+        table.put(seqKey(22, 0), 19);
+        table.put(seqKey(22, 1), -1);
+        for (int seq = 2; seq <= 7; seq++) {
+            table.put(seqKey(22, seq), seq + 18);
+        }
+        for (int seq = 8; seq <= 13; seq++) {
+            table.put(seqKey(22, seq), -1);
+        }
+        for (int seq = 14; seq < 512; seq++) {
+            table.put(seqKey(22, seq), seq - 14);
+        }
+
+        // File 36 — ship shadow tweaks (shadowDifference == 28)
+        table.put(seqKey(36, 2), -1); // roman cargo ship front
+        table.put(seqKey(36, 4), 1);  // roman ferry
+        table.put(seqKey(36, 6), -1); // roman ferry front
+
+        // File 42 — ShadowMapping42
+        for (int seq = 0; seq <= 6; seq++) {
+            table.put(seqKey(42, seq), seq + 19);
+        }
+        for (int seq = 7; seq < 512; seq++) {
+            table.put(seqKey(42, seq), seq - 6);
+        }
+
+        return table;
+    }
+
+
+    private static long seqKey(int fileIndex, int sequenceIndex) {
+        // todo: replace this method with calling AssetLocator in place
+        // todo: use AssetType instead of EImageLinkType
+        return new AssetLocator(fileIndex, EImageLinkType.SETTLER.ordinal(), sequenceIndex, 0).toHash() & 0xffffffff0000L;
     }
 
 
@@ -100,21 +188,51 @@ public class AssetManager {
 
 
     /**
+     * Resolves the shadow {@link AssetLocator} for a sprite body locator.
+     * <p>
+     * Table miss → naive same-sequence shadow; {@code -1} → no shadow ({@code null});
+     * otherwise absolute shadow sequence.
+     */
+    public AssetLocator getShadowLocator(AssetLocator spriteLocator) {
+
+        Integer mapped = this.shadowLookupTable.get(spriteLocator.toHash() & 0xffffffff0000L);
+
+        if (mapped != null && mapped == -1) {
+            return null;
+        }
+
+        int shadowSeq = mapped != null ? mapped : spriteLocator.sequenceIndex();
+
+        return new AssetLocator(
+            spriteLocator.fileIndex(),
+            AssetType.Shadow.value,  // note: this mixes AssetType with legacy EImageLinkType; we need to decouple from legacy classes
+            shadowSeq,
+            spriteLocator.spriteIndex()
+        );
+    }
+
+
+    /**
      * Returns the paired shadow texture for the body frame identified by {@code locator},
      * or {@code null} when that frame has no shadow.
      * <p>
-     * Shadow pairing comes from the legacy DAT loader via {@link SettlerImage#getShadow()}.
+     * Cache keys use the resolved shadow {@link AssetLocator}. Pixel data is still loaded
+     * temporarily via {@link SettlerImage#getShadow()} until shadow-section DAT reads exist.
      */
     public Texture getSpriteShadow(AssetLocator locator) {
 
-        // todo: don't alter the locator hash; use the locator as is and only use the hash when inserting into textureList
-        // todo: do we really need to include the shadow bit into the locator hash?
-        long shadowLocator = locator.toHash() | SHADOW_CACHE_BIT;
-
-        if (this.textureList.containsKey(shadowLocator)) {
-            return this.textureList.get(shadowLocator);
+        AssetLocator shadowLocator = this.getShadowLocator(locator);
+        if (shadowLocator == null) {
+            return null;
         }
 
+        long shadowHash = shadowLocator.toHash();
+
+        if (this.textureList.containsKey(shadowHash)) {
+            return this.textureList.get(shadowHash);
+        }
+
+        // Temporary pixel bridge: body SettlerImage still carries the paired shadow.
         Image image = ImageProvider.getInstance()
             .getSettlerSequence(locator.fileIndex(), locator.sequenceIndex())
             .getImageSafe(locator.spriteIndex(), null);
@@ -124,10 +242,9 @@ public class AssetManager {
             shadowImage = settlerImage.getShadow();
         }
 
-        Texture shadow = this.createAndCacheTexture(shadowLocator, shadowImage);
-        // Record a miss so we do not re-probe SettlerImage every frame.
+        Texture shadow = this.createAndCacheTexture(shadowHash, shadowImage);
         if (shadow == null) {
-            this.textureList.put(shadowLocator, null);
+            this.textureList.put(shadowHash, null);
         }
 
         return shadow;
@@ -136,6 +253,7 @@ public class AssetManager {
 
     private Texture createAndCacheTexture(long locatorHash, Image image) {
 
+        // todo: replace this method with AssetFile.decode_image
         // todo: make createAndCacheTexture get an AssetLocator not locator hash
         // note: this is a temporary solution because now the shadow bit is baked into the locator hash
         // this is because we don't have any way to resolve a shadow locator from a sprite locator

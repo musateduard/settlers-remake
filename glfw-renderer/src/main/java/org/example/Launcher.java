@@ -1,6 +1,8 @@
 package org.example;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import go.graphics.swing.opengl.LWJGLDrawContext;
 import go.graphics.swing.sound.SwingSoundPlayer;
 import jsettlers.common.ai.EPlayerType;
@@ -48,18 +50,18 @@ public class Launcher {
         todo: pass renderer as argument to gui constructor
         */
 
-        final File rootFolder = new File("C:\\games\\Settlers 3 Ultimate");
-        final Application application = new Application();
-        final UserInterface userInterface = new UserInterface(application.window, application.renderer);
-
-        // create map instance
-        // SettlersMap newGameMap = new SettlersMap();  // deprecated
-
         ResourceManager.setProvider(new SwingResourceProvider());
         SettingsManager.setup();
         SettingsManager.getInstance().setSettlersFolder(new File("C:\\games\\Settlers 3 Ultimate"));
         ImageProvider.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\GFX"), "745006780412758287");
         SoundManager.setLookupPath(new File("C:\\games\\Settlers 3 Ultimate\\SND"));
+
+        final Path rootFolder = Paths.get("C:\\games\\Settlers 3 Ultimate");
+        final File[] assetFileList = rootFolder.resolve("GFX").toFile().listFiles();
+
+        final Application application = new Application();
+        final UserInterface userInterface = new UserInterface(application.window, application.renderer);
+        final AssetManager assetManager = new AssetManager(assetFileList);
 
         final byte playerId = 0;
         final long randomSeed = System.currentTimeMillis();
@@ -87,7 +89,6 @@ public class Launcher {
 
         final MapContent mapContent = startingListener.getMap();
         final Camera camera = new Camera(mapContent.map.getWidth(), mapContent.map.getHeight());
-        final AssetManager assets = new AssetManager();
         final LandscapeLayer landscape = new LandscapeLayer(application.canvas, mapContent.map);
         final SpriteLayer sprites = new SpriteLayer(application.canvas);
         final DrawRequestArena requestArena = new DrawRequestArena();
@@ -155,7 +156,7 @@ public class Launcher {
                 landscape,
                 sprites,
                 requestArena,
-                assets,
+                assetManager,
                 landscapeEventBus,
                 context,
                 mapContent

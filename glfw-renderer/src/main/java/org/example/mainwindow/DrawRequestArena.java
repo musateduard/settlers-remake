@@ -37,7 +37,7 @@ public class DrawRequestArena {
     }
 
 
-    public void clearRequestIndex() {
+    public void clearDrawRequestIndex() {
 
         this.unitRequestIndex = 0;
         this.animatedRequestIndex = 0;
@@ -62,14 +62,17 @@ public class DrawRequestArena {
     public void addDrawRequest(
         DrawRequestType requestType, Texture texture,
         float x, float y, float width, float height,
-        float fowLevel, float u0, float v0, float u1, float v1) {
+        float fowLevel, float tintR, float tintG, float tintB,
+        float u0, float v0, float u1, float v1) {
 
         switch (requestType) {
 
             case WAVE: {
 
                 this.checkArenaCapacity(this.waveRequestList, this.waveRequestIndex + 1);
-                this.waveRequestList.get(this.waveRequestIndex).set(texture, x, y, width, height, fowLevel, u0, v0, u1, v1);
+                this.waveRequestList.get(this.waveRequestIndex).set(
+                    texture, x, y, width, height, fowLevel, tintR, tintG, tintB, u0, v0, u1, v1
+                );
                 this.waveRequestIndex += 1;
 
                 break;
@@ -78,7 +81,9 @@ public class DrawRequestArena {
             case STATIC: {
 
                 this.checkArenaCapacity(this.staticRequestList, this.staticRequestIndex + 1);
-                this.staticRequestList.get(this.staticRequestIndex).set(texture, x, y, width, height, fowLevel, u0, v0, u1, v1);
+                this.staticRequestList.get(this.staticRequestIndex).set(
+                    texture, x, y, width, height, fowLevel, tintR, tintG, tintB, u0, v0, u1, v1
+                );
                 this.staticRequestIndex += 1;
 
                 break;
@@ -87,7 +92,9 @@ public class DrawRequestArena {
             case ANIMATED: {
 
                 this.checkArenaCapacity(this.animatedRequestList, this.animatedRequestIndex + 1);
-                this.animatedRequestList.get(this.animatedRequestIndex).set(texture, x, y, width, height, fowLevel, u0, v0, u1, v1);
+                this.animatedRequestList.get(this.animatedRequestIndex).set(
+                    texture, x, y, width, height, fowLevel, tintR, tintG, tintB, u0, v0, u1, v1
+                );
                 this.animatedRequestIndex += 1;
 
                 break;
@@ -96,7 +103,9 @@ public class DrawRequestArena {
             case UNIT: {
 
                 this.checkArenaCapacity(this.unitRequestList, this.unitRequestIndex + 1);
-                this.unitRequestList.get(this.unitRequestIndex).set(texture, x, y, width, height, fowLevel, u0, v0, u1, v1);
+                this.unitRequestList.get(this.unitRequestIndex).set(
+                    texture, x, y, width, height, fowLevel, tintR, tintG, tintB, u0, v0, u1, v1
+                );
                 this.unitRequestIndex += 1;
 
                 break;

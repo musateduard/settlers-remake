@@ -13,10 +13,18 @@ import org.example.shaders.ScreenShader;
 import org.example.shaders.LandscapeShader;
 import org.example.shaders.SpriteShader;
 import go.graphics.swing.opengl.LWJGLDrawContext;
+import jsettlers.common.buildings.BuildingVariant;
+import jsettlers.common.buildings.EBuildingType;
+import jsettlers.common.buildings.IBuilding;
+import jsettlers.common.images.ImageLink;
+import jsettlers.common.images.OriginalImageLink;
+import jsettlers.graphics.image.Image;
+import jsettlers.graphics.image.sequence.Sequence;
 import jsettlers.graphics.map.MapContent;
 import jsettlers.graphics.map.draw.DrawConstants;
 import jsettlers.graphics.map.draw.ImageProvider;
 import jsettlers.common.CommonConstants;
+import jsettlers.common.Color;
 import jsettlers.common.images.EImageLinkType;
 import jsettlers.common.mapobject.EMapObjectType;
 import jsettlers.common.map.IDirectGridProvider;
@@ -24,7 +32,14 @@ import jsettlers.common.map.IGraphicsGrid;
 import jsettlers.common.mapobject.IMannaBowlObject;
 import jsettlers.common.mapobject.IMapObject;
 import jsettlers.common.mapobject.IStackMapObject;
+import jsettlers.common.movable.EDirection;
+import jsettlers.common.movable.EMovableAction;
+import jsettlers.common.movable.IGraphicsMovable;
+import jsettlers.common.player.IPlayerable;
 import jsettlers.common.position.FloatRectangle;
+import jsettlers.graphics.map.MapDrawContext;
+import jsettlers.graphics.map.draw.settlerimages.SettlerImageMap;
+import jsettlers.graphics.map.draw.settlerimages.SettlerImageMapItem;
 import static org.lwjgl.opengl.GL33C.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
@@ -260,14 +275,14 @@ public class RenderingSystem {
 
     static class AnimationSystem {
 
-        public static void resolveSpriteKeyframes(
+        public static void generateSpriteDrawRequests(
             DrawRequestArena requestArena,
             Application application,
             Camera camera,
             AssetManager assets,
             IGraphicsGrid grid) {
 
-            requestArena.clearRequestIndex();
+            requestArena.clearDrawRequestIndex();
 
             int screenPadding = 50;
             int tallSpriteOverdraw = 50;
@@ -336,7 +351,7 @@ public class RenderingSystem {
                     IMapObject object = grid.getVisibleMapObjectsAt(tileX, tileY);
                     while (object != null) {
 
-                        resolveObjectKeyframe(
+                        AnimationSystem.resolveObjectKeyframe(
                             requestArena, assets, grid,
                             tileX, tileY, object, fogStatus,
                             screenMinX, screenMinY, screenMaxX, screenMaxY,
@@ -346,10 +361,129 @@ public class RenderingSystem {
                         object = object.getNextObject();
                         continue;
                     }
+
+                    if (fogStatus > CommonConstants.FOG_OF_WAR_EXPLORED) {
+                        IGraphicsMovable movable = grid.getMovableAt(tileX, tileY);
+                        if (movable != null && movable.getMovableType().isShip() == false) {
+                            AnimationSystem.resolveUnitKeyframe(
+                                requestArena, assets, grid,
+                                tileX, tileY, movable, fogStatus,
+                                screenMinX, screenMinY, screenMaxX, screenMaxY
+                            );
+                        }
+                    }
+
+                    continue;
                 }
             }
 
             return;
+        }
+
+
+        static void resolveUnitKeyframe(
+            DrawRequestArena arena,
+            AssetManager assets,
+            IGraphicsGrid grid,
+            int tileX,
+            int tileY,
+            IGraphicsMovable movable,
+            byte fogStatus,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY) {
+
+            float fowLevel = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            Color playerColor = MapDrawContext.getPlayerColor(movable.getPlayer().getPlayerId());
+
+            float viewX;
+            float viewY;
+            float moveProgress = movable.getMoveProgress();
+
+            if (movable.getAction() == EMovableAction.WALKING) {
+                EDirection fromDirection = movable.getDirection().getInverseDirection();
+                float[] between = AnimationSystem.betweenTilesView(
+                    grid, tileX, tileY, fromDirection, 1.00f - moveProgress
+                );
+                viewX = between[0];
+                viewY = between[1];
+            } else {
+                viewX = AnimationSystem.tileViewX(grid, tileX, tileY);
+                viewY = AnimationSystem.tileViewY(grid, tileX, tileY, 0.00f);
+            }
+
+            SettlerImageMap imageMap = SettlerImageMap.getInstance();
+            float animProgress = SettlerImageMap.adjustProgressForSettler(movable);
+            SettlerImageMapItem mapItem = imageMap.getMapItemForSettler(movable);
+            int frameIndex = SettlerImageMap.getImageIndex(mapItem, animProgress);
+
+            AssetLocator locator = new AssetLocator(
+                mapItem.getFile(),
+                EImageLinkType.SETTLER.ordinal(),
+                mapItem.getSequenceIndex(),
+                Math.max(0, frameIndex)
+            );
+
+            Texture shadow = assets.getSpriteShadow(locator);
+            if (shadow != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.UNIT, shadow, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    1.00f, 1.00f, 1.00f
+                );
+            }
+
+            Texture body = assets.getOrCreateTexture(locator);
+            if (body != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.UNIT, body, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    1.00f, 1.00f, 1.00f
+                );
+            }
+
+            Texture colorMask = assets.getSpriteColor(locator);
+            if (colorMask != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.UNIT, colorMask, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    playerColor.red, playerColor.green, playerColor.blue
+                );
+            }
+
+            return;
+        }
+
+
+        /**
+         * Port of MapObjectDrawer.betweenTilesX/Y: view position between two tiles while walking.
+         */
+        static float[] betweenTilesView(
+            IGraphicsGrid grid,
+            int startX,
+            int startY,
+            EDirection direction,
+            float progress) {
+
+            float theight = grid.getVisibleHeightAt(startX, startY) & 0xFF;
+            int destX = startX + direction.gridDeltaX;
+            int destY = startY + direction.gridDeltaY;
+            float dheight = grid.getVisibleHeightAt(destX, destY) & 0xFF;
+
+            float mapX = startX + progress * direction.gridDeltaX;
+            float mapY = startY + progress * direction.gridDeltaY;
+            float height = theight + progress * (dheight - theight);
+
+            float scaleX = DrawConstants.DISTANCE_X;
+            float scaleY = DrawConstants.DISTANCE_Y;
+            float heightYDisplacement = 2.00f;
+            float realMapHeight = grid.getHeight() - 1;
+
+            float viewX = mapX * scaleX + mapY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
+            float viewY = mapY * (-scaleY) + height * heightYDisplacement + realMapHeight * scaleY;
+
+            return new float[] { viewX, viewY };
         }
 
 
@@ -813,6 +947,37 @@ public class RenderingSystem {
                     requestType = DrawRequestType.ANIMATED;
                 }
 
+                case BUILDING -> {
+                    AnimationSystem.resolveBuilding(
+                        arena, assets, grid, (IBuilding) object,
+                        tileX, tileY, fogStatus,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY,
+                        positionAnimationStep
+                    );
+                    return;
+                }
+
+                case FLAG_DOOR -> {
+                    AnimationSystem.resolvePlayerFlag(
+                        arena, assets, grid, object,
+                        tileX, tileY, fogStatus,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY,
+                        buildingsFile, 63, animationStep, 0.00f
+                    );
+                    return;
+                }
+
+                case FLAG_ROOF -> {
+                    // +2 viewY nudge via height units (heightOffset * heightYDisplacement).
+                    AnimationSystem.resolvePlayerFlag(
+                        arena, assets, grid, object,
+                        tileX, tileY, fogStatus,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY,
+                        buildingsFile, 64, animationStep, 1.00f
+                    );
+                    return;
+                }
+
                 default -> {
                     return;
                 }
@@ -861,6 +1026,362 @@ public class RenderingSystem {
 
 
         /**
+         * Door/roof flags are ColorSprite-only: shadow + team-color mask with player tint.
+         */
+        static void resolvePlayerFlag(
+            DrawRequestArena arena,
+            AssetManager assets,
+            IGraphicsGrid grid,
+            IMapObject object,
+            int tileX,
+            int tileY,
+            byte fogStatus,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            int fileIndex,
+            int sequenceIndex,
+            int animationStep,
+            float heightOffset) {
+
+            ImageProvider imageProvider = ImageProvider.getInstance();
+            int seqLength = imageProvider.getSettlerSequence(fileIndex, sequenceIndex).length();
+            if (seqLength < 1) {
+                return;
+            }
+
+            AssetLocator locator = new AssetLocator(
+                fileIndex,
+                EImageLinkType.SETTLER.ordinal(),
+                sequenceIndex,
+                animationStep % seqLength
+            );
+
+            float fowLevel = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            float viewX = AnimationSystem.tileViewX(grid, tileX, tileY);
+            float viewY = AnimationSystem.tileViewY(grid, tileX, tileY, heightOffset);
+
+            Color playerColor = Color.WHITE;
+            if (object instanceof IPlayerable playerable && playerable.getPlayer() != null) {
+                playerColor = MapDrawContext.getPlayerColor(playerable.getPlayer().getPlayerId());
+            }
+
+            Texture shadow = assets.getSpriteShadow(locator);
+            if (shadow != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.ANIMATED, shadow, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    1.00f, 1.00f, 1.00f
+                );
+            }
+
+            Texture colorMask = assets.getSpriteColor(locator);
+            if (colorMask != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.ANIMATED, colorMask, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    playerColor.red, playerColor.green, playerColor.blue
+                );
+                return;
+            }
+
+            // Fallback if torso bridge fails: body path (may be ColorSprite-only via getOrCreateTexture).
+            Texture body = assets.getOrCreateTexture(locator);
+            if (body != null) {
+                AnimationSystem.addClippedDrawRequest(
+                    arena, DrawRequestType.ANIMATED, body, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                    playerColor.red, playerColor.green, playerColor.blue
+                );
+            }
+
+            return;
+        }
+
+
+        // todo: move all the building helper methods out of AnimationSystem
+        // either into the main switch in resolveObjectKeyframe or as object methods
+        static void resolveBuilding(
+            DrawRequestArena arena,
+            AssetManager assets,
+            IGraphicsGrid grid,
+            IBuilding building,
+            int tileX,
+            int tileY,
+            byte fogStatus,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            int positionAnimationStep) {
+
+            float progress = building.getStateProgress();
+            if (progress < 0.01f) {
+                return;
+            }
+
+            float fowLevel = fogStatus / (float) CommonConstants.FOG_OF_WAR_VISIBLE;
+            float viewX = AnimationSystem.tileViewX(grid, tileX, tileY);
+            float viewY = AnimationSystem.tileViewY(grid, tileX, tileY, 0.00f);
+
+            BuildingVariant variant = building.getBuildingVariant();
+            ImageLink[] images = variant.getImages();
+
+            if (progress >= 0.99f) {
+                ImageProvider imageProvider = ImageProvider.getInstance();
+
+                if (variant.isVariantOf(EBuildingType.MILL)
+                    && building instanceof IBuilding.IMill mill
+                    && mill.isRotating()) {
+
+                    int millFile = imageProvider.getGFXBuildingFileIndex(variant.getCivilisation());
+                    int millSequence = imageProvider.getMillRotationIndex(variant.getCivilisation());
+                    Sequence<? extends Image> animationSequence = imageProvider.getSettlerSequence(millFile, millSequence);
+                    int seqLength = animationSequence.length();
+                    if (seqLength > 0) {
+                        int frame = positionAnimationStep % seqLength;
+                        AssetLocator millLocator = new AssetLocator(
+                            millFile,
+                            EImageLinkType.SETTLER.ordinal(),
+                            millSequence,
+                            frame
+                        );
+                        Texture millSprite = assets.getOrCreateTexture(millLocator);
+                        if (millSprite != null) {
+                            AnimationSystem.addClippedDrawRequest(
+                                arena, DrawRequestType.ANIMATED, millSprite, viewX, viewY,
+                                screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+                            );
+                        }
+                    }
+
+                    if (images.length > 0) {
+                        AnimationSystem.enqueueLinkedImage(
+                            arena, assets, images[0], DrawRequestType.STATIC,
+                            viewX, viewY,
+                            screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                            false, true
+                        );
+                    }
+                    return;
+                }
+
+                if (variant.isVariantOf(EBuildingType.STOCK)) {
+                    float[] viewYOffsets = { -4.00f, -2.00f, 2.00f, 3.00f, 2.00f, -2.00f };
+                    int layerCount = Math.min(6, images.length);
+                    for (int index = 0; index < layerCount; index++) {
+                        AnimationSystem.enqueueLinkedImage(
+                            arena, assets, images[index], DrawRequestType.STATIC,
+                            viewX, viewY + viewYOffsets[index],
+                            screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                            true, true
+                        );
+                    }
+                    return;
+                }
+
+                if (images.length > 0) {
+                    float mainViewY = viewY;
+                    if (variant.isVariantOf(EBuildingType.MARKET_PLACE)) {
+                        mainViewY -= 2.00f;
+                    }
+                    AnimationSystem.enqueueLinkedImage(
+                        arena, assets, images[0], DrawRequestType.STATIC,
+                        viewX, mainViewY,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                        true, true
+                    );
+                }
+
+                for (int index = 1; index < images.length; index++) {
+                    AnimationSystem.enqueueLinkedImage(
+                        arena, assets, images[index], DrawRequestType.STATIC,
+                        viewX, viewY + 1.00f,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                        true, true
+                    );
+                }
+                return;
+            }
+
+            AnimationSystem.resolveBuildingConstruction(
+                arena, assets, variant, progress,
+                viewX, viewY,
+                screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+            );
+
+            return;
+        }
+
+
+        static void resolveBuildingConstruction(
+            DrawRequestArena arena,
+            AssetManager assets,
+            BuildingVariant variant,
+            float state,
+            float viewX,
+            float viewY,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float fowLevel) {
+
+            ImageLink[] buildImages = variant.getBuildImages();
+            boolean hasTwoConstructionPhases = buildImages.length > 0;
+            boolean isInBuildPhase = hasTwoConstructionPhases && state < 0.50f;
+
+            if (!isInBuildPhase && hasTwoConstructionPhases) {
+                for (ImageLink link : buildImages) {
+                    AnimationSystem.enqueueLinkedImage(
+                        arena, assets, link, DrawRequestType.STATIC,
+                        viewX, viewY,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                        true, true
+                    );
+                }
+            }
+
+            ImageLink[] constructionImages = isInBuildPhase ? buildImages : variant.getImages();
+            float maskState = hasTwoConstructionPhases ? (state * 2.00f) % 1.00f : state;
+
+            for (ImageLink link : constructionImages) {
+                AssetLocator locator = AnimationSystem.locatorFromImageLink(link);
+                if (locator == null) {
+                    continue;
+                }
+                Texture sprite = assets.getOrCreateTexture(locator);
+                if (sprite == null) {
+                    continue;
+                }
+                AnimationSystem.enqueueConstructionReveal(
+                    arena, DrawRequestType.STATIC, sprite, viewX, viewY,
+                    screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel, maskState
+                );
+            }
+
+            return;
+        }
+
+
+        static AssetLocator locatorFromImageLink(ImageLink link) {
+            if ((link instanceof OriginalImageLink) == false) {
+                return null;
+            }
+            OriginalImageLink original = (OriginalImageLink) link;
+            return new AssetLocator(
+                original.getFile(),
+                EImageLinkType.SETTLER.ordinal(),
+                original.getSequence(),
+                original.getImage()
+            );
+        }
+
+
+        static void enqueueLinkedImage(
+            DrawRequestArena arena,
+            AssetManager assets,
+            ImageLink link,
+            DrawRequestType requestType,
+            float viewX,
+            float viewY,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float fowLevel,
+            boolean includeBody,
+            boolean includeShadow) {
+
+            AssetLocator locator = AnimationSystem.locatorFromImageLink(link);
+            if (locator == null) {
+                return;
+            }
+
+            if (includeShadow) {
+                Texture shadow = assets.getSpriteShadow(locator);
+                if (shadow != null) {
+                    AnimationSystem.addClippedDrawRequest(
+                        arena, requestType, shadow, viewX, viewY,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+                    );
+                }
+            }
+
+            if (includeBody) {
+                Texture sprite = assets.getOrCreateTexture(locator);
+                if (sprite != null) {
+                    AnimationSystem.addClippedDrawRequest(
+                        arena, requestType, sprite, viewX, viewY,
+                        screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel
+                    );
+                }
+            }
+
+            return;
+        }
+
+
+        static void enqueueConstructionReveal(
+            DrawRequestArena arena,
+            DrawRequestType requestType,
+            Texture texture,
+            float viewX,
+            float viewY,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float fowLevel,
+            float maskState) {
+
+            if (maskState <= 0.00f) {
+                return;
+            }
+            if (maskState > 1.00f) {
+                maskState = 1.00f;
+            }
+
+            float topLineBottom = 1.00f - maskState;
+            float left = viewX + texture.offsetX;
+            float fullTop = viewY - texture.offsetY;
+            float visibleHeight = texture.height * maskState;
+            float top = fullTop + texture.height * topLineBottom;
+            float right = left + texture.width;
+            float bottom = top - visibleHeight;
+
+            if (right <= screenMinX || left >= screenMaxX || top <= screenMinY || bottom >= screenMaxY) {
+                return;
+            }
+
+            arena.addDrawRequest(
+                requestType, texture, left, top,
+                texture.width, visibleHeight, fowLevel,
+                1.00f, 1.00f, 1.00f,
+                0.00f, maskState, 1.00f, 0.00f
+            );
+            return;
+        }
+
+
+        static float tileViewX(IGraphicsGrid grid, int tileX, int tileY) {
+            float scaleX = DrawConstants.DISTANCE_X;
+            float realMapHeight = grid.getHeight() - 1;
+            return tileX * scaleX + tileY * (-0.50f * scaleX) + realMapHeight * scaleX * 0.50f;
+        }
+
+
+        static float tileViewY(IGraphicsGrid grid, int tileX, int tileY, float heightOffset) {
+            float scaleY = DrawConstants.DISTANCE_Y;
+            float heightYDisplacement = 2.00f;
+            int height = grid.getVisibleHeightAt(tileX, tileY) & 0xFF;
+            float realMapHeight = grid.getHeight() - 1;
+            return tileY * (-scaleY) + (height + heightOffset) * heightYDisplacement + realMapHeight * scaleY;
+        }
+
+
+        /**
          * Appends a full-size sprite quad, or skips it when completely outside the visible screen.
          * Partial off-screen overlap is left to OpenGL clipping.
          */
@@ -875,6 +1396,30 @@ public class RenderingSystem {
             float screenMaxX,
             float screenMaxY,
             float fowLevel) {
+
+            AnimationSystem.addClippedDrawRequest(
+                arena, requestType, texture, viewX, viewY,
+                screenMinX, screenMinY, screenMaxX, screenMaxY, fowLevel,
+                1.00f, 1.00f, 1.00f
+            );
+            return;
+        }
+
+
+        static void addClippedDrawRequest(
+            DrawRequestArena arena,
+            DrawRequestType requestType,
+            Texture texture,
+            float viewX,
+            float viewY,
+            float screenMinX,
+            float screenMinY,
+            float screenMaxX,
+            float screenMaxY,
+            float fowLevel,
+            float tintR,
+            float tintG,
+            float tintB) {
 
             // Legacy quad: left=offsetX, top=-offsetY, right=offsetX+w, bottom=-offsetY-h
             // todo: use Sprite instead of Texture; textures don't have offsetX
@@ -891,6 +1436,7 @@ public class RenderingSystem {
             arena.addDrawRequest(
                 requestType, texture, left, top,
                 texture.width, texture.height, fowLevel,
+                tintR, tintG, tintB,
                 0.00f, 1.00f, 1.00f, 0.00f
             );
 
@@ -997,6 +1543,7 @@ public class RenderingSystem {
             GL33C.glUniformMatrix4fv(shader.modelMatrixUniform, false, shader.buffer);
 
             GL33C.glUniform1f(shader.fowUniform, request.fow);
+            GL33C.glUniform3f(shader.tintUniform, request.tintR, request.tintG, request.tintB);
             GL33C.glUniform4f(shader.uvRectUniform, request.u0, request.v0, request.u1, request.v1);
 
             GL33C.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1164,7 +1711,7 @@ public class RenderingSystem {
             GameRenderer.frameSetupLegacy(application, context, map);
 
             LandscapeRenderer.drawLandscape(application, assetManager, camera, map.map, landscape, eventBus);
-            AnimationSystem.resolveSpriteKeyframes(requestArena, application, camera, assets, map.map);
+            AnimationSystem.generateSpriteDrawRequests(requestArena, application, camera, assets, map.map);
             SpriteRenderer.drawSprites(application, camera, sprites, requestArena);
 
             context.invalidateDrawState();  // this forces the LWJGLDrawContext managed variables to update their state

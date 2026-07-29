@@ -14,6 +14,9 @@ public class SpriteDrawRequest {
     public float width;
     public float height;
     public float fow;
+    public float tintR;
+    public float tintG;
+    public float tintB;
     public float u0;
     public float v0;
     public float u1;
@@ -23,7 +26,8 @@ public class SpriteDrawRequest {
     public void set(
         Texture texture,
         float x, float y, float width, float height,
-        float fow, float u0, float v0, float u1, float v1) {
+        float fow, float tintR, float tintG, float tintB,
+        float u0, float v0, float u1, float v1) {
 
         this.texture = texture;
         this.x = x;
@@ -31,6 +35,9 @@ public class SpriteDrawRequest {
         this.width = width;
         this.height = height;
         this.fow = fow;
+        this.tintR = tintR;
+        this.tintG = tintG;
+        this.tintB = tintB;
         this.u0 = u0;
         this.v0 = v0;
         this.u1 = u1;

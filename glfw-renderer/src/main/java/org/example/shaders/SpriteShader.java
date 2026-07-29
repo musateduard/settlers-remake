@@ -5,8 +5,9 @@ import org.lwjgl.opengl.GL33C;
 
 
 /**
- * Textured sprite quad with fog-of-war color multiply.
+ * Textured sprite quad with player tint and fog-of-war multiply.
  * Unit geometry: (0,0) top-left to (1,-1) bottom-right in local space.
+ * Use tint (1,1,1) for normal sprites; player color for ColorSprite masks.
  */
 public class SpriteShader {
 
@@ -16,6 +17,7 @@ public class SpriteShader {
     public final int modelMatrixUniform;
     public final int textureUniform;
     public final int fowUniform;
+    public final int tintUniform;
     public final int uvRectUniform;
     public final Matrix4f projectionMatrix;
     public final Matrix4f viewMatrix;
@@ -53,13 +55,14 @@ public class SpriteShader {
 
         uniform sampler2D texHandle;
         uniform float fow;
+        uniform vec3 tint;
 
         void main() {
             vec4 color = texture(texHandle, frag_texcoord);
             if (color.a < 0.01) {
                 discard;
             }
-            fragColor = vec4(color.rgb * fow, color.a);
+            fragColor = vec4(color.rgb * tint * fow, color.a);
         }
         """;
 
@@ -69,6 +72,7 @@ public class SpriteShader {
         this.modelMatrixUniform = GL33C.glGetUniformLocation(this.id, "model");
         this.textureUniform = GL33C.glGetUniformLocation(this.id, "texHandle");
         this.fowUniform = GL33C.glGetUniformLocation(this.id, "fow");
+        this.tintUniform = GL33C.glGetUniformLocation(this.id, "tint");
         this.uvRectUniform = GL33C.glGetUniformLocation(this.id, "uvRect");
 
         if (this.projectionMatrixUniform == -1 ||
@@ -76,6 +80,7 @@ public class SpriteShader {
             this.modelMatrixUniform == -1 ||
             this.textureUniform == -1 ||
             this.fowUniform == -1 ||
+            this.tintUniform == -1 ||
             this.uvRectUniform == -1) {
             throw new RuntimeException("SpriteShader: missing uniform location");
         }

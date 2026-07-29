@@ -9,6 +9,7 @@ import jsettlers.graphics.image.SingleImage;
 import jsettlers.graphics.map.draw.ImageProvider;
 import org.example.assetmanager.AssetType;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -37,7 +38,7 @@ public class AssetManager {
     public final Texture landscapeAtlas;
 
 
-    public AssetManager() {
+    public AssetManager(File[] pathList) {
 
         // todo: introduce sprite - shadow mapping lists
         // this is because not all sprite sequences have a corresponding shadow sequence
@@ -183,7 +184,20 @@ public class AssetManager {
             .getSettlerSequence(locator.fileIndex(), locator.sequenceIndex())
             .getImageSafe(locator.spriteIndex(), null);
 
-        return this.createAndCacheTexture(locatorHash, image);
+        Texture texture = this.createAndCacheTexture(locatorHash, image);
+        if (texture != null) {
+            return texture;
+        }
+
+        // ColorSprite-only assets (e.g. building flags) have an empty body; use torso pixels.
+        if (image instanceof SettlerImage settlerImage) {
+            SingleImage torso = settlerImage.getTorso();
+            if (torso != null) {
+                return this.createAndCacheTexture(locatorHash, torso);
+            }
+        }
+
+        return null;
     }
 
 
@@ -248,6 +262,55 @@ public class AssetManager {
         }
 
         return shadow;
+    }
+
+
+    /**
+     * Resolves the ColorSprite (torso / team-color mask) locator for a body locator.
+     * Same file, sequence, and frame; section = {@link AssetType#ColorSprite}.
+     */
+    public AssetLocator getColorSpriteLocator(AssetLocator spriteLocator) {
+
+        return new AssetLocator(
+            spriteLocator.fileIndex(),
+            AssetType.ColorSprite.value,
+            spriteLocator.sequenceIndex(),
+            spriteLocator.spriteIndex()
+        );
+    }
+
+
+    /**
+     * Returns the paired ColorSprite mask texture for the body frame identified by {@code locator},
+     * or {@code null} when that frame has no torso / color layer.
+     * <p>
+     * Cache keys use the ColorSprite {@link AssetLocator}. Pixel data is loaded temporarily via
+     * {@link SettlerImage#getTorso()} until ColorSprite DAT reads exist.
+     */
+    public Texture getSpriteColor(AssetLocator locator) {
+
+        AssetLocator colorLocator = this.getColorSpriteLocator(locator);
+        long colorHash = colorLocator.toHash();
+
+        if (this.textureList.containsKey(colorHash)) {
+            return this.textureList.get(colorHash);
+        }
+
+        Image image = ImageProvider.getInstance()
+            .getSettlerSequence(locator.fileIndex(), locator.sequenceIndex())
+            .getImageSafe(locator.spriteIndex(), null);
+
+        SingleImage torsoImage = null;
+        if (image instanceof SettlerImage settlerImage) {
+            torsoImage = settlerImage.getTorso();
+        }
+
+        Texture color = this.createAndCacheTexture(colorHash, torsoImage);
+        if (color == null) {
+            this.textureList.put(colorHash, null);
+        }
+
+        return color;
     }
 
 
